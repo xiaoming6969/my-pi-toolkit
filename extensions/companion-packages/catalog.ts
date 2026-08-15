@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 export interface CompanionNpmPackage {
 	/** Unpinned Pi install spec, e.g. `npm:pi-lens`. */
 	spec: string;
@@ -7,18 +11,11 @@ export interface CompanionNpmPackage {
 	listName: string;
 }
 
-export const COMPANION_NPM_PACKAGES: CompanionNpmPackage[] = [
-	{
-		spec: "npm:@dietrichgebert/ponytail",
-		name: "@dietrichgebert/ponytail",
-		listName: "ponytail",
-	},
-	{
-		spec: "npm:pi-lens",
-		name: "pi-lens",
-		listName: "pi-lens",
-	},
-];
+const catalogPath = join(dirname(fileURLToPath(import.meta.url)), "catalog.json");
+
+export const COMPANION_NPM_PACKAGES: CompanionNpmPackage[] = JSON.parse(
+	readFileSync(catalogPath, "utf8"),
+) as CompanionNpmPackage[];
 
 export function npmNameFromSource(source: string): string | undefined {
 	if (!source.startsWith("npm:")) return undefined;

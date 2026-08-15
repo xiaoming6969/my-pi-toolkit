@@ -39,7 +39,7 @@
 | 子 Agent 控制台 | `/subagents` 与 `Alt+A` 查看、管理并行任务过程 |
 | 启动面板与主题 | M-PI Dashboard；推荐主题 `grok-build-dark` |
 
-能力由三个扩展入口编排：`ming-core`、`tapd`、`context7`。首次启动会自动安装 companion 包 `ponytail` 与 `pi-lens`（独立出现在扩展列表）。通用模块细节见 [`extensions/README.md`](extensions/README.md)。
+能力由三个扩展入口编排：`ming-core`、`tapd`、`context7`。`pi install` 本 toolkit 会自动安装 companion 包 `ponytail` 与 `pi-lens`（独立出现在扩展列表）。通用模块细节见 [`extensions/README.md`](extensions/README.md)。
 
 ## Preview
 
@@ -98,7 +98,7 @@ pi install git:github.com/BigGoblin/my-pi-toolkit@main
 }
 ```
 
-本仓库已 vendored Open Cursor（Cursor ↔ Pi 桥），无需再单独安装 `npm:@open-cursor/pi-agent`。Ponytail 与 Pi Lens 不是 toolkit 的 npm 依赖：第一次启动会自动 `pi install` 未钉版本的 `npm:@dietrichgebert/ponytail` 和 `npm:pi-lens`，换电脑仍只需安装 toolkit。之后用 `pi update --extensions` 更新这两个包，不必改 toolkit。Pi Lens 在 Termux 等环境安装失败时会跳过，不影响其它扩展。
+本仓库已 vendored Open Cursor（Cursor ↔ Pi 桥），无需再单独安装 `npm:@open-cursor/pi-agent`。Ponytail 与 Pi Lens 不是 toolkit 的 npm 依赖：`pi install` 本 toolkit 时由 `postinstall` 自动 `pi install` 未钉版本的 `npm:@dietrichgebert/ponytail` 和 `npm:pi-lens`（本地 `pi install .` 则在同一次流程的 `npm install` 里触发）。换电脑仍只需安装 toolkit。之后用 `pi update --extensions` 更新这两个包，不必改 toolkit。Pi Lens 在 Termux 等环境安装失败时会跳过，不影响其它扩展。
 
 ## Quick Start
 
@@ -107,7 +107,7 @@ cd /path/to/your-project
 pi --no-session
 ```
 
-首次启动若提示信任项目目录，选择 Trust。启动面板应列出 toolkit 三个入口：`ming-core`、`tapd`、`context7`。第一次会话还会自动安装 companion 包，Extensions 列随后包含 `pi-lens` 与 `ponytail`（若安装成功；可能需要 `/reload`）。
+首次启动若提示信任项目目录，选择 Trust。启动面板应列出 toolkit 三个入口：`ming-core`、`tapd`、`context7`。`pi install` 成功后 Extensions 列还应包含 `pi-lens` 与 `ponytail`（若 companion 安装成功；本地路径安装后若尚未出现请执行 `/reload`）。
 
 | 操作 | 说明 |
 | --- | --- |
@@ -118,7 +118,7 @@ pi --no-session
 | `/subagents` | 管理子 Agent |
 | `/settings` | 切换主题等设置 |
 | `/helps` | 打开 [my-pi-toolkit](https://github.com/BigGoblin/my-pi-toolkit) 文档仓库 |
-| `/reload` | 修改扩展后重新加载；首次自动安装 companion 后若未自动重载请执行一次 |
+| `/reload` | 修改扩展后重新加载；`pi install` 后 companion 已写入 settings 但当前会话未加载时执行一次 |
 
 ## Configuration
 
@@ -155,7 +155,7 @@ pi --no-session
 
 - [`skills/context7`](skills/context7/)：指导 Agent 查询第三方库最新文档
 - [`.pi/skills/pi-package-bundler`](.pi/skills/pi-package-bundler/)：仅在本 toolkit 仓库内可用，将指定 Pi package **内置进 toolkit**（与 ponytail / pi-lens 的 companion 安装不同）
-- companion `pi-lens` / `ponytail` 的 Skills 由 Pi 从 `~/.pi/agent/npm/` 加载，首次启动自动安装后出现
+- companion `pi-lens` / `ponytail` 的 Skills 由 Pi 从 `~/.pi/agent/npm/` 加载，`pi install` toolkit 时自动安装后出现
 
 给出 npm 包名、pi.dev 页面、npm 页面或 GitHub 链接即可触发 package bundler，也可执行 `/skill:pi-package-bundler`。
 
@@ -173,7 +173,7 @@ pi --no-session
 <details>
 <summary><strong>Termux / <code>@ast-grep/cli</code> 安装失败</strong></summary>
 
-若出现 `Failed to locate @ast-grep/cli native binary`：`pi-lens` 依赖在 Android 上无对应原生包。仓库已用 `.npmrc`（`ignore-scripts=true`）规避整次 `npm install` 失败。
+若出现 `Failed to locate @ast-grep/cli native binary`：`pi-lens` 依赖在 Android 上无对应原生包。它由 companion `pi install npm:pi-lens` 安装，失败不阻断 toolkit。不要给本仓库加 `ignore-scripts=true`，否则 `postinstall` 无法在 `pi install` 时注册 companion。
 
 若 git 安装目录仍缺依赖（例如 `pi install` 显示已安装但缺少 `marked`），在缓存目录强制重装：
 

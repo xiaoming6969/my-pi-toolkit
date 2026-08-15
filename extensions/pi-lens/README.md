@@ -2,7 +2,7 @@
 
 LSP、AST 搜索、诊断和代码分析。本 toolkit **不再 bundled** `pi-lens`。
 
-第一次启动 Pi 时由 [`companion-packages`](../companion-packages/README.md) 自动执行：
+`pi install` 本 toolkit 时由 [`companion-packages`](../companion-packages/README.md) 自动执行：
 
 ```bash
 pi install npm:pi-lens

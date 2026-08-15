@@ -9,7 +9,7 @@
 1. `openai-compat-models` — 对 `models.json` 中未手写 `models` 的 OpenAI 兼容 provider 注册动态发现（`/model` 时刷新）
 2. `cursor-models` — Cursor 模型折叠、思考等级、Fast 模式
 3. `model-manager` — 新对话默认模型与思考等级
-4. `companion-packages` — 首次启动时自动 `pi install` 未钉版本的 `npm:@dietrichgebert/ponytail` 与 `npm:pi-lens`
+4. `companion-packages` — `pi install` toolkit 时通过 npm `postinstall` 自动 `pi install` 未钉版本的 `npm:@dietrichgebert/ponytail` 与 `npm:pi-lens`（`session_start` 补装）
 5. `chat-mode` — Build / Plan / Ask（`Shift+Tab`、`/plan`、`enter_plan_mode` / `exit_plan_mode`、`ask_user_choice`）
 6. `built-in-tool-style` — 可选 Grok 风格 Pi 内置工具时间线（`/grok-tools`）
 7. `agent-todos` — 任务清单工具与 UI

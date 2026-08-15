@@ -26,7 +26,7 @@
 | OpenAI Compat Models | 对 `models.json` 中未手写 `models` 的 OpenAI 兼容 provider 在 `/model` 时拉取 `/models` | [`openai-compat-models/README.md`](openai-compat-models/README.md) |
 | Cursor Models | Cursor 模型折叠、思考等级和 Fast 模式 | [`cursor-models/README.md`](cursor-models/README.md) |
 | Model Manager | 为新对话应用可配置的默认模型和思考等级；`/effort` 选择当前模型思考等级 | [`model-manager/README.md`](model-manager/README.md) |
-| Companion packages | 首次启动自动安装未钉版本的 ponytail / pi-lens；用 `pi update --extensions` 更新 | [`companion-packages/README.md`](companion-packages/README.md) |
+| Companion packages | `pi install` toolkit 时自动安装未钉版本的 ponytail / pi-lens；用 `pi update --extensions` 更新 | [`companion-packages/README.md`](companion-packages/README.md) |
 | Pi Lens | Multi Task worker 从 companion 安装目录软加载 Pi Lens | [`pi-lens/README.md`](pi-lens/README.md) |
 | Ponytail | 由 Pi 作为独立 package 加载的懒惰高级工程师模式 | [`ponytail/README.md`](ponytail/README.md) |
 | M-PI Dashboard | M-PI 响应式启动面板、自定义 Header 与模型 Footer | [`startup-dashboard/README.md`](startup-dashboard/README.md) |

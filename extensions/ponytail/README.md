@@ -2,7 +2,7 @@
 
 懒惰高级工程师模式：写代码前走 YAGNI 决策梯子，优先复用、标准库和平台原生能力。
 
-本 toolkit **不再 bundled** 该包。第一次启动 Pi 时由 [`companion-packages`](../companion-packages/README.md) 自动执行：
+本 toolkit **不再 bundled** 该包。`pi install` 本 toolkit 时由 [`companion-packages`](../companion-packages/README.md) 自动执行：
 
 ```bash
 pi install npm:@dietrichgebert/ponytail

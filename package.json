@@ -5,6 +5,9 @@
   "author": "",
   "license": "MIT",
   "type": "module",
+  "scripts": {
+    "postinstall": "node scripts/install-companions.mjs"
+  },
   "dependencies": {
     "@bufbuild/protobuf": "1.10.0",
     "@connectrpc/connect": "^1.7.0",
