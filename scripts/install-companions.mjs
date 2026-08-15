@@ -212,8 +212,8 @@ async function main() {
 	if (shouldDefer(options)) {
 		const piPid = findAncestorPiPid();
 		const waitArgs = piPid
-			? ["--wait-pid", String(piPid), "--cwd", process.cwd()]
-			: ["--wait-ms", String(FALLBACK_WAIT_MS), "--cwd", process.cwd()];
+			? ["--wait-pid", String(piPid), "--cwd", options.cwd]
+			: ["--wait-ms", String(FALLBACK_WAIT_MS), "--cwd", options.cwd];
 		spawnDeferred(SCRIPT_PATH, waitArgs, agentDir());
 		console.log(
 			`DEFERRED ${piPid ? `wait-pid=${piPid}` : `wait-ms=${FALLBACK_WAIT_MS}`}`,

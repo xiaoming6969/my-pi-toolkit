@@ -12,7 +12,7 @@
 
 ## ming-core 内能力模块
 
-实现仍在下列目录；由 `ming-core` 统一注册，启动面板扩展列表显示 `ming-core`、`tapd`、`context7`，以及自动安装的 companion 包 `ponytail`、`pi-lens`。
+实现仍在下列目录；由 `ming-core` 统一注册，启动面板扩展列表显示 `ming-core`、`tapd`、`context7`，以及 `pi install` 自动安装的 companion 包 `ponytail`、`pi-lens`。
 
 | 模块 | 说明 | 文档 |
 | --- | --- | --- |
