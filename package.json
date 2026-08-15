@@ -31,8 +31,7 @@
     "extensions": [
       "./extensions/ming-core/index.ts",
       "./extensions/tapd/index.ts",
-      "./extensions/context7/index.ts",
-      "./extensions/ponytail/index.ts"
+      "./extensions/context7/index.ts"
     ],
     "skills": [
       "./skills/context7",

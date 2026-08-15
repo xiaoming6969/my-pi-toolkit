@@ -2,7 +2,7 @@
 
 懒惰高级工程师模式：写代码前走 YAGNI 决策梯子，优先复用、标准库和平台原生能力。
 
-实际实现由 npm 依赖 `@dietrichgebert/ponytail` 提供。本目录只做加载入口，不复制上游源码。安装 toolkit 后即可使用，无需在每个项目再执行 `pi install npm:@dietrichgebert/ponytail`。
+实际实现由 npm 依赖 `@dietrichgebert/ponytail` 提供。本目录只做加载入口，由 `ming-core` 注册，不复制上游源码，也不单独出现在启动面板扩展列表。安装 toolkit 后即可使用，无需在每个项目再执行 `pi install npm:@dietrichgebert/ponytail`。
 
 ## 命令
 

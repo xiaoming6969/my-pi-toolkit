@@ -39,7 +39,7 @@
 | 子 Agent 控制台 | `/subagents` 与 `Alt+A` 查看、管理并行任务过程 |
 | 启动面板与主题 | M-PI Dashboard；推荐主题 `grok-build-dark` |
 
-能力由四个扩展入口编排：`ming-core`、`tapd`、`context7`、`ponytail`。通用模块细节见 [`extensions/README.md`](extensions/README.md)。
+能力由三个扩展入口编排：`ming-core`、`tapd`、`context7`。Ponytail 由 `ming-core` 加载，不单独出现在扩展列表。通用模块细节见 [`extensions/README.md`](extensions/README.md)。
 
 ## Preview
 
@@ -107,7 +107,7 @@ cd /path/to/your-project
 pi --no-session
 ```
 
-首次启动若提示信任项目目录，选择 Trust。启动面板应列出四个扩展：`context7`、`ming-core`、`ponytail`、`tapd`。
+首次启动若提示信任项目目录，选择 Trust。启动面板应列出三个扩展：`ming-core`、`tapd`、`context7`。Ponytail 作为 `ming-core` 内模块加载，skills 仍会出现在 Skills 列。
 
 | 操作 | 说明 |
 | --- | --- |
@@ -138,10 +138,9 @@ pi --no-session
 
 | 扩展 | 简介 | 文档 |
 | --- | --- | --- |
-| ming-core | 通用能力编排：模型、Plan、子 Agent、Dashboard、Session Branch Guard、Pi Lens 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
+| ming-core | 通用能力编排：模型、Plan、子 Agent、Dashboard、Session Branch Guard、Pi Lens、Ponytail 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
 | TAPD | 待办、需求分析、选项确认式技术设计、协作评审、Bug 定位与子需求同步 | [`extensions/tapd/README.md`](extensions/tapd/README.md) |
 | Context7 | 第三方库最新文档查询 | [`extensions/context7/README.md`](extensions/context7/README.md) |
-| Ponytail | 懒惰高级工程师模式（bundled `@dietrichgebert/ponytail`） | [`extensions/ponytail/README.md`](extensions/ponytail/README.md) |
 
 完整模块列表见 [`extensions/README.md`](extensions/README.md)。
 
