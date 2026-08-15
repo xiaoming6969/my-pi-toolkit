@@ -1,22 +1,19 @@
-# Pi Lens Extension
+# Pi Lens
 
-项目内的 `pi-lens` 加载入口。
+LSP、AST 搜索、诊断和代码分析。本 toolkit **不再 bundled** `pi-lens`。
 
-实际实现由 npm 依赖 `pi-lens` 提供，本目录软加载已构建的扩展入口。若安装失败（例如 Termux 上 `@ast-grep/cli` 无原生 binary），会跳过 Pi Lens，其它 toolkit 扩展仍可加载。
+第一次启动 Pi 时由 [`companion-packages`](../companion-packages/README.md) 自动执行：
 
-Pi Lens 提供：
+```bash
+pi install npm:pi-lens
+```
 
-- LSP 导航与诊断
-- AST-aware 搜索和替换
-- 项目、模块与符号报告
-- Tree-sitter、ast-grep 和安全规则
-- lint、复杂度及项目级诊断聚合
+Pi 把它当作独立 package 加载，启动面板 Extensions 列会显示 `pi-lens`。更新：
 
-## Source
+```bash
+pi update --extensions
+```
 
-- 本地入口：`extensions/pi-lens/index.js`
-- 实际实现：`node_modules/pi-lens/dist/index.js`
-- Skills：`node_modules/pi-lens/skills/`
-- 版本：查看仓库根目录 `package.json`
+本目录的 `index.js` 仅供 Multi Task worker 从 `~/.pi/agent/npm/node_modules/pi-lens`（或项目 `.pi/npm/`）软加载。companion 未安装或 Termux 上原生 binary 失败时跳过，不阻断 worker。
 
 具体工具和配置以当前安装版本的 `pi-lens` 文档为准。

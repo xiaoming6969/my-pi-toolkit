@@ -8,25 +8,23 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import agentTodos from "../agent-todos/index.js";
 import builtInToolStyle from "../built-in-tool-style/index.js";
 import chatMode from "../chat-mode/index.js";
+import companionPackages from "../companion-packages/index.js";
 import cursorModels from "../cursor-models/index.js";
 import helps from "../helps/index.js";
 import modelManager from "../model-manager/index.js";
 import multiTask from "../multi-task/index.js";
 import openaiCompatModels from "../openai-compat-models/index.js";
-import piLens from "../pi-lens/index.js";
-import ponytail from "../ponytail/index.js";
 import repoSearchSubagent from "../repo-search-subagent/index.js";
 import { sessionBranchGuard } from "../session-branch-guard/index.js";
 import startupDashboard from "../startup-dashboard/index.js";
 import subagentConsole from "../subagent-console/index.js";
 import taskDuration from "../task-duration/index.js";
 
-export default async function mingCore(pi: ExtensionAPI): Promise<void> {
+export default function mingCore(pi: ExtensionAPI): void {
 	openaiCompatModels(pi);
 	cursorModels(pi);
 	modelManager(pi);
-	await piLens(pi);
-	await ponytail(pi);
+	companionPackages(pi);
 	chatMode(pi);
 	builtInToolStyle(pi);
 	agentTodos(pi);

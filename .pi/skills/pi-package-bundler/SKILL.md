@@ -5,6 +5,8 @@ description: 将用户指定的 Pi package 集成到当前 my-pi-toolkit 中并�
 
 # Pi Package Bundler
 
+Ponytail 与 Pi Lens **不要**用本技能 bundled 进 toolkit。它们由 `extensions/companion-packages` 在首次启动时 `pi install` 为未钉版本的用户级 package，用 `pi update --extensions` 更新。
+
 ## 目标
 
 默认把第三方 Pi package **内置到当前 `my-pi-toolkit`**，使任何安装了这个 toolkit 的项目都能使用它。不要只创建当前项目的 `.pi/settings.json`，那只对单个项目生效。

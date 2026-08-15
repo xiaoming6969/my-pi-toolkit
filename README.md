@@ -39,7 +39,7 @@
 | 子 Agent 控制台 | `/subagents` 与 `Alt+A` 查看、管理并行任务过程 |
 | 启动面板与主题 | M-PI Dashboard；推荐主题 `grok-build-dark` |
 
-能力由三个扩展入口编排：`ming-core`、`tapd`、`context7`。Ponytail 由 `ming-core` 加载，不单独出现在扩展列表。通用模块细节见 [`extensions/README.md`](extensions/README.md)。
+能力由三个扩展入口编排：`ming-core`、`tapd`、`context7`。首次启动会自动安装 companion 包 `ponytail` 与 `pi-lens`（独立出现在扩展列表）。通用模块细节见 [`extensions/README.md`](extensions/README.md)。
 
 ## Preview
 
@@ -98,7 +98,7 @@ pi install git:github.com/BigGoblin/my-pi-toolkit@main
 }
 ```
 
-本仓库已 vendored Open Cursor（Cursor ↔ Pi 桥），无需再单独安装 `npm:@open-cursor/pi-agent`。`pi-lens` 与 `@dietrichgebert/ponytail` 已随 toolkit bundled；安装 toolkit 后不必在每个项目再执行 `pi install npm:@dietrichgebert/ponytail`。`pi-lens` 在 Termux 等无原生 binary 的环境会自动跳过，不影响其它扩展。
+本仓库已 vendored Open Cursor（Cursor ↔ Pi 桥），无需再单独安装 `npm:@open-cursor/pi-agent`。Ponytail 与 Pi Lens 不是 toolkit 的 npm 依赖：第一次启动会自动 `pi install` 未钉版本的 `npm:@dietrichgebert/ponytail` 和 `npm:pi-lens`，换电脑仍只需安装 toolkit。之后用 `pi update --extensions` 更新这两个包，不必改 toolkit。Pi Lens 在 Termux 等环境安装失败时会跳过，不影响其它扩展。
 
 ## Quick Start
 
@@ -107,18 +107,18 @@ cd /path/to/your-project
 pi --no-session
 ```
 
-首次启动若提示信任项目目录，选择 Trust。启动面板应列出三个扩展：`ming-core`、`tapd`、`context7`。Ponytail 作为 `ming-core` 内模块加载，skills 仍会出现在 Skills 列。
+首次启动若提示信任项目目录，选择 Trust。启动面板应列出 toolkit 三个入口：`ming-core`、`tapd`、`context7`。第一次会话还会自动安装 companion 包，Extensions 列随后包含 `pi-lens` 与 `ponytail`（若安装成功；可能需要 `/reload`）。
 
 | 操作 | 说明 |
 | --- | --- |
 | `Shift+Tab` | 切换 Build / Plan / Ask |
 | `/tapd` | 打开 TAPD 待办（需配置） |
 | `/context7 <query>` | 查询第三方库文档 |
-| `/ponytail [lite\|full\|ultra\|off]` | 设置 Ponytail 强度；无参数时报告当前级别 |
+| `/ponytail [lite\|full\|ultra\|off]` | 设置 Ponytail 强度（companion 包提供） |
 | `/subagents` | 管理子 Agent |
 | `/settings` | 切换主题等设置 |
 | `/helps` | 打开 [my-pi-toolkit](https://github.com/BigGoblin/my-pi-toolkit) 文档仓库 |
-| `/reload` | 修改扩展后重新加载运行时 |
+| `/reload` | 修改扩展后重新加载；首次自动安装 companion 后若未自动重载请执行一次 |
 
 ## Configuration
 
@@ -138,7 +138,7 @@ pi --no-session
 
 | 扩展 | 简介 | 文档 |
 | --- | --- | --- |
-| ming-core | 通用能力编排：模型、Plan、子 Agent、Dashboard、Session Branch Guard、Pi Lens、Ponytail 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
+| ming-core | 通用能力编排：模型、Plan、子 Agent、Dashboard、Session Branch Guard、companion 自动安装等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
 | TAPD | 待办、需求分析、选项确认式技术设计、协作评审、Bug 定位与子需求同步 | [`extensions/tapd/README.md`](extensions/tapd/README.md) |
 | Context7 | 第三方库最新文档查询 | [`extensions/context7/README.md`](extensions/context7/README.md) |
 
@@ -154,9 +154,8 @@ pi --no-session
 <summary><strong>Skills</strong></summary>
 
 - [`skills/context7`](skills/context7/)：指导 Agent 查询第三方库最新文档
-- [`.pi/skills/pi-package-bundler`](.pi/skills/pi-package-bundler/)：仅在本 toolkit 仓库内可用，将指定 Pi package 集成并随分发
-- `node_modules/pi-lens/skills`：Pi Lens 自带的代码导航、AST 规则与诊断 Skills
-- `node_modules/@dietrichgebert/ponytail/skills`：Ponytail 自带的 YAGNI 梯子与 review / audit / debt Skills
+- [`.pi/skills/pi-package-bundler`](.pi/skills/pi-package-bundler/)：仅在本 toolkit 仓库内可用，将指定 Pi package **内置进 toolkit**（与 ponytail / pi-lens 的 companion 安装不同）
+- companion `pi-lens` / `ponytail` 的 Skills 由 Pi 从 `~/.pi/agent/npm/` 加载，首次启动自动安装后出现
 
 给出 npm 包名、pi.dev 页面、npm 页面或 GitHub 链接即可触发 package bundler，也可执行 `/skill:pi-package-bundler`。
 

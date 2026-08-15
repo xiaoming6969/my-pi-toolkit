@@ -2,6 +2,10 @@ import { access, readFile, readdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, extname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+	companionExtensionNames,
+	companionSkillDirectories,
+} from "../companion-packages/settings.js";
 
 export interface DashboardData {
 	contexts: string[];
@@ -187,6 +191,7 @@ export async function discoverDashboardData(
 		...(manifest.pi?.skills ?? []).map((path) => ({
 			path: resolve(TOOLKIT_ROOT, path),
 		})),
+		...(await companionSkillDirectories(cwd)).map((path) => ({ path })),
 		{
 			path: resolve(homedir(), ".pi", "agent", "skills"),
 			includeRootMarkdown: true,
@@ -197,8 +202,10 @@ export async function discoverDashboardData(
 			includeRootMarkdown: basename(dirname(path)) === ".pi",
 		})),
 	];
-	const extensions = (manifest.pi?.extensions ?? [])
-		.map(extensionName)
+	const extensions = [
+		...(manifest.pi?.extensions ?? []).map(extensionName),
+		...(await companionExtensionNames(cwd)),
+	]
 		.filter((name) => name !== "startup-dashboard")
 		.sort((a, b) => a.localeCompare(b));
 

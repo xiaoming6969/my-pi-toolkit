@@ -2,7 +2,17 @@
 
 懒惰高级工程师模式：写代码前走 YAGNI 决策梯子，优先复用、标准库和平台原生能力。
 
-实际实现由 npm 依赖 `@dietrichgebert/ponytail` 提供。本目录只做加载入口，由 `ming-core` 注册，不复制上游源码，也不单独出现在启动面板扩展列表。安装 toolkit 后即可使用，无需在每个项目再执行 `pi install npm:@dietrichgebert/ponytail`。
+本 toolkit **不再 bundled** 该包。第一次启动 Pi 时由 [`companion-packages`](../companion-packages/README.md) 自动执行：
+
+```bash
+pi install npm:@dietrichgebert/ponytail
+```
+
+Pi 把它当作独立 package 加载，启动面板 Extensions 列会显示 `ponytail`。更新：
+
+```bash
+pi update --extensions
+```
 
 ## 命令
 
@@ -17,15 +27,8 @@
 
 也可用环境变量 `PONYTAIL_DEFAULT_MODE` 或 `~/.config/ponytail/config.json` 的 `defaultMode` 设置默认级别。
 
-## Source
-
-- 本地入口：`extensions/ponytail/index.ts`
-- 实际实现：`node_modules/@dietrichgebert/ponytail/pi-extension/index.js`
-- Skills：`node_modules/@dietrichgebert/ponytail/skills/`
-- 版本：查看仓库根目录 `package.json`
-
 上游文档：[ponytail.dev](https://ponytail.dev/) · [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail)
 
 ## TUI 偏差
 
-状态栏指示器（🐴 / 🌿 / ⚡ / 🔥）来自上游 `pi-extension`，未改写为 toolkit 共享视觉原语。行为与单独安装 ponytail 一致；不覆盖本 toolkit 的 Header / Footer。
+状态栏指示器（🐴 / 🌿 / ⚡ / 🔥）来自上游 `pi-extension`，未改写为 toolkit 共享视觉原语。
