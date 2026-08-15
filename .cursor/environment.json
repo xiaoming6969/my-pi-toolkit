@@ -1,0 +1,4 @@
+{
+  "name": "my-pi-toolkit",
+  "install": "bash -lc 'export PATH=\"$(nvm which 22 | xargs dirname):$PATH\"; node -v; npm install && ./node_modules/.bin/pi install .'"
+}
