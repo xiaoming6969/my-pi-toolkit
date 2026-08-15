@@ -1,0 +1,12 @@
+[
+	{
+		"spec": "npm:@dietrichgebert/ponytail",
+		"name": "@dietrichgebert/ponytail",
+		"listName": "ponytail"
+	},
+	{
+		"spec": "npm:pi-lens",
+		"name": "pi-lens",
+		"listName": "pi-lens"
+	}
+]

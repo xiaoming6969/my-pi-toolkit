@@ -6,13 +6,13 @@
 
 | 扩展 | 说明 | 文档 |
 | --- | --- | --- |
-| ming-core | 通用能力编排（模型、会话壳、子 Agent、Dashboard、Pi Lens 等） | [`ming-core/README.md`](ming-core/README.md) |
+| ming-core | 通用能力编排（模型、会话壳、子 Agent、Dashboard、companion 自动安装等） | [`ming-core/README.md`](ming-core/README.md) |
 | TAPD | TAPD 待办、需求文档工作流、Bug 定位和子需求同步；待办 Overlay 与 Subagent 共用响应式单层 shell | [`tapd/README.md`](tapd/README.md) |
 | Context7 | 第三方库最新文档查询工具 | [`context7/README.md`](context7/README.md) |
 
 ## ming-core 内能力模块
 
-实现仍在下列目录；由 `ming-core` 统一注册，启动面板扩展列表只显示 `ming-core`（外加 tapd / context7）。
+实现仍在下列目录；由 `ming-core` 统一注册，启动面板扩展列表显示 `ming-core`、`tapd`、`context7`，以及 `pi install` 自动安装的 companion 包 `ponytail`、`pi-lens`。
 
 | 模块 | 说明 | 文档 |
 | --- | --- | --- |
@@ -26,7 +26,9 @@
 | OpenAI Compat Models | 对 `models.json` 中未手写 `models` 的 OpenAI 兼容 provider 在 `/model` 时拉取 `/models` | [`openai-compat-models/README.md`](openai-compat-models/README.md) |
 | Cursor Models | Cursor 模型折叠、思考等级和 Fast 模式 | [`cursor-models/README.md`](cursor-models/README.md) |
 | Model Manager | 为新对话应用可配置的默认模型和思考等级；`/effort` 选择当前模型思考等级 | [`model-manager/README.md`](model-manager/README.md) |
-| Pi Lens | LSP、AST 搜索、诊断和代码分析扩展加载入口 | [`pi-lens/README.md`](pi-lens/README.md) |
+| Companion packages | `pi install` toolkit 时自动安装未钉版本的 ponytail / pi-lens；用 `pi update --extensions` 更新 | [`companion-packages/README.md`](companion-packages/README.md) |
+| Pi Lens | Multi Task worker 从 companion 安装目录软加载 Pi Lens | [`pi-lens/README.md`](pi-lens/README.md) |
+| Ponytail | 由 Pi 作为独立 package 加载的懒惰高级工程师模式 | [`ponytail/README.md`](ponytail/README.md) |
 | M-PI Dashboard | M-PI 响应式启动面板、自定义 Header 与模型 Footer | [`startup-dashboard/README.md`](startup-dashboard/README.md) |
 | Task Duration | 在最终回复下方持久显示本次 Agent 任务耗时，不进入 LLM 上下文 | [`task-duration/README.md`](task-duration/README.md) |
 | Helps | `/helps` 打开 toolkit GitHub 仓库页 | [`helps/index.ts`](helps/index.ts) |

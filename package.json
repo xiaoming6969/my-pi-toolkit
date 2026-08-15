@@ -1,10 +1,13 @@
 {
   "name": "my-pi-toolkit",
   "version": "1.0.0",
-  "description": "Pi coding-agent package: session modes, TAPD workflows, Context7 docs, Cursor model bridge, themes, and skills",
+  "description": "Pi coding-agent package: session modes, TAPD workflows, Context7 docs, Cursor model bridge, ponytail, themes, and skills",
   "author": "",
   "license": "MIT",
   "type": "module",
+  "scripts": {
+    "postinstall": "node scripts/install-companions.mjs"
+  },
   "dependencies": {
     "@bufbuild/protobuf": "1.10.0",
     "@connectrpc/connect": "^1.7.0",
@@ -13,13 +16,9 @@
     "@open-cursor/protocol": "file:./vendor/open-cursor/protocol",
     "grok-mermaid": "0.2.2",
     "marked": "18.0.5",
-    "pi-lens": "3.8.72",
     "typebox": "^1.1.38",
     "yaml": "^2.9.0"
   },
-  "bundledDependencies": [
-    "pi-lens"
-  ],
   "peerDependencies": {
     "@earendil-works/pi-ai": ">=0.84.0",
     "@earendil-works/pi-coding-agent": ">=0.84.0",
@@ -32,15 +31,11 @@
       "./extensions/context7/index.ts"
     ],
     "skills": [
-      "./skills/context7",
-      "./node_modules/pi-lens/skills"
+      "./skills/context7"
     ],
     "prompts": [],
     "themes": [
       "./themes"
     ]
-  },
-  "bundleDependencies": [
-    "pi-lens"
-  ]
+  }
 }

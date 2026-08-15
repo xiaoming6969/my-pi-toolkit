@@ -99,7 +99,7 @@ implementation: read, grep, find, ls, edit, write, lsp_diagnostics, lens_diagnos
 research:       read, grep, find, ls
 ```
 
-implementation worker 没有 `bash`，不能执行任意命令。它只显式加载瘦路径：`cursor-models`、`pi-lens` 和 `path-guard.ts`，不会加载整个 `ming-core`。Pi Lens 会在 `edit`/`write` 后提供自动格式化、lint、结构、安全和类型反馈；worker 结束前还必须对实际修改文件运行有界的 `lsp_diagnostics` 与 `lens_diagnostics(mode=all)`。守卫在每次 `edit`、`write` 前规范化目标，并阻止声明范围外的写入。
+implementation worker 没有 `bash`，不能执行任意命令。它只显式加载瘦路径：`cursor-models`、`pi-lens` 和 `path-guard.ts`，不会加载整个 `ming-core`。Pi Lens 从 companion 安装目录软加载（`~/.pi/agent/npm/node_modules/pi-lens`）；未安装或原生模块失败时跳过。Pi Lens 会在 `edit`/`write` 后提供自动格式化、lint、结构、安全和类型反馈；worker 结束前还必须对实际修改文件运行有界的 `lsp_diagnostics` 与 `lens_diagnostics(mode=all)`。守卫在每次 `edit`、`write` 前规范化目标，并阻止声明范围外的写入。
 
 research worker 由 Batch manager 直接调用 Repo Search runner，与 implementation worker 平级；它只加载 Cursor provider 和 `.gitignore` guard，不能写文件、运行 shell 或调用另一个 `repo_search`。任务声明的 `paths` 会写入搜索请求作为范围，报告应包含文件、行号和调用关系证据。
 
