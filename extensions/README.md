@@ -2,17 +2,18 @@
 
 本目录包含 `my-pi-toolkit` 加载的 Pi 扩展。
 
-`package.json` 的 `pi.extensions` 现为 **3 个入口**：
+`package.json` 的 `pi.extensions` 现为 **4 个入口**：
 
 | 扩展 | 说明 | 文档 |
 | --- | --- | --- |
 | ming-core | 通用能力编排（模型、会话壳、子 Agent、Dashboard、Pi Lens 等） | [`ming-core/README.md`](ming-core/README.md) |
 | TAPD | TAPD 待办、需求文档工作流、Bug 定位和子需求同步；待办 Overlay 与 Subagent 共用响应式单层 shell | [`tapd/README.md`](tapd/README.md) |
 | Context7 | 第三方库最新文档查询工具 | [`context7/README.md`](context7/README.md) |
+| Ponytail | 懒惰高级工程师模式；转发 bundled `@dietrichgebert/ponytail` | [`ponytail/README.md`](ponytail/README.md) |
 
 ## ming-core 内能力模块
 
-实现仍在下列目录；由 `ming-core` 统一注册，启动面板扩展列表只显示 `ming-core`（外加 tapd / context7）。
+实现仍在下列目录；由 `ming-core` 统一注册，启动面板扩展列表只显示 `ming-core`（外加 tapd / context7 / ponytail）。
 
 | 模块 | 说明 | 文档 |
 | --- | --- | --- |

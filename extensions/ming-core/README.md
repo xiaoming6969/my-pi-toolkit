@@ -37,4 +37,4 @@
 
 ## 独立扩展
 
-- `tapd`、`context7` 仍在 `package.json` 的 `pi.extensions` 中单独注册。
+- `tapd`、`context7`、`ponytail` 仍在 `package.json` 的 `pi.extensions` 中单独注册。

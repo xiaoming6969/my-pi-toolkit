@@ -2,7 +2,7 @@
 
 # my-pi-toolkit
 
-面向 [Pi](https://pi.dev/) coding-agent 的扩展包：会话模式、TAPD 工作流、Context7、Cursor 模型桥、主题与 Skills。
+面向 [Pi](https://pi.dev/) coding-agent 的扩展包：会话模式、TAPD 工作流、Context7、Ponytail、Cursor 模型桥、主题与 Skills。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Node](https://img.shields.io/badge/Node-%3E%3D22.19-brightgreen.svg)](https://nodejs.org/)
@@ -34,11 +34,12 @@
 | 会话模式 | `Shift+Tab` 在 Build / Plan / Ask 间切换；Plan 支持选项确认式关键决策，配合任务清单与 Grok 风格工具时间线 |
 | TAPD 工作流 | 待办 Overlay、需求分析 / 技术设计 / 协作评审、Bug 定位、子需求同步，以及关联分支 / 提交 / GitLab MR |
 | Context7 | 为 Agent 提供第三方库最新文档，减少对训练数据的依赖 |
+| Ponytail | 懒惰高级工程师模式：写代码前走 YAGNI 决策梯子，压过度设计 |
 | 会话与分支门禁 | 恢复会话时校验 Git 分支，降低跨分支误操作 |
 | 子 Agent 控制台 | `/subagents` 与 `Alt+A` 查看、管理并行任务过程 |
 | 启动面板与主题 | M-PI Dashboard；推荐主题 `grok-build-dark` |
 
-能力由三个扩展入口编排：`ming-core`、`tapd`、`context7`。通用模块细节见 [`extensions/README.md`](extensions/README.md)。
+能力由四个扩展入口编排：`ming-core`、`tapd`、`context7`、`ponytail`。通用模块细节见 [`extensions/README.md`](extensions/README.md)。
 
 ## Preview
 
@@ -97,7 +98,7 @@ pi install git:github.com/BigGoblin/my-pi-toolkit@main
 }
 ```
 
-本仓库已 vendored Open Cursor（Cursor ↔ Pi 桥），无需再单独安装 `npm:@open-cursor/pi-agent`。`pi-lens` 已内置；在 Termux 等无原生 binary 的环境会自动跳过，不影响其它扩展。
+本仓库已 vendored Open Cursor（Cursor ↔ Pi 桥），无需再单独安装 `npm:@open-cursor/pi-agent`。`pi-lens` 与 `@dietrichgebert/ponytail` 已随 toolkit bundled；安装 toolkit 后不必在每个项目再执行 `pi install npm:@dietrichgebert/ponytail`。`pi-lens` 在 Termux 等无原生 binary 的环境会自动跳过，不影响其它扩展。
 
 ## Quick Start
 
@@ -106,13 +107,14 @@ cd /path/to/your-project
 pi --no-session
 ```
 
-首次启动若提示信任项目目录，选择 Trust。启动面板应列出三个扩展：`ming-core`、`tapd`、`context7`。
+首次启动若提示信任项目目录，选择 Trust。启动面板应列出四个扩展：`context7`、`ming-core`、`ponytail`、`tapd`。
 
 | 操作 | 说明 |
 | --- | --- |
 | `Shift+Tab` | 切换 Build / Plan / Ask |
 | `/tapd` | 打开 TAPD 待办（需配置） |
 | `/context7 <query>` | 查询第三方库文档 |
+| `/ponytail [lite\|full\|ultra\|off]` | 设置 Ponytail 强度；无参数时报告当前级别 |
 | `/subagents` | 管理子 Agent |
 | `/settings` | 切换主题等设置 |
 | `/helps` | 打开 [my-pi-toolkit](https://github.com/BigGoblin/my-pi-toolkit) 文档仓库 |
@@ -139,6 +141,7 @@ pi --no-session
 | ming-core | 通用能力编排：模型、Plan、子 Agent、Dashboard、Session Branch Guard、Pi Lens 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
 | TAPD | 待办、需求分析、选项确认式技术设计、协作评审、Bug 定位与子需求同步 | [`extensions/tapd/README.md`](extensions/tapd/README.md) |
 | Context7 | 第三方库最新文档查询 | [`extensions/context7/README.md`](extensions/context7/README.md) |
+| Ponytail | 懒惰高级工程师模式（bundled `@dietrichgebert/ponytail`） | [`extensions/ponytail/README.md`](extensions/ponytail/README.md) |
 
 完整模块列表见 [`extensions/README.md`](extensions/README.md)。
 
@@ -154,6 +157,7 @@ pi --no-session
 - [`skills/context7`](skills/context7/)：指导 Agent 查询第三方库最新文档
 - [`.pi/skills/pi-package-bundler`](.pi/skills/pi-package-bundler/)：仅在本 toolkit 仓库内可用，将指定 Pi package 集成并随分发
 - `node_modules/pi-lens/skills`：Pi Lens 自带的代码导航、AST 规则与诊断 Skills
+- `node_modules/@dietrichgebert/ponytail/skills`：Ponytail 自带的 YAGNI 梯子与 review / audit / debt Skills
 
 给出 npm 包名、pi.dev 页面、npm 页面或 GitHub 链接即可触发 package bundler，也可执行 `/skill:pi-package-bundler`。
 

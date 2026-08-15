@@ -1,7 +1,7 @@
 {
   "name": "my-pi-toolkit",
   "version": "1.0.0",
-  "description": "Pi coding-agent package: session modes, TAPD workflows, Context7 docs, Cursor model bridge, themes, and skills",
+  "description": "Pi coding-agent package: session modes, TAPD workflows, Context7 docs, Cursor model bridge, ponytail, themes, and skills",
   "author": "",
   "license": "MIT",
   "type": "module",
@@ -9,6 +9,7 @@
     "@bufbuild/protobuf": "1.10.0",
     "@connectrpc/connect": "^1.7.0",
     "@connectrpc/connect-node": "^1.7.0",
+    "@dietrichgebert/ponytail": "4.9.0",
     "@open-cursor/client": "file:./vendor/open-cursor/client",
     "@open-cursor/protocol": "file:./vendor/open-cursor/protocol",
     "grok-mermaid": "0.2.2",
@@ -18,6 +19,7 @@
     "yaml": "^2.9.0"
   },
   "bundledDependencies": [
+    "@dietrichgebert/ponytail",
     "pi-lens"
   ],
   "peerDependencies": {
@@ -29,11 +31,13 @@
     "extensions": [
       "./extensions/ming-core/index.ts",
       "./extensions/tapd/index.ts",
-      "./extensions/context7/index.ts"
+      "./extensions/context7/index.ts",
+      "./extensions/ponytail/index.ts"
     ],
     "skills": [
       "./skills/context7",
-      "./node_modules/pi-lens/skills"
+      "./node_modules/pi-lens/skills",
+      "./node_modules/@dietrichgebert/ponytail/skills"
     ],
     "prompts": [],
     "themes": [
@@ -41,6 +45,7 @@
     ]
   },
   "bundleDependencies": [
+    "@dietrichgebert/ponytail",
     "pi-lens"
   ]
 }
