@@ -51,6 +51,7 @@ Plan 用于实施前的只读调研与方案审批：
 - 同一 session 再次进入时继续读取和修改同一个文件。
 - 不提供 Plan ID、Plan 列表、`/plan new` 或多 Plan artifact。
 - 不同 session 通过不同目录隔离。
+- Pi 运行期间删除持久会话（包括在 `/resume` 中删除）时，会同步删除该 session 的 `plan.md`；目录中若有其他文件则保留。
 - `--no-session` 等内存会话没有 session 存储目录，Plan 临时放在系统临时目录的 `pi-plan-sessions/<session-id>/plan.md`。
 - 旧 `.pi/plan.md` 与 `.pi/plans/**` 不再读取或写入，也不会自动删除。
 

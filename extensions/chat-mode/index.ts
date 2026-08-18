@@ -12,10 +12,12 @@ import {
 } from "./lifecycle.js";
 import { seedPlanFile, type SessionPlanFile } from "./plan-file.js";
 import { registerPlanTools } from "./plan-tools.js";
+import { registerSessionPlanCleanup } from "./session-plan-cleanup.js";
 import { getChatMode } from "./state.js";
 
 export default function chatModeExtension(pi: ExtensionAPI): void {
 	registerAskUserChoiceTool(pi);
+	registerSessionPlanCleanup(pi);
 	let planFile: SessionPlanFile | undefined;
 	let pendingImplementationKickoff = false;
 
