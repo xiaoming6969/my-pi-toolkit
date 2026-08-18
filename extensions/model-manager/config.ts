@@ -71,10 +71,7 @@ function optionalThinkingLevel(
 	filePath: string,
 ): ThinkingLevel | undefined {
 	if (value === undefined) return undefined;
-	if (
-		typeof value === "string" &&
-		THINKING_LEVELS.has(value as ThinkingLevel)
-	) {
+	if (typeof value === "string" && THINKING_LEVELS.has(value as ThinkingLevel)) {
 		return value as ThinkingLevel;
 	}
 	throw new Error(
@@ -117,7 +114,15 @@ export function userConfigPath(): string {
 }
 
 export function projectConfigPath(cwd: string): string {
-	return path.join(cwd, CONFIG_DIR_NAME, "model-manager.json");
+	let current = path.resolve(cwd);
+	while (true) {
+		const candidate = path.join(current, CONFIG_DIR_NAME, "model-manager.json");
+		if (fs.existsSync(candidate)) return candidate;
+		const parent = path.dirname(current);
+		if (parent === current)
+			return path.join(cwd, CONFIG_DIR_NAME, "model-manager.json");
+		current = parent;
+	}
 }
 
 export function resolveNewConversationConfig(
