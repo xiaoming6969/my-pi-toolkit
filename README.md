@@ -36,7 +36,7 @@
 | Context7 | 为 Agent 提供第三方库最新文档，减少对训练数据的依赖 |
 | 会话与分支门禁 | 恢复会话时校验 Git 分支，降低跨分支误操作 |
 | 子 Agent 控制台 | `/subagents` 与 `Alt+A` 查看、管理并行任务过程 |
-| 启动面板与主题 | M-PI Dashboard；推荐主题 `grok-build-dark` |
+| 启动面板与主题 | M-PI Dashboard；Footer 兼容第三方扩展状态；推荐主题 `grok-build-dark` |
 
 能力由三个扩展入口编排：`ming-core`、`tapd`、`context7`。通用模块细节见 [`extensions/README.md`](extensions/README.md)。
 

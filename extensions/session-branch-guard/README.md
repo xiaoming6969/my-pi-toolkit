@@ -12,7 +12,7 @@
   2. **留在当前分支继续** —— 二次确认后把 A 重新绑定（rebind）到当前分支；
   3. **取消** —— 保持当前会话与分支不变。
 - 校验基于目标会话 header 中的 cwd（resume 后 Pi 会切到该目录），而不是切换前的工作区；因此从仓库 A 恢复属于仓库 B 的会话可以正常进入 B。仅当会话目录与绑定仓库不一致时才按跨仓库取消。
-- 每次交互输入前做轻量漂移校验；用户在会话运行期间外部切分支会被拦截并提示 `/session-branch resolve`。
+- 每次交互输入前做轻量漂移校验；用户在会话运行期间外部切分支会被拦截并提示 `/session-branch resolve`。阻塞期间 M-PI Footer 会在当前 Git 分支名后显示 `✗ branch mismatch`，解除后立即清除。
 - 其他扩展（如 TAPD 的 `/tapd branch`）创建并切换到新分支后，会自动复用 binding API（`readBinding`/`createBinding`/`appendBindingCurrent`）把会话绑定 rebind 到新分支，避免下一次输入被漂移门禁拦截。
 - `pi --session` / `pi -r` / `-c` 等无法前置拦截的路径，在 `session_start` 补偿校验；无 UI（print/json）环境只报错并阻塞，**不自动执行任何 Git 变更**。
 

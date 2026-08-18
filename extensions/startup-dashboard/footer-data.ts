@@ -1,6 +1,7 @@
 import { basename } from "node:path";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { isFast } from "../cursor-models/fast-state.js";
+import { extensionStatusTexts } from "./footer-status.js";
 
 interface UsageLike {
 	input?: number;
@@ -27,7 +28,9 @@ export interface FooterSnapshot {
 	thinking?: string;
 	fast?: boolean;
 	modeStatus?: string;
+	branchMismatch?: boolean;
 	subagentStatus?: string;
+	extensionStatuses: ReturnType<typeof extensionStatusTexts>;
 	usage: UsageTotals;
 	contextTokens?: number;
 	contextWindow?: number;
@@ -84,8 +87,7 @@ export function createFooterSnapshot(
 	ctx: ExtensionContext,
 	branch?: string | null,
 	title?: string,
-	modeStatus?: string,
-	subagentStatus?: string,
+	extensionStatuses?: ReadonlyMap<string, string>,
 ): FooterSnapshot {
 	const context = ctx.getContextUsage();
 	const provider = validText(ctx.model?.provider);
@@ -97,8 +99,9 @@ export function createFooterSnapshot(
 		model: validText(ctx.model?.id),
 		thinking: validText(ctx.thinkingLevel),
 		fast: provider === "cursor-agent" ? isFast() : undefined,
-		modeStatus,
-		subagentStatus,
+		branchMismatch: extensionStatuses?.has("session-branch"),
+		subagentStatus: extensionStatuses?.get("subagent"),
+		extensionStatuses: extensionStatusTexts(extensionStatuses),
 		usage: collectUsage(ctx),
 		contextTokens: validNumber(context?.tokens),
 		contextWindow: validNumber(

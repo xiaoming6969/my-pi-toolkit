@@ -1,4 +1,5 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
+import { statusGlyph } from "../shared/tui/visual-language.js";
 import type { FooterSnapshot } from "./footer-data.js";
 
 export interface FooterSegment {
@@ -52,6 +53,38 @@ function fastSegment(
 		id: "fast",
 		content: theme.fg("success", compact ? "⚡" : "⚡ fast"),
 	};
+}
+
+export function identitySegments(
+	snapshot: FooterSnapshot,
+	theme: Theme,
+): FooterSegment[] {
+	return [
+		snapshot.modeStatus
+			? { id: "mode", content: snapshot.modeStatus }
+			: undefined,
+		snapshot.project
+			? {
+					id: "project",
+					content: `${theme.fg("accent", "◆")} ${theme.bold(theme.fg("text", snapshot.project))}`,
+				}
+			: undefined,
+		snapshot.branch
+			? {
+					id: "branch",
+					content: `${theme.fg("muted", "")} ${theme.fg("muted", snapshot.branch)}`,
+				}
+			: undefined,
+		snapshot.branchMismatch
+			? {
+					id: "branch-status",
+					content: `${statusGlyph(theme, "error")} ${theme.fg("error", "branch mismatch")}`,
+				}
+			: undefined,
+		snapshot.title
+			? { id: "title", content: theme.fg("text", snapshot.title) }
+			: undefined,
+	].filter((segment): segment is FooterSegment => segment !== undefined);
 }
 
 export function runtimeSegments(

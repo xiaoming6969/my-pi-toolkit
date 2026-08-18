@@ -1,14 +1,15 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { statusGlyph } from "../shared/tui/visual-language.js";
 import { type FooterSnapshot, validNumber } from "./footer-data.js";
 import {
 	type FooterSegment as Segment,
+	identitySegments,
 	runtimeSegments,
 } from "./footer-runtime.js";
 
 export { createFooterSnapshot } from "./footer-data.js";
 export type { FooterSnapshot } from "./footer-data.js";
-
 function formatTokens(count: number): string {
 	if (count < 1_000) return count.toString();
 	const [divisor, suffix] =
@@ -113,29 +114,6 @@ function compactContextText(
 	return styledContext([`${Math.round(percent)}%`], percent, theme);
 }
 
-function identitySegments(snapshot: FooterSnapshot, theme: Theme): Segment[] {
-	return [
-		snapshot.modeStatus
-			? { id: "mode", content: snapshot.modeStatus }
-			: undefined,
-		snapshot.project
-			? {
-					id: "project",
-					content: `${theme.fg("accent", "◆")} ${theme.bold(theme.fg("text", snapshot.project))}`,
-				}
-			: undefined,
-		snapshot.branch
-			? {
-					id: "branch",
-					content: `${theme.fg("muted", "")} ${theme.fg("muted", snapshot.branch)}`,
-				}
-			: undefined,
-		snapshot.title
-			? { id: "title", content: theme.fg("text", snapshot.title) }
-			: undefined,
-	].filter((segment): segment is Segment => segment !== undefined);
-}
-
 function usageSegments(snapshot: FooterSnapshot, theme: Theme): Segment[] {
 	const usage = snapshot.usage;
 	const cacheParts = [
@@ -178,6 +156,32 @@ function costSegment(
 				content: theme.fg("warning", `$${snapshot.usage.cost.toFixed(2)}`),
 			}
 		: undefined;
+}
+function extensionStatusLine(
+	snapshot: FooterSnapshot,
+	width: number,
+	theme: Theme,
+): string | undefined {
+	const segments = snapshot.extensionStatuses.map((status) => ({
+		id: status.id,
+		content: `${status.glyph ? `${statusGlyph(theme, status.glyph)} ` : ""}${theme.fg(status.tone, status.text)}`,
+	}));
+	if (segments.length === 0) return undefined;
+	return truncateToWidth(
+		joinSegments(segments, theme),
+		width,
+		theme.fg("dim", "..."),
+	);
+}
+
+function appendExtensionStatuses(
+	lines: string[],
+	snapshot: FooterSnapshot,
+	width: number,
+	theme: Theme,
+): string[] {
+	const status = extensionStatusLine(snapshot, width, theme);
+	return status ? [...lines, status] : lines;
 }
 
 function wrapSegments(
@@ -239,14 +243,18 @@ export function renderFooter(
 			Math.min(12, Math.max(0, availableContext - 18)),
 		);
 		const resourceLeft = joinSegments(
-			[
-				context ? { id: "context", content: context } : undefined,
-				...usage,
-			].filter((segment): segment is Segment => segment !== undefined),
+			[context ? { id: "context", content: context } : undefined, ...usage].filter(
+				(segment): segment is Segment => segment !== undefined,
+			),
 			theme,
 		);
-		return [first, align(resourceLeft, costText, width)].filter(
-			(line) => visibleWidth(line) > 0,
+		return appendExtensionStatuses(
+			[first, align(resourceLeft, costText, width)].filter(
+				(line) => visibleWidth(line) > 0,
+			),
+			snapshot,
+			width,
+			theme,
 		);
 	}
 
@@ -261,5 +269,10 @@ export function renderFooter(
 		...(cost ? [cost] : []),
 		...usage,
 	];
-	return wrapSegments(allSegments, width, theme);
+	return appendExtensionStatuses(
+		wrapSegments(allSegments, width, theme),
+		snapshot,
+		width,
+		theme,
+	);
 }
