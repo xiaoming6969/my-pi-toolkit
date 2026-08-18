@@ -141,9 +141,7 @@ function responseText(
 	return summarize(view);
 }
 
-async function executeMultiTask(
-	options: MultiTaskExecutionOptions,
-): Promise<{
+async function executeMultiTask(options: MultiTaskExecutionOptions): Promise<{
 	content: Array<{ type: "text"; text: string }>;
 	details: MultiTaskDetails;
 }> {
@@ -168,7 +166,9 @@ async function executeMultiTask(
 	}
 	const view = snapshot(batch, includeOutput);
 	return {
-		content: [{ type: "text", text: responseText(params.action, view, includeOutput) }],
+		content: [
+			{ type: "text", text: responseText(params.action, view, includeOutput) },
+		],
 		details: { action: params.action, batch: view },
 	};
 }
@@ -187,7 +187,7 @@ function createMultiTaskTool(pi: ExtensionAPI) {
 			"Keep multi_task task.kind as implementation when the task must modify files, even if it needs preliminary repository searches; implementation is the default for backward compatibility.",
 			"Use multi_task start only when the main agent has other independent work to do while workers run; do not poll status repeatedly, wait for the completion follow-up.",
 			"Do not use multi_task for tasks that modify shared files, depend on one another, or require unresolved architecture decisions.",
-			"Every multi_task implementation worker loads Pi Lens and must run bounded diagnostics after editing; integrate all worker reports and run project-level verification before declaring the work complete.",
+			"Integrate all implementation worker reports and run project-level verification before declaring the work complete.",
 		],
 		parameters: Type.Object({
 			action: Type.Unsafe<MultiTaskInput["action"]>({
@@ -260,7 +260,9 @@ function createMultiTaskTool(pi: ExtensionAPI) {
 				details: progressDetails(batch, theme, expanded),
 				body: expanded && hasOutput ? collectText(batch) : undefined,
 				hint:
-					!expanded && hasOutput ? "(Ctrl+O to expand worker reports)" : undefined,
+					!expanded && hasOutput
+						? "(Ctrl+O to expand worker reports)"
+						: undefined,
 			});
 		},
 	};

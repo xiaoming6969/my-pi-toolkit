@@ -48,10 +48,8 @@ function parseStyle(value: unknown, configPath: string): BuiltinToolStyle {
 }
 
 function readConfigObject(configPath: string): Record<string, unknown> {
-	// pi-lens-ignore: ts-path-traversal
 	if (!fs.existsSync(configPath)) return {};
 	try {
-		// pi-lens-ignore: ts-path-traversal
 		const value: unknown = JSON.parse(fs.readFileSync(configPath, "utf8"));
 		if (!value || typeof value !== "object" || Array.isArray(value)) {
 			throw new Error("配置根节点必须是 JSON 对象");
@@ -64,7 +62,6 @@ function readConfigObject(configPath: string): Record<string, unknown> {
 }
 
 export function builtinToolStyleConfigPath(): string {
-	// pi-lens-ignore: ts-path-traversal
 	return path.join(getAgentDir(), "ming-core.json");
 }
 
@@ -83,9 +80,7 @@ export function writeBuiltinToolStyle(style: BuiltinToolStyle): string {
 	const configPath = builtinToolStyleConfigPath();
 	const config = readConfigObject(configPath);
 	config.builtinToolStyle = style;
-	// pi-lens-ignore: ts-path-traversal
 	fs.mkdirSync(path.dirname(configPath), { recursive: true });
-	// pi-lens-ignore: ts-path-traversal
 	fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
 	return configPath;
 }

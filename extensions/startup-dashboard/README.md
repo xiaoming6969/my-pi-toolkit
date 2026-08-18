@@ -10,7 +10,7 @@
 - 使用 Grok Build 风格的轻量品牌行、工作区说明、资源分栏和 Ready 快捷提示，减少装饰性卡片与重边框。
 - Context、Skills、Extensions 和 Themes 始终完整展示，不使用折叠或展开快捷键。
 - 中屏自动变为两行双栏，窄屏变为紧凑单栏，避免内容超出终端宽度。
-- 四类资源均动态发现；Skills 同时覆盖 toolkit、`~/.pi/agent/skills`、`~/.agents/skills` 及当前项目的 `.pi/.agents` 技能目录，Context 使用 `./`、`../` 相对路径区分同名文件。
+- 四类资源均动态发现；Extensions 继承 Pi PackageManager 当前启用的全局与项目 package（包括 npm、git 和本地路径），Skills 同时覆盖 toolkit、`~/.pi/agent/skills`、`~/.agents/skills` 及当前项目的 `.pi/.agents` 技能目录，Context 使用 `./`、`../` 相对路径区分同名文件。
 - Footer 使用响应式双行布局；第一行显示 Build/Plan/Ask、项目、Git 分支、会话标题、`provider/model`、思考强度、Fast 状态和活跃子 Agent。模式配色全部来自当前 Theme，窄屏按 segment 自动换行和紧凑化。
 - 第二行优先显示上下文用量和进度条，再显示输入/输出 Token、缓存读写与会话花费；Context 在 70% 起使用 warning、90% 起使用 error。所有缺失字段都会连同分隔符一起隐藏。
 

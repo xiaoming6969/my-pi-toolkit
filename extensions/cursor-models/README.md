@@ -11,15 +11,13 @@
 
 思考等级请使用 `/effort`（由 model-manager 提供）；`Shift+Tab` 用于切换 Build/Plan/Ask 会话模式。
 
-## Command and shortcut
+## Command
 
 ```text
 /fast
 ```
 
-切换 Cursor Fast 模式。
-
-- `Ctrl+Shift+F`：切换 Cursor Fast 模式。
+切换 Cursor Fast 模式。`Ctrl+Shift+F` 保留给 Pi 的全屏 transcript 搜索。
 
 状态文件：
 

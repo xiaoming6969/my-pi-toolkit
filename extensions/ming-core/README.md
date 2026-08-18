@@ -9,17 +9,16 @@
 1. `openai-compat-models` — 对 `models.json` 中未手写 `models` 的 OpenAI 兼容 provider 注册动态发现（`/model` 时刷新）
 2. `cursor-models` — Cursor 模型折叠、思考等级、Fast 模式
 3. `model-manager` — 新对话默认模型与思考等级
-4. `pi-lens` — LSP / AST / 诊断（npm `pi-lens` 转发）
-5. `chat-mode` — Build / Plan / Ask（`Shift+Tab`、`/plan`、`enter_plan_mode` / `exit_plan_mode`、`ask_user_choice`）
-6. `built-in-tool-style` — 可选 Grok 风格 Pi 内置工具时间线（`/grok-tools`）
-7. `agent-todos` — 任务清单工具与 UI
-8. `multi-task` — 独立文件任务的后台并行 worker 编排
-9. `repo-search-subagent` — 只读 Repo Search 子 Agent
-10. `subagent-console` — `/subagents` 与 `Alt+A`，完整实时/历史消息和工具时间线
-11. `session-branch-guard` — 会话与 Git 分支绑定门禁（`/session-branch`），恢复会话时校验分支，dirty 时提供 stash/直接切换/rebind
-12. `task-duration` — 在最终回复下方持久显示首次 `agent_start` 到最终 `agent_settled` 的任务耗时，不进入 LLM 上下文
-13. `startup-dashboard` — 启动面板与 Footer
-14. `helps` — `/helps` 在浏览器打开 [my-pi-toolkit](https://github.com/BigGoblin/my-pi-toolkit) 仓库页
+4. `chat-mode` — Build / Plan / Ask（`Shift+Tab`、`/plan`、`enter_plan_mode` / `exit_plan_mode`、`ask_user_choice`）
+5. `built-in-tool-style` — 可选 Grok 风格 Pi 内置工具时间线（`/grok-tools`）
+6. `agent-todos` — 任务清单工具与 UI
+7. `multi-task` — 独立文件任务的后台并行 worker 编排
+8. `repo-search-subagent` — 只读 Repo Search 子 Agent
+9. `subagent-console` — `/subagents` 与 `Alt+A`，完整实时/历史消息和工具时间线
+10. `session-branch-guard` — 会话与 Git 分支绑定门禁（`/session-branch`），恢复会话时校验分支，dirty 时提供 stash/直接切换/rebind
+11. `task-duration` — 在最终回复下方持久显示首次 `agent_start` 到最终 `agent_settled` 的任务耗时，不进入 LLM 上下文
+12. `startup-dashboard` — 启动面板与 Footer
+13. `helps` — `/helps` 在浏览器打开 [my-pi-toolkit](https://github.com/BigGoblin/my-pi-toolkit) 仓库页
 
 实现仍在各自目录；本入口只做组合注册。新增或更新这些模块的终端 UI 时，必须遵循 [`docs/tui-development-guidelines.md`](../../docs/tui-development-guidelines.md)，并优先复用 `extensions/shared/tui/`。
 

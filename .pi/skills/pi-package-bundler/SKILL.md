@@ -1,6 +1,6 @@
 ---
 name: pi-package-bundler
-description: 将用户指定的 Pi package 集成到当前 my-pi-toolkit 中并随扩展分发。用户给出 npm 包名、pi.dev 页面、npm 页面或 GitHub 链接并要求安装、接入、像 pi-lens 一样使用时加载此技能。
+description: 将用户指定的 Pi package 集成到当前 my-pi-toolkit 中并随扩展分发。用户给出 npm 包名、pi.dev 页面、npm 页面或 GitHub 链接并要求安装或接入时加载此技能。
 ---
 
 # Pi Package Bundler
@@ -19,7 +19,7 @@ Pi package 的扩展和依赖安装脚本拥有很高权限。安装前检查包
 
 支持以下输入：
 
-- npm 包名：`pi-lens`、`@scope/package`
+- npm 包名：`some-pi-package`、`@scope/package`
 - pi.dev 页面：从页面或 `?name=` 参数取得 canonical npm 包名
 - npm 页面：取得 `/package/<name>`
 - GitHub URL：检查仓库 `package.json`，确认它是 Pi package，再使用 git dependency

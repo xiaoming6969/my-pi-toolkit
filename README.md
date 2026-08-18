@@ -97,7 +97,7 @@ pi install git:github.com/BigGoblin/my-pi-toolkit@main
 }
 ```
 
-本仓库已 vendored Open Cursor（Cursor ↔ Pi 桥），无需再单独安装 `npm:@open-cursor/pi-agent`。`pi-lens` 已内置；在 Termux 等无原生 binary 的环境会自动跳过，不影响其它扩展。
+本仓库已 vendored Open Cursor（Cursor ↔ Pi 桥），无需再单独安装 `npm:@open-cursor/pi-agent`。
 
 ## Quick Start
 
@@ -136,7 +136,7 @@ pi --no-session
 
 | 扩展 | 简介 | 文档 |
 | --- | --- | --- |
-| ming-core | 通用能力编排：模型、Plan、子 Agent、Dashboard、Session Branch Guard、Pi Lens 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
+| ming-core | 通用能力编排：模型、Plan、子 Agent、Dashboard、Session Branch Guard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
 | TAPD | 待办、需求分析、选项确认式技术设计、协作评审、Bug 定位与子需求同步 | [`extensions/tapd/README.md`](extensions/tapd/README.md) |
 | Context7 | 第三方库最新文档查询 | [`extensions/context7/README.md`](extensions/context7/README.md) |
 
@@ -153,7 +153,6 @@ pi --no-session
 
 - [`skills/context7`](skills/context7/)：指导 Agent 查询第三方库最新文档
 - [`.pi/skills/pi-package-bundler`](.pi/skills/pi-package-bundler/)：仅在本 toolkit 仓库内可用，将指定 Pi package 集成并随分发
-- `node_modules/pi-lens/skills`：Pi Lens 自带的代码导航、AST 规则与诊断 Skills
 
 给出 npm 包名、pi.dev 页面、npm 页面或 GitHub 链接即可触发 package bundler，也可执行 `/skill:pi-package-bundler`。
 
@@ -169,11 +168,9 @@ pi --no-session
 ## Troubleshooting
 
 <details>
-<summary><strong>Termux / <code>@ast-grep/cli</code> 安装失败</strong></summary>
+<summary><strong>Git 安装后依赖缺失</strong></summary>
 
-若出现 `Failed to locate @ast-grep/cli native binary`：`pi-lens` 依赖在 Android 上无对应原生包。仓库已用 `.npmrc`（`ignore-scripts=true`）规避整次 `npm install` 失败。
-
-若 git 安装目录仍缺依赖（例如 `pi install` 显示已安装但缺少 `marked`），在缓存目录强制重装：
+若 git 安装目录缺少依赖（例如 `pi install` 显示已安装但缺少 `marked`），在缓存目录强制重装：
 
 ```bash
 cd ~/.pi/agent/git/github.com/BigGoblin/my-pi-toolkit

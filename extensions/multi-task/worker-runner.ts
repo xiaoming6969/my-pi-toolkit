@@ -5,8 +5,7 @@ import type { TerminalSubagentUpdate } from "../shared/subagent/terminal-runner.
 import { buildWorkerTask, MULTI_TASK_WORKER_PROMPT } from "./prompt.js";
 import type { MultiTaskBatch, MultiTaskWorker } from "./types.js";
 
-const IMPLEMENTATION_TOOLS =
-	"read,grep,find,ls,edit,write,lsp_diagnostics,lens_diagnostics";
+const IMPLEMENTATION_TOOLS = "read,grep,find,ls,edit,write";
 const MAX_VISIBLE_TOOL_CALLS = 8;
 
 function researchTask(worker: MultiTaskWorker): string {
@@ -78,7 +77,8 @@ export async function executeWorker(options: {
 	researchConfig?: RepoSearchRunConfig;
 	emitProgress: () => void;
 }): Promise<void> {
-	const { batch, worker, extensionPaths, researchConfig, emitProgress } = options;
+	const { batch, worker, extensionPaths, researchConfig, emitProgress } =
+		options;
 	if (batch.cancelRequested) {
 		worker.status = "cancelled";
 		worker.progress = "cancelled";
@@ -90,7 +90,8 @@ export async function executeWorker(options: {
 	emitProgress();
 	try {
 		if (worker.kind === "research") {
-			if (!researchConfig) throw new Error("research worker 缺少 Repo Search 配置");
+			if (!researchConfig)
+				throw new Error("research worker 缺少 Repo Search 配置");
 			await runResearch(batch, worker, researchConfig, emitProgress);
 		} else {
 			await runImplementation(batch, worker, extensionPaths, emitProgress);

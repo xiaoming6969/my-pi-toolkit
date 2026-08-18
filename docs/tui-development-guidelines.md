@@ -211,8 +211,6 @@ renderResult(result, { expanded }, theme) {
 
 ### 自动检查
 
-- [ ] 对所有修改的 TypeScript 文件运行 LSP diagnostics。
-- [ ] 使用 Pi Lens `mode=all`，确保无阻塞错误和新增可修复警告。
 - [ ] 运行 `git diff --check`。
 - [ ] 仓库没有根测试脚本时，不得声称 `npm test` 已通过；记录实际执行的验证。
 

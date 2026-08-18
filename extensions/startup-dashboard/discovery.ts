@@ -2,6 +2,12 @@ import { access, readFile, readdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, extname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+	DefaultPackageManager,
+	getAgentDir,
+	type ResolvedResource,
+	SettingsManager,
+} from "@earendil-works/pi-coding-agent";
 
 export interface DashboardData {
 	contexts: string[];
@@ -144,10 +150,7 @@ async function collectThemes(path: string, names: string[]): Promise<void> {
 		for (const child of await readdir(path, { withFileTypes: true })) {
 			const childPath = resolve(path, child.name);
 			if (child.isDirectory()) await collectThemes(childPath, names);
-			else if (
-				child.isFile() &&
-				extname(child.name).toLowerCase() === ".json"
-			) {
+			else if (child.isFile() && extname(child.name).toLowerCase() === ".json") {
 				await collectThemes(childPath, names);
 			}
 		}
@@ -179,8 +182,59 @@ function extensionName(entry: string): string {
 		: file.replace(/\.[^.]+$/, "");
 }
 
+function packageName(source: string): string {
+	let name = source.replace(/^npm:/, "");
+	const versionAt = name.lastIndexOf("@");
+	if (versionAt > name.lastIndexOf("/")) name = name.slice(0, versionAt);
+	if (source.startsWith("npm:")) return name;
+	name = name
+		.replace(/^git:/, "")
+		.replace(/[?#].*$/, "")
+		.replace(/\.git$/, "");
+	return basename(name) || source;
+}
+
+function isToolkitResource(resource: ResolvedResource): boolean {
+	return [resource.metadata.baseDir, resource.metadata.source].some(
+		(path) =>
+			path &&
+			!/^(?:npm|git):/.test(path) &&
+			relative(TOOLKIT_ROOT, resolve(path)) === "",
+	);
+}
+
+function installedExtensionName(resource: ResolvedResource): string {
+	if (resource.metadata.origin === "top-level" || isToolkitResource(resource)) {
+		return extensionName(resource.path);
+	}
+	return packageName(resource.metadata.source);
+}
+
+async function discoverInstalledExtensions(
+	cwd: string,
+	projectTrusted: boolean,
+): Promise<string[]> {
+	try {
+		const settingsManager = SettingsManager.create(cwd, getAgentDir(), {
+			projectTrusted,
+		});
+		const packageManager = new DefaultPackageManager({
+			cwd,
+			agentDir: getAgentDir(),
+			settingsManager,
+		});
+		const resources = await packageManager.resolve(async () => "skip");
+		return resources.extensions.flatMap((resource: ResolvedResource) =>
+			resource.enabled ? [installedExtensionName(resource)] : [],
+		);
+	} catch {
+		return [];
+	}
+}
+
 export async function discoverDashboardData(
 	cwd: string,
+	projectTrusted = false,
 ): Promise<DashboardData> {
 	const manifest = await readManifest();
 	const skillPaths = [
@@ -197,8 +251,10 @@ export async function discoverDashboardData(
 			includeRootMarkdown: basename(dirname(path)) === ".pi",
 		})),
 	];
-	const extensions = (manifest.pi?.extensions ?? [])
-		.map(extensionName)
+	const extensions = [
+		...(manifest.pi?.extensions ?? []).map(extensionName),
+		...(await discoverInstalledExtensions(cwd, projectTrusted)),
+	]
 		.filter((name) => name !== "startup-dashboard")
 		.sort((a, b) => a.localeCompare(b));
 

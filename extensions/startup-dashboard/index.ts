@@ -75,7 +75,7 @@ export default function startupDashboard(pi: ExtensionAPI) {
 	pi.on("session_start", async (_event: unknown, ctx: ExtensionContext) => {
 		if (ctx.mode !== "tui") return;
 		sessionTitle = pi.getSessionName();
-		data = await discoverDashboardData(ctx.cwd);
+		data = await discoverDashboardData(ctx.cwd, ctx.isProjectTrusted());
 		installHeader(ctx);
 		installFooter(ctx);
 	});
@@ -120,7 +120,9 @@ export default function startupDashboard(pi: ExtensionAPI) {
 		handler: async (_args: string, ctx: ExtensionCommandContext) => {
 			if (ctx.mode !== "tui") return;
 			headerEnabled = !headerEnabled;
-			if (headerEnabled) data = await discoverDashboardData(ctx.cwd);
+			if (headerEnabled) {
+				data = await discoverDashboardData(ctx.cwd, ctx.isProjectTrusted());
+			}
 			installHeader(ctx);
 			ctx.ui.notify(
 				`Dashboard header ${headerEnabled ? "enabled" : "disabled"}`,
