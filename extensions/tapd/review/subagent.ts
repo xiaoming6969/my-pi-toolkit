@@ -11,10 +11,11 @@ import type { ReviewSubagentResult } from "./types.js";
 const MAX_REPORT_BYTES = 50 * 1024;
 const MAX_REPORT_LINES = 2000;
 const READ_ONLY_TOOLS = "read,grep,find,ls";
-const CURSOR_PROVIDER_EXTENSION = resolve(
-	dirname(fileURLToPath(import.meta.url)),
-	"../../cursor-models/index.ts",
-);
+const EXTENSION_DIR = dirname(fileURLToPath(import.meta.url));
+const MODEL_EXTENSIONS = [
+	resolve(EXTENSION_DIR, "../../openai-compat-models/index.ts"),
+	resolve(EXTENSION_DIR, "../../cursor-models/index.ts"),
+].filter(existsSync);
 
 function getPiInvocation(args: string[]): { command: string; args: string[] } {
 	const currentScript = process.argv[1];
@@ -114,9 +115,7 @@ export async function runReviewSubagent(options: {
 		task: options.task,
 		systemPrompt: REVIEW_SYSTEM_PROMPT,
 		tools: READ_ONLY_TOOLS,
-		extensionPaths: existsSync(CURSOR_PROVIDER_EXTENSION)
-			? [CURSOR_PROVIDER_EXTENSION]
-			: [],
+		extensionPaths: MODEL_EXTENSIONS,
 		artifactFiles: options.artifactFiles,
 		// TAPD Review must use the persistent RPC path so the shared subagent
 		// registry, footer count, overlay, and /subagents all observe the run.
@@ -142,9 +141,7 @@ export async function runReviewSubagent(options: {
 		"-p",
 		"--no-session",
 		"--no-extensions",
-		...(existsSync(CURSOR_PROVIDER_EXTENSION)
-			? ["--extension", CURSOR_PROVIDER_EXTENSION]
-			: []),
+		...MODEL_EXTENSIONS.flatMap((path) => ["--extension", path]),
 		"--no-skills",
 		"--no-prompt-templates",
 		"--tools",

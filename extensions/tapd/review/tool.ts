@@ -9,7 +9,11 @@ import { getMarkdownTheme } from "@earendil-works/pi-coding-agent";
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
 // @ts-expect-error -- TypeBox's .d.mts exports require a newer resolver than the workspace LSP.
 import { Type } from "typebox";
-import { previewLines, resultText } from "../../shared/tui/tool-format.js";
+import {
+	compactText,
+	previewLines,
+	resultText,
+} from "../../shared/tui/tool-format.js";
 import {
 	toolCall,
 	toolHeader,
@@ -196,13 +200,17 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 			result: AgentToolResult<TapdReviewToolDetails>,
 			{ expanded }: ToolRenderResultOptions,
 			theme: Theme,
+			context: { isError: boolean },
 		) {
 			const details = result.details as TapdReviewToolDetails | undefined;
-			if (!details) {
+			if (context.isError || !details) {
+				const error = resultText(result.content, "Review failed");
 				return toolResult(theme, {
 					status: "error",
 					title: "TAPD review",
-					summary: resultText(result.content, "(no report)"),
+					summary: compactText(error, 100),
+					body: expanded ? error : undefined,
+					hint: error.length > 100 ? "Ctrl+O to expand error" : undefined,
 				});
 			}
 			if (details.running) {
