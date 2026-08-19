@@ -23,6 +23,7 @@
 | Agent Todos | Cursor TodoWrite 风格任务清单，editor 上方完整进度 | [`agent-todos/README.md`](agent-todos/README.md) |
 | Chat Mode | 使用 `Shift+Tab` 循环 Build/Plan/Ask；Plan 支持关键决策选项确认，仅可写 session `plan.md`，含 enter/exit_plan_mode 审批 | [`chat-mode/README.md`](chat-mode/README.md) |
 | Built-in Tool Style | 通过官方 tool factory 为 Pi 七个内置工具提供可选 Grok 时间线；`/grok-tools` 配置 | [`built-in-tool-style/README.md`](built-in-tool-style/README.md) |
+| Auto Format | 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 格式化主会话本轮修改文件 | [`auto-format/README.md`](auto-format/README.md) |
 | OpenAI Compat Models | 对 `models.json` 中未手写 `models` 的 OpenAI 兼容 provider 在 `/model` 时拉取 `/models` | [`openai-compat-models/README.md`](openai-compat-models/README.md) |
 | Cursor Models | Cursor 模型折叠、思考等级和 Fast 模式 | [`cursor-models/README.md`](cursor-models/README.md) |
 | Model Manager | 为新对话应用可配置的默认模型和思考等级；`/effort` 选择当前模型思考等级 | [`model-manager/README.md`](model-manager/README.md) |
@@ -38,5 +39,7 @@
 `shared/tui/visual-language.ts` 统一状态字符、模式 badge、间距与行宽处理；`overlay-shell.ts` 统一复杂 Overlay 的 Header/viewport/Footer、高度预算和边框；`tool-render.ts` 和 `tool-format.ts` 为 toolkit 工具提供运行/成功/失败时间线。`built-in-tool-style` 可选择性覆盖仍由 Pi builtin 提供的工具 definition；它不替换 Pi 内置主对话 renderer，也不承诺主对话区鼠标点击。
 
 TUI 层兼容 Pi 0.84 的 `regular` 与 `fullscreen` renderer：扩展不清屏、不依赖 `pi-tui/dist/*`，Overlay 高度预算与 `maxHeight`/margin 对齐。Plan 与 Subagent overlay 在 regular 模式按引用计数启停 SGR mouse tracking；Pi 0.84 fullscreen 会在 Overlay 前消费 wheel，因此只显示键盘滚动提示，且关闭时不会发送 disable 序列影响宿主。Plan Review 与 Subagent live/history/fallback Markdown 继承 `markdown.mermaid` 设置，并使用 Pi 0.84 Unicode LaTeX。共享 RPC 子 Agent同时接受旧版累计 `message_update.message` 与 0.84 的 `assistantMessageEvent` delta，并以 `message_end` 覆盖最终消息。
+
+`auto-format` 只使用 Pi notification 报告 formatter 失败，不注册 Widget、Overlay、Footer、快捷键或长期生命周期资源。
 
 新增模块或更新任何 TUI 功能时，必须遵循 [`docs/tui-development-guidelines.md`](../docs/tui-development-guidelines.md)，包括共享视觉语义、响应式宽度、overlay 高度预算、输入与资源释放、工具 renderer、文档和验证清单。

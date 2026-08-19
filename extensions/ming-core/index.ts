@@ -6,6 +6,7 @@
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import agentTodos from "../agent-todos/index.js";
+import autoFormat from "../auto-format/index.js";
 import builtInToolStyle from "../built-in-tool-style/index.js";
 import chatMode from "../chat-mode/index.js";
 import cursorModels from "../cursor-models/index.js";
@@ -25,6 +26,7 @@ export default function mingCore(pi: ExtensionAPI): void {
 	modelManager(pi);
 	chatMode(pi);
 	builtInToolStyle(pi);
+	autoFormat(pi);
 	agentTodos(pi);
 	multiTask(pi);
 	repoSearchSubagent(pi);
