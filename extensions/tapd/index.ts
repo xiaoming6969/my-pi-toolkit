@@ -100,7 +100,7 @@ export default function tapdExtension(pi: ExtensionAPI) {
 				{
 					value: "review",
 					label: "review",
-					description: "根据需求与设计方案审核当前代码修改",
+					description: "根据需求与设计方案审核代码及过度设计",
 				},
 				{
 					value: "sub-task",
@@ -222,13 +222,13 @@ export default function tapdExtension(pi: ExtensionAPI) {
 
 	pi.registerShortcut("ctrl+shift+t", {
 		description: "打开 TAPD 待办",
-		handler: async (ctx) => {
+		handler: async (ctx: ExtensionCommandContext) => {
 			const config = loadConfig();
 			if (!config) {
 				ctx.ui.notify("请先配置 ~/.pi/agent/tapd.json", "warning");
 				return;
 			}
-			await openTapdTodoList(ctx as ExtensionCommandContext, config, true);
+			await openTapdTodoList(ctx, config, true);
 		},
 	});
 }

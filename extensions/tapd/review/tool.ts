@@ -72,9 +72,9 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 		name: "tapd_review",
 		label: "TAPD Code Review",
 		description:
-			"Use an isolated read-only reviewer subagent to compare the current TAPD story implementation with understanding.md and design.md. Can review only uncommitted changes or all branch and working-tree changes, and returns a severity-ranked report.",
+			"Use an isolated read-only reviewer subagent to compare the current TAPD story implementation with understanding.md and design.md, including a dedicated over-engineering pass. Can review only uncommitted changes or all branch and working-tree changes, and returns a severity-ranked report.",
 		promptSnippet:
-			"Review the current TAPD story implementation against its requirement and design",
+			"Review the current TAPD story implementation against its requirement and design, including over-engineering",
 		promptGuidelines: [
 			"Use tapd_review when the user runs /tapd review or explicitly asks for the TAPD requirement implementation to be reviewed.",
 			"After tapd_review returns, summarize the highest-severity findings and wait for confirmation before modifying code.",

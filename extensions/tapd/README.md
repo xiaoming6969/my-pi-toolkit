@@ -10,7 +10,7 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 | `/tapd analyze [补充要求]` | 生成 `understanding.md` |
 | `/tapd design [补充要求]` | 调研后通过选项式提问确认关键决策，再生成 `design.md` 和结构化开发子需求拆分 |
 | `/tapd collaboration [补充要求]` | 生成供产品、后端和前端 Leader 评审的 `collaboration.md` |
-| `/tapd review [--base origin/dev] [补充要求]` | 选择“仅未提交”或“当前分支全部修改”后，启动只读子代理并将分级报告返回主 Agent |
+| `/tapd review [--base origin/dev] [补充要求]` | 选择“仅未提交”或“当前分支全部修改”后，启动只读子代理审核实现与过度设计，并将分级报告返回主 Agent |
 | `/tapd sub-task` | 根据 `design.md` 创建或同步设计、开发子需求 |
 | `/tapd bug` | 获取当前 Bug 完整信息并让 Agent 定位代码原因；定位提示对用户隐藏；结果只输出原因、带具体代码的因果链与置信度，不写长篇分析报告 |
 | `/tapd bug-reject` | 单页 Overlay 拒绝当前 Bug：评价原因多行预览，Enter 进 Overlay 用 Pi Editor 编辑（Enter 确认 / Ctrl+Enter 换行）；解决方法/开发人员同样 Enter 打开 Overlay；FAQ 默认否 |
@@ -64,7 +64,7 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 - **仅审核未提交修改**：以 `HEAD` 为比较起点，只审核暂存、未暂存和未跟踪文件，不包含只存在于既有 commit 中的修改。
 - **审核当前分支全部修改**：审核指定基础分支的 merge-base 到工作区的全部修改，包括已提交、暂存、未暂存和未跟踪文件；`--base`（默认 `origin/dev`）仅影响此选项。
 
-按 `Esc` 取消选择不会启动 Agent 或 Review 子代理。命令要求当前需求已有非空的 `understanding.md` 和 `design.md`，并使用只开放 `read`、`grep`、`find`、`ls` 的隔离子代理检查代码风格、文件拆分、需求满足度、设计满足度和隐藏 Bug；存在组件改动时，还会检查组件 Props/参数、默认值、事件、状态归属、数据流、组合方式、子结构和拆分边界是否合理及兼容。子代理保持瘦加载，只加载 OpenAI 兼容模型发现与 Cursor 模型扩展，因此可直接继承主 Agent 使用的对应自定义模型。
+按 `Esc` 取消选择不会启动 Agent 或 Review 子代理。命令要求当前需求已有非空的 `understanding.md` 和 `design.md`，并使用只开放 `read`、`grep`、`find`、`ls` 的隔离子代理检查代码风格、文件拆分、需求满足度、设计满足度和隐藏 Bug；同时按 ponytail-review 标准检查死代码、重复实现标准库或平台能力、无必要依赖、投机性抽象/配置/扩展点、单调用层、单实现接口及可明显缩短的逻辑，报告给出最小替代方案与预计可减少行数。存在组件改动时，还会检查组件 Props/参数、默认值、事件、状态归属、数据流、组合方式、子结构和拆分边界是否合理及兼容。子代理保持瘦加载，只加载 OpenAI 兼容模型发现与 Cursor 模型扩展，因此可直接继承主 Agent 使用的对应自定义模型。
 
 命令会让主 Agent 调用原生 `tapd_review` 工具；执行进度、Review 子代理最近的工具调用和最终报告均显示在对话工具框中，可用 `Ctrl+O` 在运行期间展开全部已记录调用，并在完成后展开完整 Markdown 报告。审核期间按 `Esc` 或 `Ctrl+C` 会通过工具的 AbortSignal 终止子代理。报告使用 `P0 Blocker`、`P1 High`、`P2 Medium`、`P3 Suggestion` 问题等级及 `LOW`、`MEDIUM`、`HIGH`、`BLOCKED` 总体风险等级。工具结果会直接进入主 Agent 上下文，主 Agent 只总结问题，不会自动修改代码。
 
