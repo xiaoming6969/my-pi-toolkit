@@ -31,7 +31,7 @@
 
 | 能力 | 说明 |
 | --- | --- |
-| 会话模式 | `Shift+Tab` 在 Build / Plan / Ask 间切换；Plan 支持选项确认式关键决策，配合任务清单与 Grok 风格工具时间线 |
+| 会话模式 | `Shift+Tab` 循环 Build → Plan → Ask → Debug；Plan 支持选项确认式关键决策，Debug 以实时日志完成假设、插桩、复现、修复与清理闭环 |
 | TAPD 工作流 | 待办 Overlay、需求分析 / 技术设计 / 协作评审、Bug 定位、子需求同步，以及关联分支 / 提交 / GitLab MR |
 | Context7 | 为 Agent 提供第三方库最新文档，减少对训练数据的依赖 |
 | 会话与分支门禁 | 恢复会话时校验 Git 分支，降低跨分支误操作 |
@@ -111,7 +111,8 @@ pi --no-session
 
 | 操作 | 说明 |
 | --- | --- |
-| `Shift+Tab` | 切换 Build / Plan / Ask |
+| `Shift+Tab` | 循环 Build → Plan → Ask → Debug → Build |
+| `/debuglog` | 进入 Debug；已在 Debug 时重新打开实时日志面板（`/debug` 为 Pi 内置诊断日志命令） |
 | `/tapd` | 打开 TAPD 待办（需配置） |
 | `/context7 <query>` | 查询第三方库文档 |
 | `/subagents` | 管理子 Agent |
@@ -138,7 +139,7 @@ pi --no-session
 
 | 扩展 | 简介 | 文档 |
 | --- | --- | --- |
-| ming-core | 通用能力编排：模型、Plan、自动格式化、子 Agent、Dashboard、Session Branch Guard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
+| ming-core | 通用能力编排：模型、Plan / Debug、自动格式化、子 Agent、Dashboard、Session Branch Guard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
 | TAPD | 待办、需求分析、选项确认式技术设计、协作评审、Bug 定位与子需求同步 | [`extensions/tapd/README.md`](extensions/tapd/README.md) |
 | Context7 | 第三方库最新文档查询 | [`extensions/context7/README.md`](extensions/context7/README.md) |
 

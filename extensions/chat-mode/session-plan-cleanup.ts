@@ -15,6 +15,7 @@ import type {
 	ExtensionContext,
 	SessionStartEvent,
 } from "@earendil-works/pi-coding-agent";
+import { DEBUG_ENDPOINT_FILENAME } from "./debug-endpoint.js";
 const HEADER_BYTES = 4096;
 const SESSION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
@@ -42,10 +43,13 @@ export function planPathFromSessionFile(
 	}
 }
 
-function removePlan(planPath: string): void {
+function removeSessionArtifacts(planPath: string): void {
+	const artifactDirectory = dirname(planPath);
 	rmSync(planPath, { force: true });
+	rmSync(join(artifactDirectory, "debug.jsonl"), { force: true });
+	rmSync(join(artifactDirectory, DEBUG_ENDPOINT_FILENAME), { force: true });
 	try {
-		rmdirSync(dirname(planPath));
+		rmdirSync(artifactDirectory);
 	} catch (error) {
 		const code = (error as NodeJS.ErrnoException).code;
 		if (code !== "ENOENT" && code !== "ENOTEMPTY") throw error;
@@ -87,7 +91,7 @@ export function watchDeletedSessionPlans(
 				if (!planPath) return;
 				sessions.delete(sessionFile);
 				try {
-					removePlan(planPath);
+					removeSessionArtifacts(planPath);
 				} catch {
 					// Session deletion already succeeded; cleanup must not crash Pi.
 				}

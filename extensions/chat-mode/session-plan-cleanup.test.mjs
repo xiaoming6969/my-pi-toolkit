@@ -23,12 +23,14 @@ async function waitUntil(predicate, timeoutMs = 2000) {
 	}
 }
 
-test("deleting a session removes only its Chat Mode plan", async () => {
+test("deleting a session removes only its Chat Mode artifacts", async () => {
 	const root = await mkdtemp(join(tmpdir(), "chat-mode-cleanup-"));
 	const sessionDir = join(root, "--project--");
 	const sessionId = "01a012c4-c944-7926-99ab-f519ffdf94e8";
 	const sessionFile = join(sessionDir, `2026-01-01_${sessionId}.jsonl`);
 	const planPath = join(sessionDir, sessionId, "plan.md");
+	const debugPath = join(sessionDir, sessionId, "debug.jsonl");
+	const endpointPath = join(sessionDir, sessionId, "debug-endpoint.json");
 	const unrelated = join(sessionDir, sessionId, "keep.txt");
 	mkdirSync(join(sessionDir, sessionId), { recursive: true });
 	writeFileSync(
@@ -36,13 +38,20 @@ test("deleting a session removes only its Chat Mode plan", async () => {
 		`${JSON.stringify({ type: "session", version: 3, id: sessionId })}\n`,
 	);
 	writeFileSync(planPath, "plan");
+	writeFileSync(debugPath, '{"message":"debug"}\n');
+	writeFileSync(endpointPath, '{"port":1234,"token":"secret"}\n');
 	writeFileSync(unrelated, "keep");
 
 	const watcher = watchDeletedSessionPlans(sessionDir);
 	assert.ok(watcher);
 	try {
 		unlinkSync(sessionFile);
-		await waitUntil(() => !existsSync(planPath));
+		await waitUntil(
+			() =>
+				!existsSync(planPath) &&
+				!existsSync(debugPath) &&
+				!existsSync(endpointPath),
+		);
 		assert.equal(existsSync(unrelated), true);
 	} finally {
 		watcher.close();

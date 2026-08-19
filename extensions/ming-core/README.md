@@ -9,7 +9,7 @@
 1. `openai-compat-models` — 对 `models.json` 中未手写 `models` 的 OpenAI 兼容 provider 注册动态发现（`/model` 时刷新）
 2. `cursor-models` — Cursor 模型折叠、思考等级、Fast 模式
 3. `model-manager` — 新对话默认模型与思考等级
-4. `chat-mode` — Build / Plan / Ask（`Shift+Tab`、`/plan`、`enter_plan_mode` / `exit_plan_mode`、`ask_user_choice`）
+4. `chat-mode` — Build / Plan / Ask / Debug（`Shift+Tab`、`/plan`、`/debuglog`、`enter_plan_mode` / `exit_plan_mode`、`ask_user_choice`、`finish_debug_cleanup`）
 5. `built-in-tool-style` — 可选 Grok 风格 Pi 内置工具时间线（`/grok-tools`）
 6. `auto-format` — 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 批量格式化本轮修改文件
 7. `agent-todos` — 任务清单工具与 UI
@@ -23,7 +23,7 @@
 
 实现仍在各自目录；本入口只做组合注册。新增或更新这些模块的终端 UI 时，必须遵循 [`docs/tui-development-guidelines.md`](../../docs/tui-development-guidelines.md)，并优先复用 `extensions/shared/tui/`。
 
-`model-manager` 同时提供 `/effort`，用于唤起当前模型的思考等级选择器（`Shift+Tab` 已用于切换会话模式）。`built-in-tool-style` 默认启用七个工具的 Grok 展示；使用 `/grok-tools native` 可关闭，`/grok-tools readonly` 可只保留只读工具。切换后会 reload 扩展。
+`model-manager` 同时提供 `/effort`，用于唤起当前模型的思考等级选择器（`Shift+Tab` 已用于按 Build → Plan → Ask → Debug → Build 切换会话模式）。`/debuglog` 进入 Debug 或重新打开实时日志面板（`/debug` 保留给 Pi 内置诊断日志）；Debug 保留完整工具，并由 `finish_debug_cleanup` 在移除临时插桩、验证修复后清日志、停 collector、返回 Build。`built-in-tool-style` 默认启用七个工具的 Grok 展示；使用 `/grok-tools native` 可关闭，`/grok-tools readonly` 可只保留只读工具。切换后会 reload 扩展。
 
 `auto-format` 无需 toolkit 配置：项目本地安装 ESLint / Prettier 后，模块会在 `agent_settled` 时按 ESLint → Prettier 顺序处理主会话本轮成功 `edit` / `write` 的文件。详细边界见 [`../auto-format/README.md`](../auto-format/README.md)。
 

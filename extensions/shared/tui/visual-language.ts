@@ -13,7 +13,7 @@ export const UI_GLYPHS = {
 } as const;
 
 export type VisualStatus = "active" | "success" | "error" | "pending";
-export type ModeName = "build" | "plan" | "ask";
+export type ModeName = "build" | "plan" | "ask" | "debug";
 
 const STATUS_COLORS = {
 	active: "accent",
@@ -26,6 +26,7 @@ const MODE_COLORS = {
 	build: "accent",
 	plan: "warning",
 	ask: "success",
+	debug: "error",
 } as const;
 
 export function statusGlyph(theme: Theme, status: VisualStatus): string {

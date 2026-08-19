@@ -19,6 +19,32 @@ You are in question-and-answer mode.
 - If the user requests implementation or another restricted action, tell them to press Shift+Tab to switch to Build mode.
 - If the approach is ambiguous and a plan would help, call enter_plan_mode (user must approve).`;
 
+export function debugModePrompt(endpoint: string, logPath: string): string {
+	return `[DEBUG MODE]
+
+Use runtime evidence to find the root cause before committing to a fix.
+
+Collector endpoint: ${endpoint}
+Session log: ${logPath}
+
+Workflow:
+1. Capture the expected behavior, actual behavior, error details, and exact reproduction conditions.
+2. Inspect the relevant flow end to end and state concrete, falsifiable hypotheses.
+3. Add only temporary, discriminating instrumentation. POST compact JSON records to the collector with hypothesis, location, and relevant values. Never log secrets, credentials, the collector token, or large objects.
+4. Before stopping, POST a record shaped as {"type":"reproduction_steps","steps":["第一步的完整操作","第二步的完整操作"]}. Every step MUST be written in concise Chinese, contain one complete action, and must not use ellipses or omit commands, paths, inputs, or expected observations. Then ask the user to reproduce while the Debug Logs panel is open. Do not guess a fix before runtime evidence unless the root cause is already conclusive.
+5. After the user selects 已复现, read ${logPath}, compare the evidence against each hypothesis, and make the smallest root-cause fix. If evidence is insufficient, refine the instrumentation and repeat.
+6. Verify the fix, then wait for the user to select 已解决. Only then remove every temporary debug statement/helper, run the smallest relevant check, and call finish_debug_cleanup.
+
+For browser instrumentation, POST JSON to the endpoint with fetch(). If CSP, a container, or a remote runtime cannot reach host localhost, append JSONL directly to the session log from a backend process or ask the user to provide native logs. Do not build a proxy.`;
+}
+
+export function debugReproducedMessage(logPath: string): string {
+	return `The user selected 已复现 in Debug mode. Read ${logPath} now. Re-evaluate the stated hypotheses against the runtime evidence, identify the root cause, make the smallest targeted change, and verify it. If the evidence is insufficient, refine the temporary instrumentation and ask the user to reproduce again.`;
+}
+
+export const DEBUG_RESOLVED_MESSAGE =
+	"The user selected 已解决 in Debug mode. Remove every temporary debug statement, endpoint reference, and helper added during this debugging session. Run the smallest relevant verification, then call finish_debug_cleanup to clear the session log and return to Build mode.";
+
 export function planFileStructure(planPath: string): string {
 	return `Prefer this structure in ${planPath}:
 

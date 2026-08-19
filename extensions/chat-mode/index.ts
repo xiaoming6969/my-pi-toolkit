@@ -3,6 +3,13 @@ import type {
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 import { registerAskUserChoiceTool } from "../shared/ask-user-choice-tool.js";
+import { registerDebugCommand, type DebugPanelActions } from "./debug-command.js";
+import { createDebugPanelController } from "./debug-dialog.js";
+import {
+	createDebugSessionCollector,
+	type DebugSessionCollector,
+} from "./debug-session.js";
+import { registerFinishDebugTool } from "./debug-tool.js";
 import { createModeController } from "./mode-controller.js";
 import { getPlanLifecycleSnapshot } from "./plan-lifecycle.js";
 import { registerPlanCommand } from "./plan-command.js";
@@ -19,6 +26,8 @@ export default function chatModeExtension(pi: ExtensionAPI): void {
 	registerAskUserChoiceTool(pi);
 	registerSessionPlanCleanup(pi);
 	let planFile: SessionPlanFile | undefined;
+	let debugCollector: DebugSessionCollector | undefined;
+	let debugPanel: DebugPanelActions;
 	let pendingImplementationKickoff = false;
 
 	function persistMode(): void {
@@ -36,6 +45,7 @@ export default function chatModeExtension(pi: ExtensionAPI): void {
 		() => planFile?.absolutePath,
 		persistMode,
 	);
+	debugPanel = createDebugPanelController(pi, () => debugCollector);
 
 	async function enterPlan(ctx: ExtensionContext, source: "tool" | "user") {
 		if (!planFile) throw new Error("Session Plan path is not initialized");
@@ -60,14 +70,23 @@ export default function chatModeExtension(pi: ExtensionAPI): void {
 		getPlan: () => planFile,
 		enterPlan: (ctx) => enterPlan(ctx, "user"),
 	});
+	registerDebugCommand(pi, modeController, debugPanel);
+	registerFinishDebugTool(pi, {
+		getCollector: () => debugCollector,
+		modeController,
+	});
 
 	registerChatModeLifecycle(pi, {
 		modeController,
 		getActiveTools: () => pi.getActiveTools(),
 		getPlan: () => planFile,
-		setPlan: (plan) => {
+		setPlan: async (plan) => {
+			await debugCollector?.dispose();
 			planFile = plan;
+			debugCollector = createDebugSessionCollector(plan.absolutePath);
 		},
+		getDebugCollector: () => debugCollector,
+		openDebugPanel: (ctx) => debugPanel.open(ctx),
 		enterPlan,
 		persistMode,
 		clearImplementationKickoff: () => {

@@ -11,6 +11,7 @@ import { refreshChatModeEditor } from "./editor.js";
 import { restrictedModeToolNames } from "./policy.js";
 import {
 	getChatMode,
+	isRestrictedMode,
 	nextChatMode,
 	setChatMode,
 	type ChatMode,
@@ -25,6 +26,7 @@ export interface ModeController {
 	getToolsBeforeRestricted(): string[] | undefined;
 	reset(): void;
 	restoreRestricted(mode: ChatMode, savedTools: string[]): void;
+	restoreFull(mode: "build" | "debug", savedTools: string[]): void;
 	switchMode(
 		mode: ChatMode,
 		ctx: ExtensionContext,
@@ -37,6 +39,11 @@ export function createModeController(
 	pi: ExtensionAPI,
 	activePlanPath: () => string | undefined,
 	persist: () => void,
+	onModeChanged?: (
+		mode: ChatMode,
+		previous: ChatMode,
+		ctx: ExtensionContext,
+	) => void,
 ): ModeController {
 	let toolsBeforeRestricted: string[] | undefined;
 
@@ -46,18 +53,20 @@ export function createModeController(
 		refreshChatModeEditor();
 	}
 
-	function restoreBuildTools(): void {
-		if (!toolsBeforeRestricted) return;
+	function availableTools(names: string[]): string[] {
 		const available = new Set(
 			pi.getAllTools().map((tool: { name: string }) => tool.name),
 		);
-		pi.setActiveTools(
-			toolsBeforeRestricted.filter((name) => available.has(name)),
-		);
+		return names.filter((name) => available.has(name));
+	}
+
+	function restoreBuildTools(): void {
+		if (!toolsBeforeRestricted) return;
+		pi.setActiveTools(availableTools(toolsBeforeRestricted));
 	}
 
 	function applyModeTools(mode: ChatMode): void {
-		if (mode === "build") {
+		if (!isRestrictedMode(mode)) {
 			restoreBuildTools();
 			toolsBeforeRestricted = undefined;
 			return;
@@ -70,6 +79,9 @@ export function createModeController(
 	function notifyMode(mode: ChatMode, ctx: ExtensionContext): void {
 		let message = "Mode: BUILD — 已恢复完整工具权限。";
 		if (mode === "ask") message = "Mode: ASK — 项目写入仅限 .pi/。";
+		if (mode === "debug") {
+			message = "Mode: DEBUG — 完整工具已启用，正在准备运行时日志面板。";
+		}
 		if (mode === "plan") {
 			message = `Mode: PLAN — 仅可写入 ${activePlanPath() ?? "活动 Plan"}。`;
 		}
@@ -86,7 +98,12 @@ export function createModeController(
 		restoreRestricted(mode, savedTools) {
 			toolsBeforeRestricted = savedTools;
 			setChatMode(mode);
-			pi.setActiveTools(restrictedModeToolNames(pi.getActiveTools()));
+			pi.setActiveTools(restrictedModeToolNames(savedTools));
+		},
+		restoreFull(mode, savedTools) {
+			toolsBeforeRestricted = undefined;
+			setChatMode(mode);
+			pi.setActiveTools(availableTools(savedTools));
 		},
 		switchMode(mode, ctx, options) {
 			const previous = getChatMode();
@@ -102,6 +119,7 @@ export function createModeController(
 			updateStatus(ctx);
 			persist();
 			notifyMode(mode, ctx);
+			onModeChanged?.(mode, previous, ctx);
 		},
 		updateStatus,
 	};

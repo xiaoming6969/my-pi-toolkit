@@ -1,6 +1,6 @@
-export type ChatMode = "build" | "plan" | "ask";
+export type ChatMode = "build" | "plan" | "ask" | "debug";
 
-const MODE_CYCLE: ChatMode[] = ["build", "plan", "ask"];
+const MODE_CYCLE: ChatMode[] = ["build", "plan", "ask", "debug"];
 
 let currentMode: ChatMode = "build";
 

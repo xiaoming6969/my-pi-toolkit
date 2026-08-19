@@ -1,18 +1,18 @@
 # Chat Mode
 
-为 Pi 提供 `Build`、`Plan`、`Ask` 三种会话模式。新会话默认使用 Build；恢复会话或 `/reload` 时恢复当前分支最近保存的模式。
+为 Pi 提供 `Build`、`Plan`、`Ask`、`Debug` 四种会话模式。新会话默认使用 Build；恢复会话或 `/reload` 时恢复当前分支最近保存的模式。
 
-Plan Mode 对齐 [Grok Build](https://github.com/xai-org/grok-build) 的 `PlanModeTracker`、`enter_plan_mode` 和 `exit_plan_mode`：每个 session 固定一个 `plan.md`、进入时 seed 但不截断、重入继续同一方案、磁盘内容作为审批依据，并交替注入 full/sparse/reentry/exit reminder。
+Plan Mode 对齐 [Grok Build](https://github.com/xai-org/grok-build) 的 `PlanModeTracker`、`enter_plan_mode` 和 `exit_plan_mode`：每个 session 固定一个 `plan.md`、进入时 seed 但不截断、重入继续同一方案、磁盘内容作为审批依据，并交替注入 full/sparse/reentry/exit reminder。Debug Mode 采用 Cursor 风格的“假设 → 插桩 → 复现 → 分析 → 修复 → 验证 → 清理”闭环，以 session 级运行时日志支持证据驱动定位。
 
 ## 切换
 
 按 `Shift+Tab` 循环：
 
 ```text
-BUILD → PLAN → ASK → BUILD
+BUILD → PLAN → ASK → DEBUG → BUILD
 ```
 
-也可使用 `/plan` 进入 Plan，使用 `/plan review` 随时重新打开当前 session 已写入的方案。Agent 运行时不能通过快捷键或命令切换模式；但 `/plan review` 是只读浏览，可在 Agent 运行中打开，不会暂停 Agent、触发审批、切换模式或修改 Plan。模型在运行中仍可调用 Enter/Exit Plan 工具。Pi 无法可靠地为已发出的模型请求动态替换工具集合，因此没有照搬 Grok 的 mid-turn toggle。
+也可使用 `/plan` 进入 Plan，使用 `/plan review` 随时重新打开当前 session 已写入的方案；`/debuglog` 进入 Debug，已在 Debug 时则重新打开实时日志面板（`/debug` 是 Pi 内置诊断日志命令）。Agent 运行时不能通过快捷键或模式切换命令进入其他模式；但 `/plan review` 是只读浏览，可在 Agent 运行中打开，不会暂停 Agent、触发审批、切换模式或修改 Plan。模型在运行中仍可调用 Enter/Exit Plan 工具。Pi 无法可靠地为已发出的模型请求动态替换工具集合，因此没有照搬 Grok 的 mid-turn toggle。
 
 ## Build
 
@@ -51,7 +51,7 @@ Plan 用于实施前的只读调研与方案审批：
 - 同一 session 再次进入时继续读取和修改同一个文件。
 - 不提供 Plan ID、Plan 列表、`/plan new` 或多 Plan artifact。
 - 不同 session 通过不同目录隔离。
-- Pi 运行期间删除持久会话（包括在 `/resume` 中删除）时，会同步删除该 session 的 `plan.md`；目录中若有其他文件则保留。
+- Pi 运行期间删除持久会话（包括在 `/resume` 中删除）时，会同步删除该 session 的 `plan.md`、`debug.jsonl` 和 `debug-endpoint.json`；目录中无关文件仍会保留。
 - `--no-session` 等内存会话没有 session 存储目录，Plan 临时放在系统临时目录的 `pi-plan-sessions/<session-id>/plan.md`。
 - 旧 `.pi/plan.md` 与 `.pi/plans/**` 不再读取或写入，也不会自动删除。
 
@@ -74,6 +74,46 @@ TUI 中 Plan 正文和审批选择分开显示：先在 Grok 风格的 `PLAN REV
 - **继续编辑**：留在 Plan，继续修改同一个 `plan.md`。
 - **取消计划**：切 Build 并结束当前 agent loop，不实施；Plan 文件仍保留供同 session 重入。
 - 无 UI 模式默认“批准并实现”。
+
+## Debug
+
+Debug 用于通过运行时证据定位并修复问题：
+
+- 与 Build 一样提供完整工具，不限制项目写入。
+- 遵循 Cursor 风格的“提出可证伪假设 → 添加临时判别性插桩 → 用户复现 → 依据日志分析 → 最小修复 → 验证 → 移除插桩并清理”流程；不应在缺少证据时猜测修复。
+- `/debuglog` 从其他模式进入 Debug；已在 Debug 时重新打开 `DEBUG LOGS` 实时 Overlay。
+- 输入框顶边线显示主题 error 色的 `─ DEBUG ─`。
+
+### Session 日志与采集端点
+
+每个 session 的运行时日志固定为与 `plan.md` 同目录的：
+
+```text
+<pi-session-dir>/<session-id>/debug.jsonl
+```
+
+进入 Debug 后，collector 只监听 `127.0.0.1`（localhost）的随机端口，并生成带 256-bit 随机 secret token 路径的 HTTP 端点。它接受 `POST`，支持浏览器预检，并只向 localhost / loopback Origin 返回 CORS 许可；单次请求最多 64 KiB，collector 管理的日志总量最多 5 MiB。端点不绑定 LAN 地址，不能从局域网直接访问；secret URL 仍不应写入日志或对外泄露。
+
+浏览器插桩可向该端点 POST 紧凑 JSON。若 CSP、自定义非 localhost Origin、容器或远程 runtime 无法访问宿主机 localhost，后端进程可直接向 session `debug.jsonl` 追加 JSONL，或由用户提供原生日志；不要为此搭建代理。
+
+端口与 token 以权限受限的 `debug-endpoint.json` 保存在同一 session artifact 目录。普通模式切换不会停止 collector；`/reload`、session 切换或进程重启会先停止服务，恢复该 session 时再绑定原端口和 token，因此已有插桩 URL 继续有效。若原端口已被其他进程占用，collector 会明确启动失败而不会静默换地址。`finish_debug_cleanup` 会删除该元数据并使旧 URL 永久失效。
+
+### DEBUG LOGS Overlay
+
+Overlay 实时读取日志；Agent 完成插桩后会先用中文写入 `reproduction_steps` 结构化记录。面板把标题和每个编号步骤分别放在一个逻辑行，长步骤按终端宽度换行并显示完整内容，不使用省略号。每次 Agent 发布新一轮复现步骤时，collector 会先清除上一轮运行日志，只保留新的复现步骤。面板同时提供三个操作：
+
+- **已复现**：仅在存在非空日志行时可用；关闭面板并向 Agent 发送分析请求，要求对照假设读取证据、定位根因、最小修复并验证。证据不足时应改进插桩并再次复现。
+- **已解决**：要求 Agent 先移除本次调试加入的所有临时日志、端点引用和辅助代码，再执行最小相关验证并调用 `finish_debug_cleanup`。该工具清空日志、停止 collector，并返回 Build。
+- **清除日志**：清除运行日志但保留最新复现步骤；不停止 collector、不切换模式。只有 `finish_debug_cleanup` 会清空包括复现步骤在内的全部日志。
+
+↑/↓、PageUp/PageDown、Home/End 滚动日志，Tab / Shift+Tab 或 ←/→ 选择操作，Enter 执行，Esc 关闭。regular 模式支持鼠标滚轮；Pi 0.84 fullscreen 会先消费 wheel，因此仅支持键盘滚动。不承诺鼠标点击操作。Agent 运行时不能用 `/debuglog` 打开面板；每轮 Debug Agent settle 后会自动重开，供继续复现或确认已解决。
+
+### Debug 命令 / 工具
+
+| 命令 / 工具 | 作用 |
+| --- | --- |
+| `/debuglog` | 进入 Debug；已在 Debug 时重新打开实时日志面板 |
+| `finish_debug_cleanup` | 在临时插桩已移除且修复已验证后，清日志、停 collector 并返回 Build |
 
 ## Lifecycle
 

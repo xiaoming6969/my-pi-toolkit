@@ -1,6 +1,7 @@
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import type {
+	AgentSettledEvent,
 	BeforeAgentStartEvent,
 	ContextEvent,
 	ExtensionAPI,
@@ -11,6 +12,7 @@ import type {
 	ToolCallEvent,
 } from "@earendil-works/pi-coding-agent";
 import type { EditorTheme, TUI } from "@earendil-works/pi-tui";
+import type { DebugSessionCollector } from "./debug-session.js";
 import { ChatModeEditor, unbindChatModeEditor } from "./editor.js";
 import { type ModeController, toggleMode } from "./mode-controller.js";
 import {
@@ -31,6 +33,7 @@ import { wantsAskModeForDocs } from "./ensure-ask-for-docs.js";
 import { checkAskToolCall, checkPlanToolCall } from "./policy.js";
 import {
 	ASK_MODE_PROMPT,
+	debugModePrompt,
 	IMPLEMENTATION_KICKOFF,
 	PLAN_EXIT_REMINDER_CUSTOM_TYPE,
 	PLAN_MODE_REMINDER_CUSTOM_TYPE,
@@ -54,7 +57,9 @@ export interface ChatModeLifecycleOptions {
 	modeController: ModeController;
 	getActiveTools: () => string[];
 	getPlan: () => SessionPlanFile | undefined;
-	setPlan: (plan: SessionPlanFile) => void;
+	setPlan: (plan: SessionPlanFile) => Promise<void>;
+	getDebugCollector: () => DebugSessionCollector | undefined;
+	openDebugPanel: (ctx: ExtensionContext) => Promise<void>;
 	enterPlan: (
 		ctx: ExtensionContext,
 		source: "tool" | "user",
@@ -74,8 +79,15 @@ export function registerChatModeLifecycle(
 	pi.on("before_agent_start", createBeforeAgentStartHandler(options));
 	pi.on("context", createContextHandler(options));
 	pi.on("tool_call", createToolCallHandler(options));
-	pi.on("session_shutdown", () => {
+	pi.on(
+		"agent_settled",
+		(_event: AgentSettledEvent, ctx: ExtensionContext) => {
+			if (getChatMode() === "debug") void options.openDebugPanel(ctx);
+		},
+	);
+	pi.on("session_shutdown", async () => {
 		unbindChatModeEditor();
+		await options.getDebugCollector()?.stop();
 	});
 }
 
@@ -100,7 +112,7 @@ async function restoreSessionModeState(
 		ctx.sessionManager.getSessionDir() || EPHEMERAL_PLAN_ROOT,
 		ctx.sessionManager.getSessionId(),
 	);
-	options.setPlan(plan);
+	await options.setPlan(plan);
 
 	const branch = ctx.sessionManager.getBranch() as Array<{
 		type: string;
@@ -125,6 +137,23 @@ async function restoreSessionModeState(
 			saved.toolsBeforeAsk ??
 			options.getActiveTools();
 		options.modeController.restoreRestricted(saved.mode, savedTools);
+	}
+	if (saved?.mode === "debug") {
+		const savedTools =
+			saved.toolsBeforeRestricted ??
+			saved.toolsBeforeAsk ??
+			options.getActiveTools();
+		options.modeController.restoreFull("debug", savedTools);
+		try {
+			await options.getDebugCollector()?.ensure();
+		} catch (error) {
+			if (ctx.hasUI) {
+				ctx.ui.notify(
+					`Debug 日志采集器启动失败：${error instanceof Error ? error.message : String(error)}`,
+					"error",
+				);
+			}
+		}
 	}
 	options.modeController.updateStatus(ctx);
 	options.persistMode();
@@ -195,6 +224,26 @@ function createBeforeAgentStartHandler(options: ChatModeLifecycleOptions) {
 				systemPrompt: `${event.systemPrompt}\n\n${ASK_MODE_PROMPT}`,
 				...(message ? { message } : {}),
 			};
+		}
+		if (mode === "debug") {
+			const collector = options.getDebugCollector();
+			if (collector) {
+				let endpoint = "unavailable — append JSONL directly to the session log";
+				try {
+					endpoint = (await collector.ensure()).endpoint;
+				} catch (error) {
+					if (ctx.hasUI) {
+						ctx.ui.notify(
+							`Debug 日志采集器启动失败：${error instanceof Error ? error.message : String(error)}`,
+							"error",
+						);
+					}
+				}
+				return {
+					systemPrompt: `${event.systemPrompt}\n\n${debugModePrompt(endpoint, collector.logPath)}`,
+					...(message ? { message } : {}),
+				};
+			}
 		}
 		if (message) return { message };
 	};
