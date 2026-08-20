@@ -118,20 +118,20 @@ TAPD Open API 索引见 [`../../docs/tapd-api.md`](../../docs/tapd-api.md)。
 - 无交互界面（print/json 等）且工作区有未提交改动时直接报错，不会默认选择会改写 Git 状态的方案。
 - 创建分支成功后，若当前会话已有分支绑定（session-branch-guard）且绑定分支与新分支不同，会自动把会话绑定切换为新分支（仅更新会话 custom entry，source=rebound，不执行任何 Git 变更）；无绑定或跨仓库时跳过。
 - Bug 提交为 `fix: {KEYWORD}`；需求/任务提交为 `feat: {KEYWORD}`。KEYWORD 原样保留。
-- 没有 upstream 时首次推送使用 `git push -u origin HEAD`。
+- `commit` 或 `mr` 遇到当前分支没有 upstream 时，会自动使用 `git push -u origin HEAD` 首次推送并建立跟踪关系。
 - 提交默认使用当前操作系统 PATH 中的 `git`。仅当运行于 WSL，且 Git hook 因 Windows CRLF shebang 报出 `sh\\r: No such file or directory` 时，才自动改用 Windows `git.exe` 重试；重试成功后将仓库记录在 `~/.pi/agent/tapd-git-runtime.json`，该仓库后续在 WSL 中提交时直接使用 Windows Git。原生 Windows、Linux 和 macOS 环境始终使用各自 PATH 中的 `git`。可用 `TAPD_WINDOWS_GIT_PATH` 指定 WSL 可执行的 `git.exe` 完整路径。
 - `git commit` / pre-commit（如 `npm run precommit`）运行期间可按 Esc 取消；hooks 失败后会在同一张 Git 卡片上临时展示截断摘要，并打开选择器：`› 使用 --no-verify 跳过 hooks 后重试` 或 `取消`。选择跳过会重新暂存并以 `--no-verify` 提交，成功后终态卡不再保留该摘要；取消时摘要仍留在取消结果中。取消、Esc 中止或放弃提交预览时卡片为 `cancelled`（不是 `completed`）。无交互界面时直接报错，不默认跳过 hooks。
 - MR 会扫描 `merge-base..HEAD` 的全部提交，不只处理第一条 TAPD 关联。
 - `/tapd mr --draft` 会创建或更新 Draft MR。当前关联项是功能需求时，功能需求本身和测试需求保持原状态，但其下所有处理人为当前 Token 用户的直属开发子需求会更新为“开发完成”；直接关联开发子需求时也照常更新为“开发完成”。这些实际流转的开发子需求会将完成工时同步为各自的有效预估工时。TAPD 任务和 Bug 不流转，Bug 也不会触发根因分析。后续执行不带 `--draft` 的 `/tapd mr` 会把同一开放 MR 更新为 Ready：当前用户负责的功能需求和开发子需求更新为“开发完成”，当前用户负责的测试需求更新为“已通过”；其他处理人的需求不流转。
 - Bug 默认标签为 `二组`、`迭代bug(每日发布)`，状态更新为 `已解决`，负责人为 `沈瑞昀`。
-- 需求/任务默认标签为 `二组`、`迭代任务(随迭代发布)`。Ready MR 中，关联项是开发子需求或 TAPD 任务时更新为 `开发完成`；关联项是测试需求时，仅在处理人为当前 Token 用户时更新为 `已通过`；关联项是顶层功能需求时，仅更新当前用户负责的功能需求本身及其直属开发、测试需求，其中功能需求和开发子需求更新为 `开发完成`，测试需求更新为 `已通过`。每个实际流转的 TAPD 任务、功能需求、开发子需求和测试需求都会将完成工时同步为自身的有效预估工时；预估工时缺失、为零或无效时只更新状态，不写完成工时，也不阻断 MR。其他处理人的需求不会被修改，所有更新均不修改负责人。
+- 需求/任务默认标签为 `二组`、`迭代任务(随迭代发布)`。Ready MR 中，关联项是开发子需求或 TAPD 任务时更新为 `开发完成`；关联项是测试需求时，仅在处理人为当前 Token 用户时更新为 `已通过`；关联项是顶层功能需求时，仅更新当前用户负责的功能需求本身及其直属开发、测试需求，其中功能需求和开发子需求更新为 `开发完成`，测试需求更新为 `已通过`。每个实际流转的 TAPD 任务、功能需求、开发子需求和测试需求都会将完成工时同步为自身的有效预估工时；首次批量更新后会回读完成工时，仅在 TAPD 状态流转覆盖工时值时单独补写并再次校验。预估工时缺失、为零或无效时只更新状态，不写完成工时，也不阻断 MR。其他处理人的需求不会被修改，所有更新均不修改负责人。
 - 纯需求/任务的 `/tapd mr` 保持一次执行完成，不触发根因填写。
 - 含 Bug 的 Ready `/tapd mr` 在同一次执行中完成：先分析修复 diff 和 `git blame` 候选并选择/手动输入引入 commit，再打开编辑器由用户填写【产生原因】与【修复】（可留空），确认后直接创建或更新 MR 并回写 TAPD。不再交给 Agent 分析，也不再要求二次执行 `/tapd mr`。
 - 若仓库 `.pi/tapd-root-cause/{bugId}.json` 已有与当前 `HEAD` 匹配的草稿，会直接复用并跳过填写；TAPD 流转成功后自动删除该草稿。选择“未能定位”时使用 TAPD 真实候选值 `其他(历史缺陷)`。
 - 引入 commit 经验证后，会拉取远端 tags，优先取直接指向 commit 的第一个 tag，否则取第一个包含该 commit 的 tag。
 - 合入版本从 TAPD `/bugs/get_fields_info` 的“合入版本”候选值中选择。普通版本精确匹配；`.0` 等存在多个迭代候选时，根据引入 commit 中 TAPD keyword 关联事项的迭代唯一匹配；关联事项没有迭代时会列出候选值让用户手动选择。
 - tag 在候选值中完全不存在时，按规则选择候选值中的 `其他(历史缺陷)`；若该选项也不存在则不修改合入版本。
-- 工作流不会修改 git config，不会 hard reset、clean、force switch 或 force-push；stash、WIP commit 与 cherry-pick 仅在用户明确选择后执行。
+- 除首次推送建立 upstream 跟踪关系外，工作流不会修改 git config，也不会 hard reset、clean、force switch 或 force-push；stash、WIP commit 与 cherry-pick 仅在用户明确选择后执行。
 
 ## Modules
 

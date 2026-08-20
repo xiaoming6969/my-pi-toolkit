@@ -60,6 +60,12 @@ export async function fetchTaskEstimatedEffort(
 		: undefined;
 }
 
+function objectApi(kind: TapdGitKind) {
+	if (kind === "bug") return { path: "/bugs", key: "Bug" };
+	if (kind === "task") return { path: "/tasks", key: "Task" };
+	return { path: "/stories", key: "Story" };
+}
+
 export async function updateTapdStatus(
 	config: TapdConfig,
 	object: LinkedTapdObject,
@@ -74,15 +80,40 @@ export async function updateTapdStatus(
 		...extraFields,
 	};
 	if (currentOwner) body.current_owner = currentOwner;
-	let path = "/stories";
-	if (object.kind === "bug") path = "/bugs";
-	else if (object.kind === "task") path = "/tasks";
+	const { path, key } = objectApi(object.kind);
 	const response = await tapdPost<TapdDataResponse<unknown>>(
 		apiUrl(config, path),
 		config,
 		body,
 	);
 	if (!response) throw new Error(`TAPD ${object.kind} 状态更新失败`);
+	const effort = extraFields.effort_completed;
+	if (effort === undefined) return;
+	const readEffort = async () => {
+		const verify = await tapdGet<
+			TapdDataResponse<Record<string, Record<string, string>>[]>
+		>(
+			apiUrl(config, path, {
+				workspace_id: object.workspaceId,
+				id: String(body.id),
+				fields: "id,effort_completed",
+				limit: "1",
+			}),
+			config,
+		);
+		return verify?.data?.[0]?.[key]?.effort_completed;
+	};
+	if ((await readEffort()) === effort) return;
+	const retry = await tapdPost<TapdDataResponse<unknown>>(
+		apiUrl(config, path),
+		config,
+		{ workspace_id: object.workspaceId, id: body.id, effort_completed: effort },
+	);
+	const saved = retry ? await readEffort() : undefined;
+	if (saved !== effort)
+		throw new Error(
+			`TAPD ${object.kind} 完成工时回读不一致：期望 ${effort}，实际 ${saved ?? "缺失"}`,
+		);
 }
 
 function normalizeVersion(value: string): string {

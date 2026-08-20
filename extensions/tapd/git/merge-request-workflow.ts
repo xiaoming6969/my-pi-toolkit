@@ -11,7 +11,11 @@ import {
 	parseGitLabProject,
 } from "./gitlab-api.js";
 import { DEFAULT_GIT_WORKFLOW_POLICY } from "./policy.js";
-import { git, readRepositoryState } from "./repository.js";
+import {
+	git,
+	pushCurrentBranch,
+	readRepositoryState,
+} from "./repository.js";
 import {
 	collectManualBugRootCauseDraft,
 	deleteBugRootCauseDraft,
@@ -55,8 +59,15 @@ export async function runMergeRequest(
 	});
 	const repository = await readRepositoryState(ctx.cwd);
 	if (repository.dirty) throw new Error("创建 MR 前请先提交工作区改动");
-	if (!repository.branch || !repository.upstream)
-		throw new Error("当前分支尚未推送并设置 upstream");
+	if (!repository.branch) throw new Error("当前处于 detached HEAD，无法创建 MR");
+	if (!repository.upstream) {
+		reportProgress?.({
+			step: 1,
+			total: 5,
+			message: `当前分支没有 upstream，正在首次推送 ${repository.branch}...`,
+		});
+		await pushCurrentBranch(repository.root, false, cancel?.signal);
+	}
 	cancel?.throwIfAborted();
 	reportProgress?.({
 		step: 2,
