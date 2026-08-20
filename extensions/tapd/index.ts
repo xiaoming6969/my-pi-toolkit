@@ -1,27 +1,29 @@
 /** TAPD extension entry point. */
 
 import type {
+	AgentSettledEvent,
 	ExtensionAPI,
 	ExtensionCommandContext,
+	ExtensionContext,
 	SessionEntry,
 } from "@earendil-works/pi-coding-agent";
-import type { AutocompleteItem } from "@earendil-works/pi-tui";
+import { tapdArgumentCompletions } from "./command-completions.js";
 import { fetchUserInfo, fetchWorkspaces } from "./core/api.js";
 import { loadConfig } from "./core/config.js";
 import {
-	ANALYZE_TRIGGER_PROMPT,
-	COLLABORATION_TRIGGER_PROMPT,
-	DESIGN_TRIGGER_PROMPT,
-} from "./documents/prompts.js";
+	handleTapdPreviewCommand,
+	runTapdDocumentWorkflow,
+} from "./documents/commands.js";
 import { createTapdSession } from "./sessions/create.js";
 import { createSubtasks } from "./subtasks/sync.js";
 import { withTapdListOverlays } from "./todo/overlay-context.js";
 import { showTable } from "./todo/ui.js";
-import {
-	locateTapdBug,
-	sendTapdWorkflowPrompt,
-} from "./documents/workflows.js";
+import { locateTapdBug } from "./documents/workflows.js";
 import { rejectTapdBug } from "./documents/bug-reject.js";
+import {
+	previewUpdatedTapdDocument,
+	type TapdDocumentSnapshot,
+} from "./documents/preview.js";
 import {
 	registerTapdGitMessageRenderer,
 	runTapdGitCommand,
@@ -65,65 +67,28 @@ async function openTapdTodoList(
 
 export default function tapdExtension(pi: ExtensionAPI) {
 	const STATE_KEY = "tapd-view-state";
+	let pendingPreview: TapdDocumentSnapshot | undefined;
 	registerTapdReviewTool(pi);
 	registerTapdGitMessageRenderer(pi);
 
+	pi.on(
+		"agent_settled",
+		async (_event: AgentSettledEvent, ctx: ExtensionContext) => {
+			const preview = pendingPreview;
+			pendingPreview = undefined;
+			if (preview) await previewUpdatedTapdDocument(ctx, preview);
+		},
+	);
+
 	pi.registerCommand("tapd", {
 		description: "查看 TAPD 待办；生成需求文档或审核需求实现代码",
-		getArgumentCompletions: (prefix: string): AutocompleteItem[] | null => {
-			const items: AutocompleteItem[] = [
-				{
-					value: "bug",
-					label: "bug",
-					description: "获取当前关联 Bug 的完整信息并尝试定位代码原因",
-				},
-				{
-					value: "bug-reject",
-					label: "bug-reject",
-					description: "拒绝当前关联 Bug（单页确认评价原因与解决方法）",
-				},
-				{
-					value: "analyze",
-					label: "analyze",
-					description: "分析当前关联需求并生成理解文档",
-				},
-				{
-					value: "design",
-					label: "design",
-					description: "基于已确认的需求理解生成设计方案",
-				},
-				{
-					value: "collaboration",
-					label: "collaboration",
-					description: "生成供产品、后端和前端 Leader 评审的协作文档",
-				},
-				{
-					value: "review",
-					label: "review",
-					description: "根据需求与设计方案审核代码及过度设计",
-				},
-				{
-					value: "sub-task",
-					label: "sub-task",
-					description: "根据 design.md 创建设计和开发子需求",
-				},
-				{
-					value: "git-status",
-					label: "git-status",
-					description: "查看 TAPD Git 工作流状态",
-				},
-				{ value: "branch", label: "branch", description: "创建 TAPD 关联分支" },
-				{
-					value: "commit",
-					label: "commit",
-					description: "提交并推送 TAPD 关联改动",
-				},
-				{ value: "mr", label: "mr", description: "创建或更新 MR 并回写 TAPD" },
-			];
-			const filtered = items.filter((item) => item.value.startsWith(prefix));
-			return filtered.length > 0 ? filtered : null;
-		},
+		getArgumentCompletions: tapdArgumentCompletions,
 		handler: async (args: string, ctx: ExtensionCommandContext) => {
+			const trimmedArgs = args.trim();
+			const [sub = "", ...restArgs] = trimmedArgs.split(/\s+/);
+			const additionalInstructions = restArgs.join(" ").trim();
+			if (await handleTapdPreviewCommand(ctx, sub, restArgs)) return;
+
 			const config = loadConfig();
 			if (!config) {
 				ctx.ui.notify(
@@ -132,10 +97,6 @@ export default function tapdExtension(pi: ExtensionAPI) {
 				);
 				return;
 			}
-
-			const trimmedArgs = args.trim();
-			const [sub = "", ...restArgs] = trimmedArgs.split(/\s+/);
-			const additionalInstructions = restArgs.join(" ").trim();
 			if (await runTapdGitCommand(pi, sub, restArgs, ctx, config)) return;
 			if (sub === "bug") {
 				await locateTapdBug(pi, ctx, config);
@@ -145,31 +106,14 @@ export default function tapdExtension(pi: ExtensionAPI) {
 				await rejectTapdBug(pi, ctx, config);
 				return;
 			}
-			if (sub === "analyze") {
-				await sendTapdWorkflowPrompt(
-					pi,
-					ctx,
-					ANALYZE_TRIGGER_PROMPT,
-					additionalInstructions,
-				);
-				return;
-			}
-			if (sub === "design") {
-				await sendTapdWorkflowPrompt(
-					pi,
-					ctx,
-					DESIGN_TRIGGER_PROMPT,
-					additionalInstructions,
-				);
-				return;
-			}
-			if (sub === "collaboration") {
-				await sendTapdWorkflowPrompt(
-					pi,
-					ctx,
-					COLLABORATION_TRIGGER_PROMPT,
-					additionalInstructions,
-				);
+			const documentWorkflow = await runTapdDocumentWorkflow(
+				pi,
+				ctx,
+				sub,
+				additionalInstructions,
+			);
+			if (documentWorkflow.handled) {
+				pendingPreview = documentWorkflow.pending;
 				return;
 			}
 			if (sub === "review") {

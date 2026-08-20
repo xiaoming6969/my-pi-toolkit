@@ -22,16 +22,16 @@ export async function sendTapdWorkflowPrompt(
 	ctx: ExtensionCommandContext,
 	prompt: string,
 	additionalInstructions?: string,
-): Promise<void> {
+): Promise<boolean> {
 	if (!ctx.isIdle()) {
 		ctx.ui.notify("Agent 正在执行，请稍后再试", "warning");
-		return;
+		return false;
 	}
 
 	const state = readTapdSessionState(ctx.sessionManager.getEntries());
 	if (state?.kind === "bug") {
 		ctx.ui.notify("当前是 Bug 会话，请执行 /tapd bug 定位缺陷原因", "warning");
-		return;
+		return false;
 	}
 
 	// 请求 chat-mode 在本轮 agent 启动前切到 Ask（可写 .pi/docs，避免 Plan 拦 design.md）。
@@ -47,6 +47,7 @@ export async function sendTapdWorkflowPrompt(
 			? `${body}\n\n## 用户补充要求与参考资料\n\n${extra}\n\n请将以上补充要求和 @ 引用文件一并纳入本次任务。`
 			: body,
 	);
+	return true;
 }
 
 export async function locateTapdBug(
