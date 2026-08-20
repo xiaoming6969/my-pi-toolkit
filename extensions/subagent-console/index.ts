@@ -199,7 +199,7 @@ async function showSubagents(ctx: ExtensionContext): Promise<void> {
 			(action === "进入子 Agent" && run.live) ||
 			action === "查看详情"
 		) {
-			await openSubagentOverlay(
+			const closeReason = await openSubagentOverlay(
 				ctx,
 				detailItems(
 					runs,
@@ -208,6 +208,7 @@ async function showSubagents(ctx: ExtensionContext): Promise<void> {
 				),
 				run.dir,
 			);
+			if (closeReason === "yielded") return;
 			continue;
 		}
 		if (action === "请求取消") {

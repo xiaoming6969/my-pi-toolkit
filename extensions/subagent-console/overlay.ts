@@ -9,6 +9,7 @@ import {
 	matchesKey,
 	type Component,
 	type KeybindingsManager,
+	type OverlayHandle,
 	type TUI,
 } from "@earendil-works/pi-tui";
 import {
@@ -212,37 +213,57 @@ function createSubagentOverlay(options: SubagentOverlayOptions): Component {
 	};
 }
 
+export type SubagentOverlayCloseReason = "closed" | "yielded";
+
 async function showOverlay(
 	ctx: ExtensionContext,
 	items: SubagentDetailItem[],
 	initialId: string,
-): Promise<void> {
-	await ctx.ui.custom<void>(
-		(
-			tui: TUI,
-			theme: Theme,
-			keybindings: KeybindingsManager,
-			done: (value: void) => void,
-		) =>
-			createSubagentOverlay({
-				items,
-				initialId,
-				tui,
-				requestRender: () => tui.requestRender(),
-				theme,
-				keybindings,
-				markdown: createSharedMarkdownRendering(ctx, theme),
-				close: () => done(),
-			}),
-		STANDARD_OVERLAY_OPTIONS,
-	);
+): Promise<SubagentOverlayCloseReason> {
+	let component: Component | undefined;
+	let handle: OverlayHandle | undefined;
+	const unsubscribeInput = ctx.ui.onTerminalInput((data: string) => {
+		if (!component || !handle || handle.isFocused()) return;
+		component.handleInput?.(data);
+		return { consume: true };
+	});
+	try {
+		return await ctx.ui.custom<SubagentOverlayCloseReason>(
+			(
+				tui: TUI,
+				theme: Theme,
+				keybindings: KeybindingsManager,
+				done: (value: SubagentOverlayCloseReason) => void,
+			) => {
+				component = createSubagentOverlay({
+					items,
+					initialId,
+					tui,
+					requestRender: () => tui.requestRender(),
+					theme,
+					keybindings,
+					markdown: createSharedMarkdownRendering(ctx, theme),
+					close: () => done(handle?.isFocused() === false ? "yielded" : "closed"),
+				});
+				return component;
+			},
+			{
+				...STANDARD_OVERLAY_OPTIONS,
+				onHandle: (overlayHandle: OverlayHandle) => {
+					handle = overlayHandle;
+				},
+			},
+		);
+	} finally {
+		unsubscribeInput();
+	}
 }
 
 export async function openSubagentOverlay(
 	ctx: ExtensionContext,
 	items: SubagentDetailItem[],
 	initialId: string,
-): Promise<void> {
-	if (items.length === 0) return;
-	await showOverlay(ctx, items, initialId);
+): Promise<SubagentOverlayCloseReason> {
+	if (items.length === 0) return "closed";
+	return showOverlay(ctx, items, initialId);
 }
