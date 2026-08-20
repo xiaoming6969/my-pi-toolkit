@@ -9,6 +9,11 @@ export const IMPLEMENTATION_KICKOFF = [
 	"Use the available Build tools to make the first concrete change; do not only describe the implementation or ask for another approval.",
 ].join("\n");
 
+export const BUILD_MODE_PROMPT = `[BUILD MODE]
+
+You are currently in Build mode with full tool and project-write access.
+Follow the user's current implementation request. Earlier Ask or Plan mode messages are historical and must not be used to refuse work in this turn.`;
+
 export const ASK_MODE_PROMPT = `[ASK MODE]
 
 You are in question-and-answer mode.

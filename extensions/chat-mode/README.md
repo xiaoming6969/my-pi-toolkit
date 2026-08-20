@@ -16,7 +16,7 @@ BUILD → PLAN → ASK → DEBUG → BUILD
 
 ## Build
 
-默认模式，不限制工具和项目写入。输入框顶边线显示：
+默认模式，不限制工具和项目写入。每轮会明确向模型声明当前为 Build，避免历史 Ask / Plan 提示被误当成当前限制。输入框顶边线显示：
 
 ```text
 ─ BUILD ───────
@@ -121,7 +121,7 @@ Overlay 实时读取日志；Agent 完成插桩后会先用中文写入 `reprodu
 
 生命周期通过 session custom entry 保存，并按当前 session branch 恢复。
 
-TAPD 的 `/tapd analyze`、`/tapd design`、`/tapd collaboration` 会写入 `chat-mode-ensure-ask-for-docs` 标记；本扩展在 `before_agent_start` 检测到尚未被助手回复消费的该标记时，若当前不是 Ask 则切到 Ask，以便写入项目 `.pi/docs/**`（Plan 仅允许 session `plan.md`，二者冲突）。
+TAPD 的 `/tapd analyze`、`/tapd design`、`/tapd collaboration` 会写入 `chat-mode-ensure-ask-for-docs` 标记；本扩展在下一次 `before_agent_start` 单次消费该标记，并在当前不是 Ask 时切到 Ask，以便写入项目 `.pi/docs/**`（Plan 仅允许 session `plan.md`，二者冲突）。即使该轮被取消或未产生助手回复，旧标记也不会在用户之后切到 Build 时再次生效。
 
 ## Ask
 

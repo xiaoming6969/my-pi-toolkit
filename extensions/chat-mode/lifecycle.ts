@@ -29,10 +29,14 @@ import {
 	sessionPlanFile,
 	type SessionPlanFile,
 } from "./plan-file.js";
-import { wantsAskModeForDocs } from "./ensure-ask-for-docs.js";
+import {
+	ENSURE_ASK_FOR_DOCS_CONSUMED_ENTRY,
+	wantsAskModeForDocs,
+} from "./ensure-ask-for-docs.js";
 import { checkAskToolCall, checkPlanToolCall } from "./policy.js";
 import {
 	ASK_MODE_PROMPT,
+	BUILD_MODE_PROMPT,
 	debugModePrompt,
 	IMPLEMENTATION_KICKOFF,
 	PLAN_EXIT_REMINDER_CUSTOM_TYPE,
@@ -42,7 +46,6 @@ import {
 import { getChatMode, isRestrictedMode, type ChatMode } from "./state.js";
 
 export const CHAT_MODE_STATE_ENTRY = "chat-mode-state";
-
 const EPHEMERAL_PLAN_ROOT = resolve(tmpdir(), "pi-plan-sessions");
 
 export interface PersistedModeState {
@@ -69,22 +72,18 @@ export interface ChatModeLifecycleOptions {
 	hasImplementationKickoff: () => boolean;
 	consumeImplementationKickoff: () => void;
 }
-
 export function registerChatModeLifecycle(
 	pi: ExtensionAPI,
 	options: ChatModeLifecycleOptions,
 ): void {
 	pi.on("session_start", createSessionStartHandler(options));
 	pi.on("session_compact", createSessionCompactHandler(options));
-	pi.on("before_agent_start", createBeforeAgentStartHandler(options));
+	pi.on("before_agent_start", createBeforeAgentStartHandler(pi, options));
 	pi.on("context", createContextHandler(options));
 	pi.on("tool_call", createToolCallHandler(options));
-	pi.on(
-		"agent_settled",
-		(_event: AgentSettledEvent, ctx: ExtensionContext) => {
-			if (getChatMode() === "debug") void options.openDebugPanel(ctx);
-		},
-	);
+	pi.on("agent_settled", (_event: AgentSettledEvent, ctx: ExtensionContext) => {
+		if (getChatMode() === "debug") void options.openDebugPanel(ctx);
+	});
 	pi.on("session_shutdown", async () => {
 		unbindChatModeEditor();
 		await options.getDebugCollector()?.stop();
@@ -186,14 +185,14 @@ function createSessionCompactHandler(options: ChatModeLifecycleOptions) {
 	};
 }
 
-function createBeforeAgentStartHandler(options: ChatModeLifecycleOptions) {
+function createBeforeAgentStartHandler(pi: ExtensionAPI, options: ChatModeLifecycleOptions) {
 	return async (event: BeforeAgentStartEvent, ctx: ExtensionContext) => {
-		// TAPD 文档流：Plan 只能写 session plan.md，与 .pi/docs 冲突，强制 Ask。
-		if (
-			wantsAskModeForDocs(ctx.sessionManager.getEntries()) &&
-			getChatMode() !== "ask"
-		) {
-			options.modeController.switchMode("ask", ctx);
+		// TAPD 文档流：Plan 只能写 session plan.md，与 .pi/docs 冲突，单次切到 Ask。
+		if (wantsAskModeForDocs(ctx.sessionManager.getEntries())) {
+			pi.appendEntry(ENSURE_ASK_FOR_DOCS_CONSUMED_ENTRY, { version: 1 });
+			if (getChatMode() !== "ask") {
+				options.modeController.switchMode("ask", ctx);
+			}
 		}
 
 		const mode = getChatMode();
@@ -219,6 +218,12 @@ function createBeforeAgentStartHandler(options: ChatModeLifecycleOptions) {
 			message = { customType, content: reminder, display: false };
 		}
 
+		if (mode === "build") {
+			return {
+				systemPrompt: `${event.systemPrompt}\n\n${BUILD_MODE_PROMPT}`,
+				...(message ? { message } : {}),
+			};
+		}
 		if (mode === "ask") {
 			return {
 				systemPrompt: `${event.systemPrompt}\n\n${ASK_MODE_PROMPT}`,
