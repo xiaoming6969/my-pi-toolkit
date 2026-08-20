@@ -63,6 +63,7 @@ export interface MultiTaskBatch {
 	createdAt: string;
 	completedAt?: string;
 	maxConcurrency: number;
+	implementationTools: string[];
 	cancelRequested: boolean;
 	workers: MultiTaskWorker[];
 }

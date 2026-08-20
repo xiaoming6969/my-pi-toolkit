@@ -5,7 +5,6 @@ import type { TerminalSubagentUpdate } from "../shared/subagent/terminal-runner.
 import { buildWorkerTask, MULTI_TASK_WORKER_PROMPT } from "./prompt.js";
 import type { MultiTaskBatch, MultiTaskWorker } from "./types.js";
 
-const IMPLEMENTATION_TOOLS = "read,grep,find,ls,edit,write";
 const MAX_VISIBLE_TOOL_CALLS = 8;
 
 function researchTask(worker: MultiTaskWorker): string {
@@ -29,8 +28,9 @@ async function runImplementation(
 		model: worker.model,
 		task: buildWorkerTask(worker.task, worker.paths),
 		systemPrompt: MULTI_TASK_WORKER_PROMPT,
-		tools: IMPLEMENTATION_TOOLS,
+		tools: batch.implementationTools.join(","),
 		extensionPaths,
+		loadDefaultResources: true,
 		parentSessionId: batch.parentSessionId,
 		keepOpen: false,
 		signal: worker.controller.signal,

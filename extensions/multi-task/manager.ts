@@ -164,6 +164,7 @@ export function startBatch(options: {
 	parentSessionId: string;
 	tasks: MultiTaskInputTask[];
 	maxConcurrency: number;
+	implementationTools: string[];
 	extensionPaths: string[];
 	researchConfig?: RepoSearchRunConfig;
 	onProgress?: (batch: MultiTaskBatch) => void;
@@ -190,6 +191,7 @@ export function startBatch(options: {
 		status: "running",
 		createdAt: new Date().toISOString(),
 		maxConcurrency: Math.min(6, Math.max(1, options.maxConcurrency)),
+		implementationTools: options.implementationTools,
 		cancelRequested: false,
 		workers: tasks.map((task) =>
 			workerFrom(task, options.model, options.researchConfig),

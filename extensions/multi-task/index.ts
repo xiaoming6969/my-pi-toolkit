@@ -51,6 +51,10 @@ function currentModel(params: MultiTaskInput, ctx: ExtensionContext): string {
 	throw new Error("未指定 worker 模型，且主 Agent 当前没有可继承的模型");
 }
 
+function implementationTools(pi: ExtensionAPI): string[] {
+	return pi.getActiveTools().filter((name: string) => name !== "repo_search");
+}
+
 function researchConfig(
 	params: MultiTaskInput,
 	ctx: ExtensionContext,
@@ -86,6 +90,7 @@ async function runBatch(
 		parentSessionId: ctx.sessionManager.getSessionId(),
 		tasks: params.tasks,
 		maxConcurrency: params.maxConcurrency ?? 3,
+		implementationTools: implementationTools(options.pi),
 		extensionPaths: IMPLEMENTATION_WORKER_EXTENSIONS,
 		researchConfig: researchConfig(params, ctx),
 		signal,
@@ -113,6 +118,7 @@ function startBackgroundBatch(
 		parentSessionId: ctx.sessionManager.getSessionId(),
 		tasks: params.tasks,
 		maxConcurrency: params.maxConcurrency ?? 3,
+		implementationTools: implementationTools(pi),
 		extensionPaths: IMPLEMENTATION_WORKER_EXTENSIONS,
 		researchConfig: researchConfig(params, ctx),
 		onSettled: (settled) =>

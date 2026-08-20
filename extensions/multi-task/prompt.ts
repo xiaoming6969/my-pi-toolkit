@@ -6,8 +6,8 @@ Rules:
 - Do not attempt to bypass path restrictions.
 - Do not undo unrelated changes already present in the workspace.
 - Keep changes small and consistent with existing project conventions and AGENTS.md.
-- You have no shell access. Use repository tools to inspect and modify files.
-- Re-read changed areas after editing to catch obvious syntax or integration mistakes.
+- The repo_search tool is intentionally unavailable; inspect the repository with your other active tools.
+- Re-read changed areas and run applicable checks after editing.
 - Return a concise report with: outcome, changed files, verification performed, and blockers.
 `;
 

@@ -174,7 +174,7 @@ renderResult(result, { expanded }, theme) {
 - 屏幕缓冲区、alternate-screen 进入/退出、清屏和 scrollback 由 Pi 宿主管理；Header、Footer、Widget、Overlay 的 factory 不得自行清屏。
 - 公共视觉 helper 放在 `extensions/shared/tui/`；业务数据和执行逻辑留在模块目录。
 - 不得让 `shared/tui` 依赖具体业务模块，避免循环依赖。
-- 子 Agent 仍走瘦加载路径，不得加载整个 `ming-core`。
+- Repo Search、TAPD Review 等受限子 Agent 仍走瘦加载路径，不得加载整个 `ming-core`。Multi Task implementation worker 为继承主 Agent 能力可加载正常资源，但必须排除 `repo_search`、保留 `edit/write` 路径守卫，并在模块 README 明确 shell 与其他副作用工具不受该守卫约束。
 - 保持现有命令、快捷键、tool name、status key 和 session custom entry 兼容；破坏性变化必须提供迁移说明。
 - 不得为视觉改造改变工具权限、Plan 生命周期、worker 隔离或安全门禁。
 - 内置 tool override 必须默认可关闭，并验证包装前后除 `renderShell`、`renderCall`、`renderResult` 外的 definition 字段保持一致。

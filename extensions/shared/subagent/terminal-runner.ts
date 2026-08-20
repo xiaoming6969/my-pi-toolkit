@@ -31,6 +31,7 @@ export interface TerminalSubagentOptions {
 	systemPrompt: string;
 	tools: string;
 	extensionPaths?: string[];
+	loadDefaultResources?: boolean;
 	disableContextFiles?: boolean;
 	artifactFiles?: string[];
 	presentation?: SubagentPresentation;

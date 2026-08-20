@@ -49,11 +49,12 @@ function buildArgs(options: TerminalSubagentOptions, runDir: string): string[] {
 		join(runDir, "sessions"),
 		"--name",
 		options.title,
-		"--no-extensions",
 	];
+	if (!options.loadDefaultResources) args.push("--no-extensions");
 	for (const extension of options.extensionPaths ?? [])
 		args.push("--extension", extension);
-	args.push("--no-skills", "--no-prompt-templates");
+	if (!options.loadDefaultResources)
+		args.push("--no-skills", "--no-prompt-templates");
 	if (options.disableContextFiles) args.push("--no-context-files");
 	args.push(
 		"--tools",
