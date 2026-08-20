@@ -1,3 +1,5 @@
+/// <reference path="../types/grok-mermaid.d.ts" />
+
 import { render as renderMermaid } from "grok-mermaid";
 import {
 	getAgentDir,
@@ -75,6 +77,21 @@ function createMermaidTransformer(
 	};
 }
 
+function renderMermaidToFit(source: string, availableWidth: number) {
+	const art = renderMermaid(source);
+	if (!art || art.width <= availableWidth) return art;
+
+	// Horizontal flowcharts grow quickly with long code labels; preserve the
+	// graph while changing only its presentation direction for narrow viewports.
+	const vertical = source.replace(
+		/^(\s*)(flowchart|graph)\s+(LR|RL)\b/im,
+		"$1$2 TD",
+	);
+	if (vertical === source) return art;
+	const reflowed = renderMermaid(vertical);
+	return reflowed && reflowed.width <= availableWidth ? reflowed : art;
+}
+
 function transformToken(
 	token: { type: string; raw: string; lang?: string; text?: string },
 	availableWidth: number,
@@ -87,7 +104,7 @@ function transformToken(
 	)
 		return token.raw;
 	try {
-		const art = renderMermaid(token.text);
+		const art = renderMermaidToFit(token.text, availableWidth);
 		if (!art || art.width > availableWidth) return token.raw;
 		if (art.warnings.length > 0) {
 			const extra =
