@@ -46,7 +46,15 @@ function buildPiArgs(
 	args.push("--no-skills", "--no-prompt-templates");
 	if (options.disableContextFiles) args.push("--no-context-files");
 	args.push(...(options.extraCliArgs ?? []));
-	args.push("--tools", options.tools, "--model", options.model, `@${taskPath}`);
+	args.push(
+		"--tools",
+		options.tools,
+		"--models",
+		options.model,
+		"--model",
+		options.model,
+		`@${taskPath}`,
+	);
 	appendThinkingCliArgs(args, options.thinkingLevel);
 	return args;
 }

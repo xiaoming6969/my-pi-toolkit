@@ -7,7 +7,10 @@ import {
 	appendThinkingCliArgs,
 	runTerminalSubagent,
 } from "../shared/subagent/terminal-runner.js";
-import { resolvePiLensExtensionPaths, REPO_SEARCH_TOOLS } from "./pi-lens.js";
+import {
+	resolveRepoSearchExtensionPaths,
+	REPO_SEARCH_TOOLS,
+} from "./pi-lens.js";
 import { REPO_SEARCH_PROMPT } from "./prompt.js";
 import type {
 	RepoSearchDetails,
@@ -16,7 +19,6 @@ import type {
 } from "./types.js";
 
 const READ_ONLY_TOOLS = REPO_SEARCH_TOOLS.join(",");
-const EXTRA_CLI_ARGS = ["--no-lazy-tools"];
 const EXTENSION_DIR = path.dirname(fileURLToPath(import.meta.url));
 const GITIGNORE_GUARD_EXTENSION = path.resolve(
 	EXTENSION_DIR,
@@ -104,11 +106,12 @@ export async function runRepoSearchSubagent(options: {
 	signal?: AbortSignal;
 	onUpdate?: (details: RepoSearchDetails) => void;
 }): Promise<RepoSearchRunResult> {
-	const piLensExtensions = await resolvePiLensExtensionPaths(
+	const optionalExtensions = await resolveRepoSearchExtensionPaths(
 		options.cwd,
 		options.config.projectTrusted ?? false,
+		options.config.model,
 	);
-	const extensionPaths = [GITIGNORE_GUARD_EXTENSION, ...piLensExtensions];
+	const extensionPaths = [GITIGNORE_GUARD_EXTENSION, ...optionalExtensions];
 	const terminal = await runTerminalSubagent({
 		cwd: options.cwd,
 		title: "Repo Search Subagent",
@@ -118,7 +121,6 @@ export async function runRepoSearchSubagent(options: {
 		systemPrompt: REPO_SEARCH_PROMPT,
 		tools: READ_ONLY_TOOLS,
 		extensionPaths,
-		extraCliArgs: EXTRA_CLI_ARGS,
 		disableContextFiles: true,
 		presentation: options.config.presentation,
 		keepOpen: options.keepOpen,
@@ -161,13 +163,14 @@ export async function runRepoSearchSubagent(options: {
 		"--no-extensions",
 		"--extension",
 		GITIGNORE_GUARD_EXTENSION,
-		...piLensExtensions.flatMap((extension) => ["--extension", extension]),
+		...optionalExtensions.flatMap((extension) => ["--extension", extension]),
 		"--no-skills",
 		"--no-prompt-templates",
 		"--no-context-files",
-		...EXTRA_CLI_ARGS,
 		"--tools",
 		READ_ONLY_TOOLS,
+		"--models",
+		options.config.model,
 		"--model",
 		options.config.model,
 		"--system-prompt",

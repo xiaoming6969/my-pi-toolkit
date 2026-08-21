@@ -61,6 +61,8 @@ function buildArgs(options: TerminalSubagentOptions, runDir: string): string[] {
 	args.push(
 		"--tools",
 		options.tools,
+		"--models",
+		options.model,
 		"--model",
 		options.model,
 		"--system-prompt",

@@ -45,9 +45,27 @@ export function extractPiLensExtensionPaths(
 	);
 }
 
-export async function resolvePiLensExtensionPaths(
+export function extractRepoSearchExtensionPaths(
+	resources: ResolvedResource[],
+	model: string,
+): string[] {
+	return resources.flatMap((resource) => {
+		if (!resource.enabled) return [];
+		if (/^npm:pi-lens(?:@[^/]+)?$/.test(resource.metadata.source))
+			return [resource.path];
+		if (
+			model.startsWith("cursor/") &&
+			/^npm:@rahularya01\/pi-cursor(?:@[^/]+)?$/.test(resource.metadata.source)
+		)
+			return [resource.path];
+		return [];
+	});
+}
+
+export async function resolveRepoSearchExtensionPaths(
 	cwd: string,
 	projectTrusted: boolean,
+	model: string,
 ): Promise<string[]> {
 	try {
 		const settingsManager = SettingsManager.create(cwd, getAgentDir(), {
@@ -59,9 +77,9 @@ export async function resolvePiLensExtensionPaths(
 			settingsManager,
 		});
 		const resources = await packageManager.resolve(async () => "skip");
-		return extractPiLensExtensionPaths(resources.extensions);
+		return extractRepoSearchExtensionPaths(resources.extensions, model);
 	} catch {
-		// pi-lens is an optional enhancement; missing or invalid packages degrade cleanly.
+		// Optional package resolution failures degrade to the isolated base tools.
 		return [];
 	}
 }

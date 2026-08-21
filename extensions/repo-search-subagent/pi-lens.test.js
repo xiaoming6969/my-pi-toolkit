@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
 	extractPiLensExtensionPaths,
+	extractRepoSearchExtensionPaths,
 	requestedPaths,
 	REPO_SEARCH_TOOLS,
 } from "./pi-lens.ts";
@@ -48,19 +49,34 @@ test("extracts path and paths arrays for the gitignore guard", () => {
 	assert.deepEqual(requestedPaths({}), ["."]);
 });
 
+const resource = (path, source, enabled = true) => ({
+	path,
+	enabled,
+	metadata: { source, scope: "user", origin: "package" },
+});
+
+const RESOURCES = [
+	resource("/lens/index.ts", "npm:pi-lens"),
+	resource("/lens/versioned.ts", "npm:pi-lens@1.2.3"),
+	resource("/lens/disabled.ts", "npm:pi-lens", false),
+	resource("/cursor/index.js", "npm:@rahularya01/pi-cursor"),
+	resource("/other/index.ts", "npm:other"),
+];
+
 test("extracts only enabled npm:pi-lens extension paths", () => {
-	const resource = (path, source, enabled = true) => ({
-		path,
-		enabled,
-		metadata: { source, scope: "user", origin: "package" },
-	});
+	assert.deepEqual(extractPiLensExtensionPaths(RESOURCES), [
+		"/lens/index.ts",
+		"/lens/versioned.ts",
+	]);
+});
+
+test("loads the cursor provider only for cursor models", () => {
 	assert.deepEqual(
-		extractPiLensExtensionPaths([
-			resource("/lens/index.ts", "npm:pi-lens"),
-			resource("/lens/versioned.ts", "npm:pi-lens@1.2.3"),
-			resource("/lens/disabled.ts", "npm:pi-lens", false),
-			resource("/other/index.ts", "npm:other"),
-		]),
+		extractRepoSearchExtensionPaths(RESOURCES, "cursor/composer-2.5"),
+		["/lens/index.ts", "/lens/versioned.ts", "/cursor/index.js"],
+	);
+	assert.deepEqual(
+		extractRepoSearchExtensionPaths(RESOURCES, "openai/gpt-5"),
 		["/lens/index.ts", "/lens/versioned.ts"],
 	);
 });
