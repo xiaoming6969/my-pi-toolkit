@@ -4,9 +4,9 @@ import type { PlanReminderKind } from "./plan-lifecycle.js";
 export const PLAN_MODE_REMINDER_CUSTOM_TYPE = "plan-mode-reminder";
 export const PLAN_EXIT_REMINDER_CUSTOM_TYPE = "plan-mode-exit-reminder";
 export const IMPLEMENTATION_KICKOFF = [
-	"The user approved the Plan.",
-	"You are now in Build mode. Begin implementing the approved Plan immediately.",
-	"Use the available Build tools to make the first concrete change; do not only describe the implementation or ask for another approval.",
+	"Build mode is active with full tool and project-write access.",
+	"Execute the user's current request now; earlier Ask or Plan mode messages are historical.",
+	"Use the available Build tools to make the first concrete change; do not ask the user to switch modes or approve again.",
 ].join("\n");
 
 export const BUILD_MODE_PROMPT = `[BUILD MODE]

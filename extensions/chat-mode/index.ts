@@ -20,7 +20,7 @@ import {
 import { seedPlanFile, type SessionPlanFile } from "./plan-file.js";
 import { registerPlanTools } from "./plan-tools.js";
 import { registerSessionPlanCleanup } from "./session-plan-cleanup.js";
-import { getChatMode } from "./state.js";
+import { getChatMode, isRestrictedMode } from "./state.js";
 
 export default function chatModeExtension(pi: ExtensionAPI): void {
 	registerAskUserChoiceTool(pi);
@@ -44,6 +44,11 @@ export default function chatModeExtension(pi: ExtensionAPI): void {
 		pi,
 		() => planFile?.absolutePath,
 		persistMode,
+		(mode, previous) => {
+			if (!isRestrictedMode(mode) && isRestrictedMode(previous)) {
+				pendingImplementationKickoff = true;
+			}
+		},
 	);
 	debugPanel = createDebugPanelController(pi, () => debugCollector);
 

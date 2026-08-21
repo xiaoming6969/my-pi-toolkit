@@ -117,7 +117,7 @@ Overlay 实时读取日志；Agent 完成插桩后会先用中文写入 `reprodu
 
 ## Lifecycle
 
-用户进入时先进入 `pending`，下一次 agent prompt 注入 full/reentry reminder 后转为 `active`；模型通过工具进入时，工具结果本身是进入信号，直接 active。active 状态交替注入 full/sparse reminder。用户切换离开时下一轮注入一次 exit reminder；工具审批退出时，Build/Ask 请求会过滤历史 Plan reminder，批准并实现只追加一次实现 kickoff。压缩后下一次恢复 full reminder。
+用户进入时先进入 `pending`，下一次 agent prompt 注入 full/reentry reminder 后转为 `active`；模型通过工具进入时，工具结果本身是进入信号，直接 active。active 状态交替注入 full/sparse reminder。用户切换离开时下一轮注入一次 exit reminder；离开 Ask/Plan 等受限模式后，下一次 Build 请求会过滤历史 Plan reminder 并追加一次实现 kickoff，明确恢复完整工具权限，避免模型沿用历史受限状态拒绝执行。压缩后下一次恢复 full reminder。
 
 生命周期通过 session custom entry 保存，并按当前 session branch 恢复。
 
