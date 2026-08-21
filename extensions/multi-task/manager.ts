@@ -43,6 +43,7 @@ function workerFrom(
 	task: NormalizedMultiTaskTask,
 	implementationModel: string,
 	researchConfig: RepoSearchRunConfig | undefined,
+	thinkingLevel: string | undefined,
 ): MultiTaskWorker {
 	return {
 		...task,
@@ -50,6 +51,10 @@ function workerFrom(
 			task.kind === "research"
 				? (researchConfig?.model ?? implementationModel)
 				: implementationModel,
+		thinkingLevel:
+			task.kind === "research"
+				? (researchConfig?.thinkingLevel ?? thinkingLevel)
+				: thinkingLevel,
 		status: "queued",
 		toolCalls: [],
 		controller: new AbortController(),
@@ -161,6 +166,7 @@ async function executeBatch(options: {
 export function startBatch(options: {
 	cwd: string;
 	model: string;
+	thinkingLevel?: string;
 	parentSessionId: string;
 	tasks: MultiTaskInputTask[];
 	maxConcurrency: number;
@@ -187,6 +193,7 @@ export function startBatch(options: {
 		id: randomUUID(),
 		cwd: options.cwd,
 		model: options.model,
+		thinkingLevel: options.thinkingLevel,
 		parentSessionId: options.parentSessionId,
 		status: "running",
 		createdAt: new Date().toISOString(),
@@ -194,7 +201,12 @@ export function startBatch(options: {
 		implementationTools: options.implementationTools,
 		cancelRequested: false,
 		workers: tasks.map((task) =>
-			workerFrom(task, options.model, options.researchConfig),
+			workerFrom(
+				task,
+				options.model,
+				options.researchConfig,
+				options.thinkingLevel,
+			),
 		),
 	};
 	batches.set(batch.id, batch);

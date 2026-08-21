@@ -62,6 +62,8 @@ ast_grep_outline, ast_grep_dump
 2. 用户级 `~/.pi/agent/repo-search-subagent.json`
 3. 当前主 Agent 模型
 
+思考等级始终继承主会话当前的 `thinkingLevel`，并显示在工具卡 summary 与 Subagent Overlay Header 中。
+
 未受信任项目的项目配置不会被读取。配置文件不是合法 JSON、`model` 为空或 Pi 无法解析/使用指定模型时，工具会明确失败，不会静默换用其他模型。
 
 子进程禁用全部普通扩展，只显式加载本 toolkit 的 `extensions/cursor-models/index.ts`、`extensions/repo-search-subagent/gitignore-guard.ts`，以及通过 Pi 的 `SettingsManager` + `DefaultPackageManager` 解析出的已启用 `npm:pi-lens` extension path；不会加载其它 pi-lens 工具或普通扩展。前者注册 `cursor-agent` provider，守卫在每次文件工具调用前使用 `git check-ignore --no-index` 执行项目 `.gitignore` 规则，并同时检查工具参数中的 `path` 和 `paths[]`。最终可调用工具仍受上述精确白名单限定。若指定模型依赖其他未加载的自定义 provider 或凭据，工具会返回模型启动错误。

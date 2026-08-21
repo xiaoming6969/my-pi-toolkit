@@ -12,6 +12,7 @@ import {
 export interface HistoricalSubagentView {
 	title: string;
 	model: string;
+	thinkingLevel?: string;
 	cwd: string;
 	status: string;
 	markdown?: string;

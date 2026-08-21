@@ -1,32 +1,10 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { statusGlyph } from "../shared/tui/visual-language.js";
+import { statusGlyph, thinkingLevelText } from "../shared/tui/visual-language.js";
 import type { FooterSnapshot } from "./footer-data.js";
 
 export interface FooterSegment {
 	id: string;
 	content: string;
-}
-
-function thinkingText(level: string, theme: Theme, compact = false): string {
-	const text = compact ? level : `think:${level}`;
-	switch (level) {
-		case "off":
-			return theme.fg("thinkingOff", text);
-		case "minimal":
-			return theme.fg("thinkingMinimal", text);
-		case "low":
-			return theme.fg("thinkingLow", text);
-		case "medium":
-			return theme.fg("thinkingMedium", text);
-		case "high":
-			return theme.fg("thinkingHigh", text);
-		case "xhigh":
-			return theme.fg("thinkingXhigh", text);
-		case "max":
-			return theme.fg("thinkingMax", text);
-		default:
-			return theme.fg("muted", text);
-	}
 }
 
 function modelText(snapshot: FooterSnapshot, theme: Theme): string | undefined {
@@ -98,7 +76,7 @@ export function runtimeSegments(
 		snapshot.thinking
 			? {
 					id: "thinking",
-					content: thinkingText(snapshot.thinking, theme, compact),
+					content: thinkingLevelText(snapshot.thinking, theme, compact),
 				}
 			: undefined,
 		fastSegment(snapshot, theme, compact),

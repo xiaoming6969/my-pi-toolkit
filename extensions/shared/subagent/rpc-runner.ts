@@ -5,9 +5,10 @@ import { randomUUID } from "node:crypto";
 import { basename, join } from "node:path";
 import { SUBAGENT_RUNS_ROOT } from "./run-paths.js";
 import { RpcSubagentSession } from "./rpc-session.js";
-import type {
-	TerminalSubagentOptions,
-	TerminalSubagentResult,
+import {
+	appendThinkingCliArgs,
+	type TerminalSubagentOptions,
+	type TerminalSubagentResult,
 } from "./terminal-runner.js";
 
 function getPiInvocation(args: string[]): { command: string; args: string[] } {
@@ -65,6 +66,7 @@ function buildArgs(options: TerminalSubagentOptions, runDir: string): string[] {
 		"--system-prompt",
 		options.systemPrompt,
 	);
+	appendThinkingCliArgs(args, options.thinkingLevel);
 	return args;
 }
 
@@ -80,6 +82,7 @@ async function writeLaunchMetadata(
 				id,
 				title: options.title,
 				model: options.model,
+				thinkingLevel: options.thinkingLevel,
 				cwd: options.cwd,
 				parentSessionId: options.parentSessionId,
 				mode: "manual-rpc",

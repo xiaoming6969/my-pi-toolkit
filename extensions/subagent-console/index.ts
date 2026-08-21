@@ -27,6 +27,7 @@ interface RunSummary {
 	dir: string;
 	title: string;
 	model: string;
+	thinkingLevel?: string;
 	cwd: string;
 	state: "starting" | "running" | "completed" | "failed" | "exited";
 	startedAt?: string;
@@ -100,6 +101,7 @@ async function listRuns(): Promise<RunSummary[]> {
 		dir: join(SUBAGENT_RUNS_ROOT, run.id),
 		title: run.title,
 		model: run.model,
+		thinkingLevel: run.thinkingLevel,
 		cwd: run.cwd,
 		state: run.status,
 		startedAt: run.startedAt,
@@ -126,6 +128,8 @@ async function listRuns(): Promise<RunSummary[]> {
 			dir,
 			title: typeof launch.title === "string" ? launch.title : basename(dir),
 			model: typeof launch.model === "string" ? launch.model : "unknown",
+			thinkingLevel:
+				typeof launch.thinkingLevel === "string" ? launch.thinkingLevel : undefined,
 			cwd: typeof launch.cwd === "string" ? launch.cwd : process.cwd(),
 			state: runState(completed, exited),
 			startedAt:
@@ -153,6 +157,7 @@ function historicalView(run: RunSummary): HistoricalSubagentView {
 	return {
 		title: run.title,
 		model: run.model,
+		thinkingLevel: run.thinkingLevel,
 		cwd: run.cwd,
 		status: run.state,
 		entries,

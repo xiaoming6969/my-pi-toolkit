@@ -59,6 +59,7 @@ export async function generateBugRootCauseSummary(options: {
 			cwd,
 			title,
 			model,
+			thinkingLevel: ctx.thinkingLevel,
 			task: buildRootCauseTask({
 				bugId: bug.shortId,
 				workspaceId: bug.workspaceId,

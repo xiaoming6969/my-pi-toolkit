@@ -7,7 +7,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 // @ts-expect-error -- TypeBox's .d.mts exports require a newer resolver than the workspace LSP.
 import { Type } from "typebox";
-import { previewLines, resultText } from "../shared/tui/tool-format.js";
+import { previewLines, resultText, formatModelWithThinking } from "../shared/tui/tool-format.js";
 import { toolCall, toolResult } from "../shared/tui/tool-render.js";
 import { registerRepoSearchCommand } from "./command.js";
 import { resolveRepoSearchConfig } from "./config.js";
@@ -74,7 +74,7 @@ export default function repoSearchSubagentExtension(pi: ExtensionAPI) {
 			const result = await runRepoSearchSubagent({
 				cwd: ctx.cwd,
 				task: params.task,
-				config,
+				config: { ...config, thinkingLevel: ctx.thinkingLevel },
 				parentSessionId: ctx.sessionManager.getSessionId(),
 				signal,
 				onUpdate: (details) =>
@@ -116,7 +116,7 @@ export default function repoSearchSubagentExtension(pi: ExtensionAPI) {
 				return toolResult(theme, {
 					status: "active",
 					title: "searching",
-					summary: details.model,
+					summary: formatModelWithThinking(details.model, details.thinkingLevel),
 					details: visibleCalls.map(
 						(call) => `→ ${previewToolCall(call.name, call.arguments)}`,
 					),
@@ -128,7 +128,7 @@ export default function repoSearchSubagentExtension(pi: ExtensionAPI) {
 				return toolResult(theme, {
 					status,
 					title: "repo_search",
-					summary: `${details.model} (${details.modelSource})`,
+					summary: `${formatModelWithThinking(details.model, details.thinkingLevel)} (${details.modelSource})`,
 					details: details.toolCalls.map(
 						(call) => `→ ${previewToolCall(call.name, call.arguments)}`,
 					),
@@ -140,7 +140,7 @@ export default function repoSearchSubagentExtension(pi: ExtensionAPI) {
 			return toolResult(theme, {
 				status,
 				title: "repo_search",
-				summary: details.model,
+				summary: formatModelWithThinking(details.model, details.thinkingLevel),
 				body: preview.text,
 				hint: preview.truncated ? "(Ctrl+O to expand)" : undefined,
 			});

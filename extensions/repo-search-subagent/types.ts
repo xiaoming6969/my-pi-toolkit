@@ -3,6 +3,7 @@ import type { SubagentPresentation } from "../shared/subagent/config.js";
 export interface RepoSearchDetails {
 	task: string;
 	model: string;
+	thinkingLevel?: string;
 	modelSource: "project" | "user" | "current";
 	output: string;
 	toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>;
@@ -14,6 +15,7 @@ export interface RepoSearchDetails {
 
 export interface RepoSearchRunConfig {
 	model: string;
+	thinkingLevel?: string;
 	source: "project" | "user" | "current";
 	projectTrusted?: boolean;
 	presentation?: SubagentPresentation;

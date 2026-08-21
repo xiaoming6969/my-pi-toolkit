@@ -60,7 +60,10 @@ function researchConfig(
 	ctx: ExtensionContext,
 ): RepoSearchRunConfig | undefined {
 	if (!params.tasks?.some((task) => task.kind === "research")) return undefined;
-	return resolveRepoSearchConfig(ctx.cwd, ctx.isProjectTrusted(), ctx.model);
+	return {
+		...resolveRepoSearchConfig(ctx.cwd, ctx.isProjectTrusted(), ctx.model),
+		thinkingLevel: ctx.thinkingLevel,
+	};
 }
 
 interface MultiTaskExecutionOptions {
@@ -87,6 +90,7 @@ async function runBatch(
 	const handle = startBatch({
 		cwd: ctx.cwd,
 		model: currentModel(params, ctx),
+		thinkingLevel: ctx.thinkingLevel,
 		parentSessionId: ctx.sessionManager.getSessionId(),
 		tasks: params.tasks,
 		maxConcurrency: params.maxConcurrency ?? 3,
@@ -115,6 +119,7 @@ function startBackgroundBatch(
 	const handle = startBatch({
 		cwd: ctx.cwd,
 		model: currentModel(params, ctx),
+		thinkingLevel: ctx.thinkingLevel,
 		parentSessionId: ctx.sessionManager.getSessionId(),
 		tasks: params.tasks,
 		maxConcurrency: params.maxConcurrency ?? 3,

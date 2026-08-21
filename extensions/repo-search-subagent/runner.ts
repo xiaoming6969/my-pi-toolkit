@@ -3,7 +3,10 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { truncateHead } from "@earendil-works/pi-coding-agent";
-import { runTerminalSubagent } from "../shared/subagent/terminal-runner.js";
+import {
+	appendThinkingCliArgs,
+	runTerminalSubagent,
+} from "../shared/subagent/terminal-runner.js";
 import { resolvePiLensExtensionPaths, REPO_SEARCH_TOOLS } from "./pi-lens.js";
 import { REPO_SEARCH_PROMPT } from "./prompt.js";
 import type {
@@ -85,6 +88,7 @@ function makeDetails(options: {
 	return {
 		task: options.task,
 		model: options.config.model,
+		thinkingLevel: options.config.thinkingLevel,
 		modelSource: options.config.source,
 		output: options.output,
 		toolCalls: [...options.toolCalls],
@@ -117,6 +121,7 @@ export async function runRepoSearchSubagent(options: {
 		cwd: options.cwd,
 		title: "Repo Search Subagent",
 		model: options.config.model,
+		thinkingLevel: options.config.thinkingLevel,
 		task: `Repository search task: ${options.task}`,
 		systemPrompt: REPO_SEARCH_PROMPT,
 		tools: READ_ONLY_TOOLS,
@@ -177,8 +182,9 @@ export async function runRepoSearchSubagent(options: {
 		options.config.model,
 		"--system-prompt",
 		REPO_SEARCH_PROMPT,
-		`Repository search task: ${options.task}`,
 	];
+	appendThinkingCliArgs(args, options.config.thinkingLevel);
+	args.push(`Repository search task: ${options.task}`);
 	const invocation = getPiInvocation(args);
 	const messages: unknown[] = [];
 	const toolCalls: RepoSearchDetails["toolCalls"] = [];

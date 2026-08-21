@@ -16,6 +16,7 @@ export interface LiveSubagentRun {
 	id: string;
 	title: string;
 	model: string;
+	thinkingLevel?: string;
 	cwd: string;
 	status: SubagentRunStatus;
 	startedAt: string;

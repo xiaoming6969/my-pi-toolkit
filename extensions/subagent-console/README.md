@@ -11,7 +11,7 @@
 
 ## 实时与历史详情
 
-运行中的任务直接订阅内存 registry，并复用 Pi 的 `UserMessageComponent`、`AssistantMessageComponent` 和 `ToolExecutionComponent`，显示完整 user、assistant/thinking 与工具时间线。thinking 在 Overlay 中默认折叠，可用 `app.thinking.toggle` 恢复显示；折叠不会从 transcript 删除内容。Subagent 的 live、history 和 fallback Markdown 都继承 `markdown.mermaid` 的 `off` / `final` / `streaming` 设置，并启用 Pi 0.84 内置的 terminal-friendly Unicode LaTeX；过宽、无效或不受支持的 Mermaid/LaTeX 会保留原始源码。
+运行中的任务直接订阅内存 registry，并复用 Pi 的 `UserMessageComponent`、`AssistantMessageComponent` 和 `ToolExecutionComponent`，显示完整 user、assistant/thinking 与工具时间线。详情 Header 在模型名后显示启动时的思考等级（例如 `cursor-agent/cursor-grok-4.6 · high`、`lumilegend/gpt-5.6-sol · max`）；旧 `launch.json` 没有该字段时省略。thinking 内容块在 Overlay 中默认折叠，可用 `app.thinking.toggle` 恢复显示；折叠不会从 transcript 删除内容。Subagent 的 live、history 和 fallback Markdown 都继承 `markdown.mermaid` 的 `off` / `final` / `streaming` 设置，并启用 Pi 0.84 内置的 terminal-friendly Unicode LaTeX；过宽、无效或不受支持的 Mermaid/LaTeX 会保留原始源码。
 
 持久 RPC Session 同时兼容 Pi 0.83 的累计 `message_update.message` 与 Pi 0.84 的 `assistantMessageEvent` delta：流式阶段按 `message_start` 组装 text/thinking，`message_end` 仍作为最终权威消息。任务完成或退出后，控制台从运行目录的 `sessions/*.jsonl` 读取当前 session branch，重建全部消息与工具调用/结果，并继续使用同一组 Pi 组件渲染。因此 completed 历史不再只显示最后一条 assistant 输出，只有 `exited.json` 的任务也不会退化为无样式的 transcript 摘要。
 

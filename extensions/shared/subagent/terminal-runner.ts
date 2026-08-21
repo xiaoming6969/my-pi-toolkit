@@ -27,6 +27,7 @@ export interface TerminalSubagentOptions {
 	cwd: string;
 	title: string;
 	model: string;
+	thinkingLevel?: string;
 	task: string;
 	systemPrompt: string;
 	tools: string;
@@ -41,6 +42,14 @@ export interface TerminalSubagentOptions {
 	env?: Record<string, string>;
 	signal?: AbortSignal;
 	onUpdate?: (update: TerminalSubagentUpdate) => void;
+}
+
+export function appendThinkingCliArgs(
+	args: string[],
+	thinkingLevel: string | undefined,
+): void {
+	if (!thinkingLevel) return;
+	args.push("--thinking", thinkingLevel);
 }
 
 interface RunEvent {

@@ -26,6 +26,14 @@ export function formatCount(
 	return `${count} ${count === 1 ? singular : plural}`;
 }
 
+export function formatModelWithThinking(
+	model: string,
+	thinkingLevel?: string,
+): string {
+	if (!thinkingLevel) return model;
+	return `${model} · ${thinkingLevel}`;
+}
+
 export function resultText(
 	content: Array<{ type: string; text?: string }> | undefined,
 	fallback: string,

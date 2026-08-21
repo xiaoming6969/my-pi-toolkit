@@ -52,6 +52,7 @@ export class RpcSubagentSession {
 			id,
 			title: options.title,
 			model: options.model,
+			thinkingLevel: options.thinkingLevel,
 			cwd: options.cwd,
 			status: this.status,
 			startedAt: new Date().toISOString(),
@@ -78,6 +79,11 @@ export class RpcSubagentSession {
 		this.options.signal?.addEventListener("abort", this.stop, { once: true });
 		this.setStatus("running");
 		this.append("Starting manual subagent…");
+		if (this.options.thinkingLevel)
+			sendRpc(this.child, {
+				type: "set_thinking_level",
+				level: this.options.thinkingLevel,
+			});
 		this.send(task);
 		return this.result;
 	}

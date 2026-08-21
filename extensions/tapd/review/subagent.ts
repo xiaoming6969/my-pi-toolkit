@@ -4,7 +4,10 @@ import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { truncateHead } from "@earendil-works/pi-coding-agent";
 import type { SubagentPresentation } from "../../shared/subagent/config.js";
-import { runTerminalSubagent } from "../../shared/subagent/terminal-runner.js";
+import {
+	appendThinkingCliArgs,
+	runTerminalSubagent,
+} from "../../shared/subagent/terminal-runner.js";
 import { REVIEW_SYSTEM_PROMPT } from "./prompt.js";
 import type { ReviewSubagentResult } from "./types.js";
 
@@ -100,6 +103,7 @@ function truncateReport(output: string): string {
 export async function runReviewSubagent(options: {
 	cwd: string;
 	model: string;
+	thinkingLevel?: string;
 	task: string;
 	presentation?: SubagentPresentation;
 	parentSessionId?: string;
@@ -112,6 +116,7 @@ export async function runReviewSubagent(options: {
 		cwd: options.cwd,
 		title: "TAPD Review Subagent",
 		model: options.model,
+		thinkingLevel: options.thinkingLevel,
 		task: options.task,
 		systemPrompt: REVIEW_SYSTEM_PROMPT,
 		tools: READ_ONLY_TOOLS,
@@ -132,6 +137,7 @@ export async function runReviewSubagent(options: {
 		return {
 			report: truncateReport(terminal.output),
 			model: terminal.model ?? options.model,
+			thinkingLevel: options.thinkingLevel,
 			toolCalls: terminal.toolCalls,
 		};
 
@@ -150,8 +156,9 @@ export async function runReviewSubagent(options: {
 		options.model,
 		"--system-prompt",
 		REVIEW_SYSTEM_PROMPT,
-		options.task,
 	];
+	appendThinkingCliArgs(args, options.thinkingLevel);
+	args.push(options.task);
 	const invocation = getPiInvocation(args);
 	const messages: unknown[] = [];
 	const toolCalls: Array<{
@@ -219,5 +226,10 @@ export async function runReviewSubagent(options: {
 		throw new Error(
 			`Review 子代理运行失败（exit ${exitCode}，model ${options.model}）：${stderr.trim() || "未返回报告"}`,
 		);
-	return { report: truncateReport(output), model: options.model, toolCalls };
+	return {
+		report: truncateReport(output),
+		model: options.model,
+		thinkingLevel: options.thinkingLevel,
+		toolCalls,
+	};
 }

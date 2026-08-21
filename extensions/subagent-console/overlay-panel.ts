@@ -16,6 +16,7 @@ import {
 	overlayViewportHeight,
 	renderOverlayShell,
 } from "../shared/tui/overlay-shell.js";
+import { thinkingLevelText } from "../shared/tui/visual-language.js";
 import {
 	createSubagentDetailNavigator,
 	type SubagentDetailItem,
@@ -168,7 +169,10 @@ export function createSubagentOverlay(
 		const visible = content.slice(scrollOffset, scrollOffset + viewportHeight);
 		while (visible.length < viewportHeight) visible.push("");
 		const statusColor = subagentStatusColor(run.status);
-		const header = `${options.theme.bold(options.theme.fg("text", "SUBAGENT"))} ${options.theme.fg("dim", navigator.position())}  ${options.theme.fg("accent", run.title)}  ${options.theme.fg(statusColor, run.status.toUpperCase())} ${options.theme.fg("muted", `· ${run.model}`)}`;
+		const thinking = run.thinkingLevel
+			? `${options.theme.fg("muted", " · ")}${thinkingLevelText(run.thinkingLevel, options.theme, true)}`
+			: "";
+		const header = `${options.theme.bold(options.theme.fg("text", "SUBAGENT"))} ${options.theme.fg("dim", navigator.position())}  ${options.theme.fg("accent", run.title)}  ${options.theme.fg(statusColor, run.status.toUpperCase())} ${options.theme.fg("muted", `· ${run.model}`)}${thinking}`;
 		const endLine = Math.min(contentHeight, scrollOffset + viewportHeight);
 		const position = contentHeight
 			? `${scrollOffset + 1}-${endLine}/${contentHeight}`

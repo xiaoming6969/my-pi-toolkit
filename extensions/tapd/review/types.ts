@@ -19,6 +19,7 @@ export interface TapdReviewContext {
 export interface ReviewSubagentResult {
 	report: string;
 	model: string;
+	thinkingLevel?: string;
 	toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>;
 }
 
@@ -38,6 +39,7 @@ export interface TapdReviewToolDetails {
 	running: boolean;
 	phase: string;
 	model: string;
+	thinkingLevel?: string;
 	toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>;
 	report?: string;
 	metadata?: TapdReviewMetadata;

@@ -43,6 +43,7 @@ export interface MultiTaskWorker {
 	paths: string[];
 	kind: MultiTaskWorkerKind;
 	model: string;
+	thinkingLevel?: string;
 	status: WorkerStatus;
 	startedAt?: string;
 	completedAt?: string;
@@ -58,6 +59,7 @@ export interface MultiTaskBatch {
 	id: string;
 	cwd: string;
 	model: string;
+	thinkingLevel?: string;
 	parentSessionId: string;
 	status: BatchStatus;
 	createdAt: string;
@@ -74,6 +76,7 @@ export interface MultiTaskWorkerView {
 	paths: string[];
 	kind: MultiTaskWorkerKind;
 	model: string;
+	thinkingLevel?: string;
 	status: WorkerStatus;
 	startedAt?: string;
 	completedAt?: string;
@@ -87,6 +90,7 @@ export interface MultiTaskWorkerView {
 export interface MultiTaskBatchView {
 	id: string;
 	model: string;
+	thinkingLevel?: string;
 	status: BatchStatus;
 	createdAt: string;
 	completedAt?: string;

@@ -3,7 +3,10 @@ import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { TerminalSubagentOptions } from "./terminal-runner.js";
+import {
+	appendThinkingCliArgs,
+	type TerminalSubagentOptions,
+} from "./terminal-runner.js";
 
 const BRIDGE_EXTENSION = resolve(
 	dirname(fileURLToPath(import.meta.url)),
@@ -44,6 +47,7 @@ function buildPiArgs(
 	if (options.disableContextFiles) args.push("--no-context-files");
 	args.push(...(options.extraCliArgs ?? []));
 	args.push("--tools", options.tools, "--model", options.model, `@${taskPath}`);
+	appendThinkingCliArgs(args, options.thinkingLevel);
 	return args;
 }
 
@@ -60,6 +64,7 @@ export async function launchWindowsTerminal(
 	const launch = {
 		title: options.title,
 		model: options.model,
+		thinkingLevel: options.thinkingLevel,
 		startedAt: new Date().toISOString(),
 		command: invocation.command,
 		arguments: [...invocation.args, ...buildPiArgs(options, runDir, taskPath)],

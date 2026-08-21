@@ -78,3 +78,32 @@ export function fitLine(text: string, width: number): string {
 	const clipped = truncateToWidth(text, width, "…", true);
 	return `${clipped}${" ".repeat(Math.max(0, width - visibleWidth(clipped)))}`;
 }
+
+type ThinkingColorToken =
+	| "thinkingOff"
+	| "thinkingMinimal"
+	| "thinkingLow"
+	| "thinkingMedium"
+	| "thinkingHigh"
+	| "thinkingXhigh"
+	| "thinkingMax";
+
+const THINKING_COLORS: Record<string, ThinkingColorToken> = {
+	off: "thinkingOff",
+	minimal: "thinkingMinimal",
+	low: "thinkingLow",
+	medium: "thinkingMedium",
+	high: "thinkingHigh",
+	xhigh: "thinkingXhigh",
+	max: "thinkingMax",
+};
+
+export function thinkingLevelText(
+	level: string,
+	theme: Theme,
+	compact = false,
+): string {
+	const text = compact ? level : `think:${level}`;
+	const token = THINKING_COLORS[level];
+	return token ? theme.fg(token, text) : theme.fg("muted", text);
+}

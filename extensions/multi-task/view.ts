@@ -3,6 +3,7 @@ import {
 	type Theme,
 } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth } from "@earendil-works/pi-tui";
+import { formatModelWithThinking } from "../shared/tui/tool-format.js";
 import { statusGlyph } from "../shared/tui/visual-language.js";
 import type {
 	MultiTaskBatch,
@@ -51,6 +52,7 @@ export function snapshot(
 	return {
 		id: batch.id,
 		model: batch.model,
+		thinkingLevel: batch.thinkingLevel,
 		status: batch.status,
 		createdAt: batch.createdAt,
 		completedAt: batch.completedAt,
@@ -61,6 +63,7 @@ export function snapshot(
 			paths: worker.paths,
 			kind: worker.kind,
 			model: worker.model,
+			thinkingLevel: worker.thinkingLevel,
 			status: worker.status,
 			startedAt: worker.startedAt,
 			completedAt: worker.completedAt,
@@ -111,7 +114,7 @@ export function progressDetails(
 		);
 		if (expanded) {
 			details.push(
-				`  └ ${truncateToWidth(`${worker.model} · ${worker.paths.length} scope${worker.paths.length === 1 ? "" : "s"}`, 116, "…")}`,
+				`  └ ${truncateToWidth(`${formatModelWithThinking(worker.model, worker.thinkingLevel)} · ${worker.paths.length} scope${worker.paths.length === 1 ? "" : "s"}`, 116, "…")}`,
 			);
 			for (const call of worker.toolCalls.slice(-4, -1))
 				details.push(

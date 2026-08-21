@@ -11,6 +11,7 @@ import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import {
 	compactText,
+	formatModelWithThinking,
 	previewLines,
 	resultText,
 } from "../../shared/tui/tool-format.js";
@@ -113,6 +114,7 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 			const config = loadConfig();
 			if (!config) throw new Error("请先配置 ~/.pi/agent/tapd.json");
 			const model = resolveReviewModel(config, ctx.model);
+			const thinkingLevel = ctx.thinkingLevel;
 			const scope = params.scope ?? "branch";
 			const baseRef =
 				params.baseRef?.trim() || DEFAULT_GIT_WORKFLOW_POLICY.baseRef;
@@ -130,6 +132,7 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 						running: true,
 						phase,
 						model,
+						thinkingLevel,
 						toolCalls: [...toolCalls],
 					},
 				});
@@ -150,6 +153,7 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 				const result = await runReviewSubagent({
 					cwd: reviewContext.repositoryRoot,
 					model,
+					thinkingLevel,
 					task: buildReviewTask(reviewContext, params.instructions),
 					presentation: config.review?.presentation,
 					parentSessionId: ctx.sessionManager.getSessionId(),
@@ -175,6 +179,7 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 					running: false,
 					phase: "审核完成",
 					model,
+					thinkingLevel,
 					toolCalls,
 					report: result.report,
 					metadata,
@@ -223,7 +228,10 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 				return toolResult(theme, {
 					status: "active",
 					title: "reviewing",
-					summary: details.model,
+					summary: formatModelWithThinking(
+						details.model,
+						details.thinkingLevel,
+					),
 					details: [details.phase],
 					body: calls.length > 0 ? calls.join("\n") : undefined,
 				});
@@ -232,7 +240,7 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 			const view = {
 				status: "success" as const,
 				title: "TAPD review",
-				summary: `risk:${reportRisk(report)} · ${details.model}`,
+				summary: `risk:${reportRisk(report)} · ${formatModelWithThinking(details.model, details.thinkingLevel)}`,
 			};
 			if (!expanded) {
 				const preview = previewLines(report, 14);
