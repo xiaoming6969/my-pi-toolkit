@@ -27,7 +27,7 @@
 
 ## Modules
 
-- `index.ts`：加载 Open Cursor provider、注册命令和生命周期事件。
+- `index.ts`：加载 Open Cursor provider、注册命令和生命周期事件。折叠 wrapper 捕获的 upstream `streamSimple` 必须放在 factory 闭包里，不能放模块级：Pi 会缓存 factory 模块，但每次 `newSession` / `switchSession` / `/resume` 会重新调用 factory 并换一份 `pi`。模块级冻结会让后续 Cursor 回合（例如 TAPD `/tapd bug`）走到已失效的旧 `pi`/`ctx`。同一会话内仍只捕获一次，避免 `registerProvider` 包到自己。
 - `collapse.ts`：折叠模型列表和家族元数据。
 - `parse.ts`：解析 Cursor 模型 ID、思考等级和 Fast 后缀。
 - `fast-state.ts`：读取和保存 Fast 状态。

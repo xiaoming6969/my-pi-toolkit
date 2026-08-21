@@ -25,11 +25,6 @@ type StreamSimple = (
 	options?: { reasoning?: string },
 ) => unknown;
 
-/**
- * Frozen upstream stream from the pre-wrap composed provider.
- * Must capture before re-register, otherwise the new stream would recurse into itself.
- */
-let upstreamStream: StreamSimple | undefined;
 let families = new Map<string, ModelFamily>();
 
 function refreshFamilies(): Map<string, ModelFamily> {
@@ -39,40 +34,6 @@ function refreshFamilies(): Map<string, ModelFamily> {
 
 function collapsedModels(): ProviderModelConfig[] {
 	return toProviderModels(refreshFamilies());
-}
-
-function applyProvider(pi: ExtensionAPI, ctx: ExtensionContext): void {
-	const provider = ctx.modelRegistry.getProvider("cursor-agent");
-	if (!provider?.streamSimple) return;
-
-	// Capture once while provider still uses open-cursor's streamSimple.
-	if (!upstreamStream) {
-		const frozen = provider;
-		upstreamStream = ((model, context, options) =>
-			frozen.streamSimple!(model, context, options)) as StreamSimple;
-	}
-
-	const models = collapsedModels();
-	if (models.length === 0) return;
-
-	pi.registerProvider("cursor-agent", {
-		baseUrl: provider.baseUrl ?? "https://api2.cursor.sh",
-		api: "cursor-agent",
-		models,
-		streamSimple: (
-			model: Parameters<StreamSimple>[0],
-			context: Parameters<StreamSimple>[1],
-			options: Parameters<StreamSimple>[2],
-		) => {
-			const resolvedId = resolveCursorModelId(
-				model.id,
-				options?.reasoning,
-				isFast(),
-				families,
-			);
-			return upstreamStream!({ ...model, id: resolvedId }, context, options);
-		},
-	});
 }
 
 async function migrateActiveModel(
@@ -112,7 +73,45 @@ function toggleFastUi(ctx: ExtensionContext): void {
 }
 
 export default function (pi: ExtensionAPI) {
-	// Run the open-cursor provider extension first (registers cursor-agent provider, OAuth, session, etc.)
+	// Frozen upstream stream from the pre-wrap composed provider for THIS session.
+	// Must live in the factory closure: the factory module is cached across
+	// newSession/switchSession, but each invocation gets a new pi/getCtx.
+	// Capture before re-register, otherwise the new stream would recurse into itself.
+	let upstreamStream: StreamSimple | undefined;
+
+	function applyProvider(ctx: ExtensionContext): void {
+		const provider = ctx.modelRegistry.getProvider("cursor-agent");
+		if (!provider?.streamSimple) return;
+
+		if (!upstreamStream) {
+			const frozen = provider;
+			upstreamStream = ((model, context, options) =>
+				frozen.streamSimple!(model, context, options)) as StreamSimple;
+		}
+
+		const models = collapsedModels();
+		if (models.length === 0) return;
+
+		pi.registerProvider("cursor-agent", {
+			baseUrl: provider.baseUrl ?? "https://api2.cursor.sh",
+			api: "cursor-agent",
+			models,
+			streamSimple: (
+				model: Parameters<StreamSimple>[0],
+				context: Parameters<StreamSimple>[1],
+				options: Parameters<StreamSimple>[2],
+			) => {
+				const resolvedId = resolveCursorModelId(
+					model.id,
+					options?.reasoning,
+					isFast(),
+					families,
+				);
+				return upstreamStream!({ ...model, id: resolvedId }, context, options);
+			},
+		});
+	}
+
 	openCursorExtension(pi);
 
 	pi.registerCommand("fast", {
@@ -123,7 +122,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	pi.on("session_start", async (_event: unknown, ctx: ExtensionContext) => {
-		applyProvider(pi, ctx);
+		applyProvider(ctx);
 		await migrateActiveModel(pi, ctx);
 	});
 
@@ -131,7 +130,7 @@ export default function (pi: ExtensionAPI) {
 		"model_select",
 		async (event: { model: { provider: string } }, ctx: ExtensionContext) => {
 			if (event.model.provider === "cursor-agent") {
-				applyProvider(pi, ctx);
+				applyProvider(ctx);
 			}
 		},
 	);

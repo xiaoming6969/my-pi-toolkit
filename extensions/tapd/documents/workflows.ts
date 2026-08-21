@@ -88,6 +88,7 @@ export async function locateTapdBug(
 		if (typeof detail.description === "string") {
 			normalizedDetail.description_text = htmlToText(detail.description);
 		}
+		// Use this command's factory pi, not a ctx captured across newSession/switchSession.
 		pi.sendMessage(
 			{
 				customType: "tapd-bug-locate",
