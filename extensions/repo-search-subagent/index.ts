@@ -37,7 +37,7 @@ export default function repoSearchSubagentExtension(pi: ExtensionAPI) {
 		name: "repo_search",
 		label: "Repo Search Subagent",
 		description:
-			"Explore files and code inside the current local repository only through an isolated read-only subagent. Use for broad multi-file architecture discovery, locating dispersed implementations, and tracing call relationships. This tool cannot access the internet or research external libraries and APIs. The child has only read, grep, find, and ls.",
+			"Explore files and code inside the current local repository only through an isolated read-only subagent. Use for broad multi-file architecture discovery, locating dispersed implementations, and tracing call relationships. This tool cannot access the internet or research external libraries and APIs. The child has read, grep, find, and ls, plus an exact read-only pi-lens allowlist when npm:pi-lens is enabled.",
 		promptSnippet:
 			"Explore files and code across the current local repository with a read-only subagent",
 		promptGuidelines: [

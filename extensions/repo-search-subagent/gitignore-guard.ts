@@ -6,9 +6,10 @@ import type {
 	ExtensionContext,
 	ToolCallEvent,
 } from "@earendil-works/pi-coding-agent";
+import { requestedPaths, REPO_SEARCH_TOOLS } from "./pi-lens.js";
 
 const execFileAsync = promisify(execFile);
-const PATH_TOOLS = new Set(["read", "grep", "find", "ls"]);
+const PATH_TOOLS = new Set(REPO_SEARCH_TOOLS);
 
 async function findGitRoot(cwd: string): Promise<string | undefined> {
 	try {
@@ -30,7 +31,11 @@ async function isIgnored(
 ): Promise<boolean> {
 	const absolutePath = path.resolve(gitRoot, targetPath);
 	const relativePath = path.relative(gitRoot, absolutePath);
-	if (relativePath.startsWith("..") || path.isAbsolute(relativePath))
+	if (
+		!relativePath ||
+		relativePath.startsWith("..") ||
+		path.isAbsolute(relativePath)
+	)
 		return false;
 
 	try {
@@ -64,14 +69,17 @@ export default function gitignoreGuard(pi: ExtensionAPI) {
 		}
 		if (!cachedGitRoot) return;
 
-		const input = event.input as { path?: unknown };
-		const requestedPath = typeof input.path === "string" ? input.path : ".";
-		const absolutePath = path.resolve(ctx.cwd, requestedPath.replace(/^@/, ""));
-		if (!(await isIgnored(cachedGitRoot, absolutePath))) return;
-
-		return {
-			block: true,
-			reason: `Repo Search 子 Agent 不允许访问被项目 .gitignore 排除的路径: ${requestedPath}`,
-		};
+		const input = event.input as { path?: unknown; paths?: unknown };
+		for (const requestedPath of requestedPaths(input)) {
+			const absolutePath = path.resolve(
+				ctx.cwd,
+				requestedPath.replace(/^@/, ""),
+			);
+			if (!(await isIgnored(cachedGitRoot, absolutePath))) continue;
+			return {
+				block: true,
+				reason: `Repo Search 子 Agent 不允许访问被项目 .gitignore 排除的路径: ${requestedPath}`,
+			};
+		}
 	});
 }

@@ -96,14 +96,14 @@ research/research 可以重叠，因为两者都是只读；research 的 `paths`
 
 ```text
 implementation: 主 Agent 当前启用的工具（repo_search 除外）
-research:       read, grep, find, ls
+research:       read, grep, find, ls（可选启用受限 pi-lens 只读工具）
 ```
 
 implementation worker 会继承主 Agent 启动时可发现的 extensions、skills、prompt templates，并使用创建 Batch 时的活跃工具快照；`repo_search` 始终从 allowlist 排除。它另外加载 `path-guard.ts`，在每次 `edit`、`write` 前规范化目标并阻止声明范围外的写入。正常资源加载可能包含 `ming-core`，这是为继承主 Agent 能力而对默认子 Agent 瘦加载规则作出的明确例外。
 
 `paths` 强制门禁只覆盖 `edit` 和 `write`。如果继承的工具包含 `bash` 或其他可产生文件副作用的扩展工具，这些副作用无法由当前路径守卫可靠识别；worker prompt 仍要求只修改声明路径，但这不是 OS 级沙箱。只应把 implementation 任务派给受信任模型，并避免在不信任项目中开放高风险工具。
 
-research worker 由 Batch manager 直接调用 Repo Search runner，与 implementation worker 平级；它只加载 Cursor provider 和 `.gitignore` guard，不能写文件、运行 shell 或调用另一个 `repo_search`。任务声明的 `paths` 会写入搜索请求作为范围，报告应包含文件、行号和调用关系证据。
+research worker 由 Batch manager 直接调用 Repo Search runner，与 implementation worker 平级；它保持 `--no-extensions` 隔离，只加载 Cursor provider、`.gitignore` guard，以及 Pi 设置中已启用且已安装的 `npm:pi-lens` extension path。pi-lens 仅开放 `lens_diagnostics`、`lsp_diagnostics`、`symbol_search`、`project_report`、`module_report`、`read_symbol`、`read_enclosing`、`ast_grep_search`、`ast_grep_outline`、`ast_grep_dump`；未安装时降级到 `read/grep/find/ls`。research 不能使用 shell、写工具、pi-lens 替换/导航/标记/激活工具，也不能调用另一个 `repo_search`。任务声明的 `paths` 会写入搜索请求作为范围，报告应包含文件、行号和调用关系证据。
 
 这是共享工作区模式，不是 Git worktree 隔离。路径锁可以避免已声明范围之间的竞争，但主 Agent 仍应只并行派发真正独立的任务，并在收集后检查整体 diff、运行诊断与测试。
 

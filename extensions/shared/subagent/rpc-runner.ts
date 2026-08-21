@@ -56,6 +56,7 @@ function buildArgs(options: TerminalSubagentOptions, runDir: string): string[] {
 	if (!options.loadDefaultResources)
 		args.push("--no-skills", "--no-prompt-templates");
 	if (options.disableContextFiles) args.push("--no-context-files");
+	args.push(...(options.extraCliArgs ?? []));
 	args.push(
 		"--tools",
 		options.tools,

@@ -11,6 +11,7 @@ export interface RepoSearchSubagentConfig {
 export interface ResolvedRepoSearchConfig {
 	model: string;
 	source: "project" | "user" | "current";
+	projectTrusted: boolean;
 	configPath?: string;
 	presentation?: SubagentPresentation;
 }
@@ -91,6 +92,7 @@ export function resolveRepoSearchConfig(
 		return {
 			model: projectConfig.model,
 			source: "project",
+			projectTrusted,
 			configPath: projectPath,
 			presentation,
 		};
@@ -98,6 +100,7 @@ export function resolveRepoSearchConfig(
 		return {
 			model: userConfig.model,
 			source: "user",
+			projectTrusted,
 			configPath: userPath,
 			presentation,
 		};
@@ -110,6 +113,7 @@ export function resolveRepoSearchConfig(
 	return {
 		model: `${currentModel.provider}/${currentModel.id}`,
 		source: "current",
+		projectTrusted,
 		presentation,
 	};
 }

@@ -15,6 +15,7 @@ export interface RepoSearchDetails {
 export interface RepoSearchRunConfig {
 	model: string;
 	source: "project" | "user" | "current";
+	projectTrusted?: boolean;
 	presentation?: SubagentPresentation;
 }
 

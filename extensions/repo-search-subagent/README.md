@@ -4,13 +4,15 @@
 
 ## 能力与安全边界
 
-子 Agent 在独立的 Pi 进程和上下文窗口中运行，并固定使用以下工具：
+子 Agent 在独立的 Pi 进程和上下文窗口中运行。基础工具固定为 `read, grep, find, ls`。如果用户或受信任项目已启用并安装 `npm:pi-lens`，还会只读增强为：
 
 ```text
-read, grep, find, ls
+lens_diagnostics, lsp_diagnostics, symbol_search, project_report,
+module_report, read_symbol, read_enclosing, ast_grep_search,
+ast_grep_outline, ast_grep_dump
 ```
 
-它不能使用 `bash`、`edit`、`write`，也不能由工具调用方临时扩大权限、切换目录或覆盖模型。子进程禁用普通扩展自动发现，只显式加载 toolkit 自带的 Cursor provider 和 `.gitignore` 访问守卫，并通过 `--tools read,grep,find,ls` 强制工具白名单；同时禁用 Skills、提示模板和上下文文件。
+它不能使用 `bash`、`edit`、`write`、`ast_grep_replace`、`lsp_navigation`、`lens_diagnostic_mark` 或 `pi_lens_activate_tools`，也不能由工具调用方临时扩大权限、切换目录或覆盖模型。子进程始终保留 `--no-extensions` 隔离，只显式加载 toolkit 自带的 Cursor provider、`.gitignore` 访问守卫和已启用的 pi-lens 路径；通过 `--tools` 强制精确白名单并传入 `--no-lazy-tools`，同时禁用 Skills、提示模板和上下文文件。pi-lens 未安装、未启用或解析失败时会静默降级到四个基础文件工具，不会自动安装或激活。
 
 适合：
 
@@ -62,7 +64,7 @@ read, grep, find, ls
 
 未受信任项目的项目配置不会被读取。配置文件不是合法 JSON、`model` 为空或 Pi 无法解析/使用指定模型时，工具会明确失败，不会静默换用其他模型。
 
-子进程禁用全部普通扩展，只显式加载本 toolkit 的 `extensions/cursor-models/index.ts` 和 `extensions/repo-search-subagent/gitignore-guard.ts`；前者注册 `cursor-agent` provider，后者在每次文件工具调用前使用 `git check-ignore --no-index` 执行项目 `.gitignore` 规则。最终可调用工具仍被 `--tools read,grep,find,ls` 限定。若指定模型依赖其他未加载的自定义 provider 或凭据，工具会返回模型启动错误。
+子进程禁用全部普通扩展，只显式加载本 toolkit 的 `extensions/cursor-models/index.ts`、`extensions/repo-search-subagent/gitignore-guard.ts`，以及通过 Pi 的 `SettingsManager` + `DefaultPackageManager` 解析出的已启用 `npm:pi-lens` extension path；不会加载其它 pi-lens 工具或普通扩展。前者注册 `cursor-agent` provider，守卫在每次文件工具调用前使用 `git check-ignore --no-index` 执行项目 `.gitignore` 规则，并同时检查工具参数中的 `path` 和 `paths[]`。最终可调用工具仍受上述精确白名单限定。若指定模型依赖其他未加载的自定义 provider 或凭据，工具会返回模型启动错误。
 
 ## 使用
 
@@ -84,7 +86,7 @@ read, grep, find, ls
 }
 ```
 
-运行期间，主对话等待工具完成，并在工具区域流式显示最近的 `read`、`grep`、`find`、`ls` 调用；按 `Ctrl+O` 可在运行期间查看全部已记录调用。所有路径是否允许访问由当前 Git 项目的 `.gitignore` 决定：被忽略的文件或目录会在工具执行前直接阻止；未被忽略的路径可以正常检索。非 Git 项目没有 `.gitignore` 守卫。按 Escape 会取消主任务并终止子进程。完成后，主 Agent只接收压缩后的检索报告；展开工具结果可以查看更完整的信息。
+运行期间，主对话等待工具完成，并在工具区域流式显示最近的只读工具调用；按 `Ctrl+O` 可在运行期间查看全部已记录调用。所有路径是否允许访问由当前 Git 项目的 `.gitignore` 决定：被忽略的文件或目录会在工具执行前直接阻止；未被忽略的路径可以正常检索。非 Git 项目没有 `.gitignore` 守卫。按 Escape 会取消主任务并终止子进程。完成后，主 Agent只接收压缩后的检索报告；展开工具结果可以查看更完整的信息。
 
 ## 后台子 Agent 与只读 Overlay
 

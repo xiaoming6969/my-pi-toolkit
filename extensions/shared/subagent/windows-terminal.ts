@@ -42,6 +42,7 @@ function buildPiArgs(
 		args.push("--extension", extension);
 	args.push("--no-skills", "--no-prompt-templates");
 	if (options.disableContextFiles) args.push("--no-context-files");
+	args.push(...(options.extraCliArgs ?? []));
 	args.push("--tools", options.tools, "--model", options.model, `@${taskPath}`);
 	return args;
 }

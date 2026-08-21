@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { truncateHead } from "@earendil-works/pi-coding-agent";
 import { runTerminalSubagent } from "../shared/subagent/terminal-runner.js";
+import { resolvePiLensExtensionPaths, REPO_SEARCH_TOOLS } from "./pi-lens.js";
 import { REPO_SEARCH_PROMPT } from "./prompt.js";
 import type {
 	RepoSearchDetails,
@@ -11,7 +12,8 @@ import type {
 	RepoSearchRunResult,
 } from "./types.js";
 
-const READ_ONLY_TOOLS = "read,grep,find,ls";
+const READ_ONLY_TOOLS = REPO_SEARCH_TOOLS.join(",");
+const EXTRA_CLI_ARGS = ["--no-lazy-tools"];
 const EXTENSION_DIR = path.dirname(fileURLToPath(import.meta.url));
 const CURSOR_PROVIDER_EXTENSION = path.resolve(
 	EXTENSION_DIR,
@@ -102,6 +104,15 @@ export async function runRepoSearchSubagent(options: {
 	signal?: AbortSignal;
 	onUpdate?: (details: RepoSearchDetails) => void;
 }): Promise<RepoSearchRunResult> {
+	const piLensExtensions = await resolvePiLensExtensionPaths(
+		options.cwd,
+		options.config.projectTrusted ?? false,
+	);
+	const extensionPaths = [
+		CURSOR_PROVIDER_EXTENSION,
+		GITIGNORE_GUARD_EXTENSION,
+		...piLensExtensions,
+	];
 	const terminal = await runTerminalSubagent({
 		cwd: options.cwd,
 		title: "Repo Search Subagent",
@@ -109,7 +120,8 @@ export async function runRepoSearchSubagent(options: {
 		task: `Repository search task: ${options.task}`,
 		systemPrompt: REPO_SEARCH_PROMPT,
 		tools: READ_ONLY_TOOLS,
-		extensionPaths: [CURSOR_PROVIDER_EXTENSION, GITIGNORE_GUARD_EXTENSION],
+		extensionPaths,
+		extraCliArgs: EXTRA_CLI_ARGS,
 		disableContextFiles: true,
 		presentation: options.config.presentation,
 		keepOpen: options.keepOpen,
@@ -154,9 +166,11 @@ export async function runRepoSearchSubagent(options: {
 		CURSOR_PROVIDER_EXTENSION,
 		"--extension",
 		GITIGNORE_GUARD_EXTENSION,
+		...piLensExtensions.flatMap((extension) => ["--extension", extension]),
 		"--no-skills",
 		"--no-prompt-templates",
 		"--no-context-files",
+		...EXTRA_CLI_ARGS,
 		"--tools",
 		READ_ONLY_TOOLS,
 		"--model",
