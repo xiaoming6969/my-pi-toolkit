@@ -11,7 +11,6 @@ import { refreshChatModeEditor } from "./editor.js";
 import { restrictedModeToolNames } from "./policy.js";
 import {
 	getChatMode,
-	isRestrictedMode,
 	nextChatMode,
 	setChatMode,
 	type ChatMode,
@@ -66,19 +65,21 @@ export function createModeController(
 	}
 
 	function applyModeTools(mode: ChatMode): void {
-		if (!isRestrictedMode(mode)) {
+		if (mode === "build" || mode === "debug") {
 			restoreBuildTools();
 			toolsBeforeRestricted = undefined;
 			return;
 		}
 		const baseTools = toolsBeforeRestricted ?? pi.getActiveTools();
 		toolsBeforeRestricted = baseTools;
-		pi.setActiveTools(restrictedModeToolNames(baseTools));
+		pi.setActiveTools(restrictedModeToolNames(baseTools, mode));
 	}
 
 	function notifyMode(mode: ChatMode, ctx: ExtensionContext): void {
 		let message = "Mode: BUILD — 已恢复完整工具权限。";
-		if (mode === "ask") message = "Mode: ASK — 项目写入仅限 .pi/。";
+		if (mode === "ask") {
+			message = "Mode: ASK — Bash 仅限白名单查询，项目写入仅限 .pi/。";
+		}
 		if (mode === "debug") {
 			message = "Mode: DEBUG — 完整工具已启用，正在准备运行时日志面板。";
 		}
@@ -98,7 +99,8 @@ export function createModeController(
 		restoreRestricted(mode, savedTools) {
 			toolsBeforeRestricted = savedTools;
 			setChatMode(mode);
-			pi.setActiveTools(restrictedModeToolNames(savedTools));
+			if (mode !== "ask" && mode !== "plan") return;
+			pi.setActiveTools(restrictedModeToolNames(savedTools, mode));
 		},
 		restoreFull(mode, savedTools) {
 			toolsBeforeRestricted = undefined;

@@ -127,12 +127,13 @@ TAPD 的 `/tapd analyze`、`/tapd design`、`/tapd collaboration` 会写入 `cha
 
 Ask 用于问答、解释、诊断和只读调研：
 
-- 只启用登记的只读工具及受路径保护的 `write` / `edit`。
-- `write` / `edit` 只能修改当前项目 `.pi/**`。
-- 禁止 bash、AST 替换及未登记工具。
+- 启用登记的只读工具、受路径保护的 `write` / `edit`，以及严格白名单约束的 Bash 查询。
+- Bash 仅允许单条、无 shell 组合语法的查询命令：HTTP(S) GET/HEAD `curl`、stdout `defuddle parse`、只读 Git、GitHub `view`/`list`、npm/pnpm 包元数据查询。
+- 禁止管道、重定向、命令串联、命令替换、变量展开、通配符、上传/请求写操作、输出文件、Git external diff/textconv、AST 替换及未登记命令；不在白名单中的 Bash 默认拒绝。
+- `write` / `edit` 仍只能修改当前项目 `.pi/**`。
 - 可调用 `enter_plan_mode` 升级到规划阶段（TAPD 文档工作流的 prompt 会明确禁止该调用）。
 - 输入框顶边线显示主题 success 色的 `─ ASK ─`。
 
 ## 安全边界
 
-Ask / Plan 限制的是模型通过 Pi 工具进行的文件修改，不是操作系统沙箱。它不会阻止用户在其他终端修改文件，也无法限制恶意扩展直接调用 Node.js 文件 API。
+Ask / Plan 限制的是模型通过 Pi 工具进行的文件修改，不是操作系统沙箱。Ask 的 Bash 白名单假设系统 `PATH` 中对应的 `curl`、`git` 等 CLI 本身可信；它不会阻止用户在其他终端修改文件，也无法限制恶意扩展或被替换的 CLI 直接调用系统 API。

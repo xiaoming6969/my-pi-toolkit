@@ -1,4 +1,5 @@
 import type { ToolCallEvent } from "@earendil-works/pi-coding-agent";
+import { checkAskBashCommand, isAskBashTool } from "./ask-bash-policy.js";
 import { isPlanFilePath, isProjectPiPath } from "./paths.js";
 import { ENTER_PLAN_TOOL, EXIT_PLAN_TOOL } from "./plan-file.js";
 
@@ -18,9 +19,15 @@ const SAFE_TOOLS = new Set([
 	EXIT_PLAN_TOOL,
 ]);
 
-export function restrictedModeToolNames(activeTools: string[]): string[] {
+export function restrictedModeToolNames(
+	activeTools: string[],
+	mode: "ask" | "plan",
+): string[] {
 	const names = activeTools.filter(
-		(name) => SAFE_TOOLS.has(name) || PATH_GATED_TOOLS.has(name),
+		(name) =>
+			SAFE_TOOLS.has(name) ||
+			PATH_GATED_TOOLS.has(name) ||
+			isAskBashTool(name, mode),
 	);
 	for (const name of [ENTER_PLAN_TOOL, EXIT_PLAN_TOOL]) {
 		if (!names.includes(name)) names.push(name);
@@ -33,6 +40,9 @@ export async function checkAskToolCall(
 	cwd: string,
 ): Promise<string | undefined> {
 	if (SAFE_TOOLS.has(event.toolName)) return undefined;
+	if (event.toolName === "bash") {
+		return checkAskBashCommand((event.input as { command?: unknown }).command);
+	}
 	if (!PATH_GATED_TOOLS.has(event.toolName)) {
 		return `Ask mode blocked "${event.toolName}" because it is not an approved read-only tool. Press Shift+Tab to switch mode.`;
 	}
