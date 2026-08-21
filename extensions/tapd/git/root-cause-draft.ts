@@ -11,6 +11,7 @@ export interface BugRootCauseDraft {
 	introducedCommit: string;
 	commitInfo: string;
 	fix: string;
+	category?: string;
 }
 
 async function draftPath(cwd: string, bugId: string): Promise<string> {
@@ -44,7 +45,11 @@ export async function loadBugRootCauseDraft(
 			typeof draft.fix !== "string"
 		)
 			return null;
-		return draft as BugRootCauseDraft;
+		return {
+			...(draft as BugRootCauseDraft),
+			category:
+				typeof draft.category === "string" ? draft.category : undefined,
+		};
 	} catch {
 		return null;
 	}
@@ -56,6 +61,21 @@ function sectionValue(text: string, label: string, nextLabel?: string): string {
 		new RegExp(`【${label}】\\s*([\\s\\S]*?)${next}`, "i"),
 	);
 	return match?.[1]?.trim() ?? "";
+}
+
+export function parseGeneratedCauseAndFix(
+	text: string,
+): { cause: string; fix: string; category?: string } | null {
+	const body = text.replace(/```[\w]*\n?([\s\S]*?)```/g, "$1").trim();
+	const cause =
+		sectionValue(body, "产生原因", "修复") ||
+		sectionValue(body, "产生原因", "引入commit") ||
+		sectionValue(body, "产生原因", "根因大类");
+	const fix =
+		sectionValue(body, "修复", "根因大类") || sectionValue(body, "修复");
+	const category = sectionValue(body, "根因大类");
+	if (!cause && !fix) return null;
+	return { cause, fix, category: category || undefined };
 }
 
 export function parseBugRootCauseEditor(
@@ -97,6 +117,7 @@ export async function collectManualBugRootCauseDraft(
 	bugId: string,
 	head: string,
 	candidate: IntroducedCommitCandidate | undefined,
+	prefill?: { cause?: string; fix?: string },
 ): Promise<BugRootCauseDraft | null> {
 	const introduced = candidate?.hash ?? "未能定位";
 	const commitInfo = candidate
@@ -105,13 +126,13 @@ export async function collectManualBugRootCauseDraft(
 	const template = renderBugRootCauseDraft({
 		head,
 		bugId,
-		cause: "",
+		cause: prefill?.cause ?? "",
 		introducedCommit: introduced,
 		commitInfo,
-		fix: "",
+		fix: prefill?.fix ?? "",
 	});
 	const edited = await ctx.ui.editor(
-		`Bug ${bugId}: 请手动填写产生原因和修复方式`,
+		`Bug ${bugId}: 请确认或修改产生原因和修复方式`,
 		`${template}\n`,
 	);
 	if (!edited) return null;

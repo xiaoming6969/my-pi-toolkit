@@ -25,6 +25,6 @@ Overlay 使用主题语义色和共享 `fitLine()`，宽度由终端响应式计
 
 Capturing Overlay 可见期间始终拥有键盘优先级：若主对话同时弹出 `ask_user_choice` 等阻塞 UI，滚动、切换和快捷键仍由详情 Overlay 响应，按键不会提交或取消下方选项。第一次 `Esc` 只关闭详情并把焦点交回提问；之后的输入才会作用于提问。从 `/subagents` 进入详情时，此路径不会重新打开任务列表覆盖等待中的提问。
 
-实时详情打开时订阅 run 更新并获取共享 mouse tracking；regular 模式由扩展按引用计数启停 SGR tracking，Pi 0.84 fullscreen 模式则复用宿主管理的 mouse mode。左右切换时会取消旧 run 订阅、按需加载新详情并订阅新的 live run，同时重置滚动和 auto-follow。组件关闭、异常销毁或 reload 时会幂等取消当前订阅并释放扩展持有的 tracking，且不会禁用 fullscreen 宿主的滚轮/选择。关闭 Overlay 不会终止子 Agent。
+实时详情打开时订阅 run 更新并获取共享 mouse tracking；regular 模式由扩展按引用计数启停 SGR tracking，Pi 0.84 fullscreen 模式则复用宿主管理的 mouse mode。左右切换时会取消旧 run 订阅、按需加载新详情并订阅新的 live run，同时重置滚动和 auto-follow。组件关闭、异常销毁或 reload 时会幂等取消当前订阅并释放扩展持有的 tracking，且不会禁用 fullscreen 宿主的滚轮/选择。关闭 Overlay 不会终止子 Agent。根因总结等主动弹出的过程 Overlay 在任务完成或失败时自动关闭；`Esc` 会取消该次总结。
 
 运行记录默认位于系统临时目录的 `my-pi-toolkit-subagents/`，保留时间由 `~/.pi/agent/subagents.json` 的 `retainCompletedMinutes` 控制。

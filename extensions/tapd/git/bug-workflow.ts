@@ -1,10 +1,17 @@
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
+import { fetchUserInfo } from "../core/api.js";
 import type { TapdConfig } from "../types.js";
 import {
 	fetchRemoteTags,
 	linkedObjectsForCommit,
 	resolveCommitTag,
 } from "./analysis.js";
+import {
+	fetchBugMrFields,
+	matchCategoryOption,
+	selectCategoryOption,
+	tapdUserChooser,
+} from "./bug-fields.js";
 import {
 	renderBugRootCauseDraft,
 	type BugRootCauseDraft,
@@ -99,7 +106,55 @@ export async function updateBugFromDraft(
 				`bug/${item.shortId}: 合入版本未修改 - ${historical.reason}`,
 			);
 	}
-	progress(`正在同步状态 ${status}、负责人和合入版本...`);
+	progress("正在匹配根因大类，并写入当前用户为开发人员...");
+	const fields = await fetchBugMrFields(config, item.workspaceId);
+	if (fields.category) {
+		let category = matchCategoryOption(
+			draftData.category,
+			fields.category.leaves,
+		);
+		let skipReason: string | undefined;
+		if (!category) {
+			try {
+				category = await selectCategoryOption(
+					fields.category.leaves,
+					(title, options) => ctx.ui.select(title, options),
+					{
+						parent: `Bug ${item.shortId}: 请选择根因大类`,
+						child: `Bug ${item.shortId}: 请选择根因子类`,
+					},
+				);
+				if (!category) skipReason = "根因大类未修改";
+			} catch (error) {
+				skipReason = `根因大类未修改 - ${error instanceof Error ? error.message : String(error)}`;
+			}
+		}
+		if (category) {
+			extraFields[fields.category.fieldName] = category;
+			updates.push(`bug/${item.shortId}: 根因大类 ${category}`);
+		} else {
+			updates.push(
+				`bug/${item.shortId}: ${skipReason ?? "根因大类未修改"}`,
+			);
+		}
+	} else {
+		updates.push(
+			`bug/${item.shortId}: 根因大类未修改 - 未找到字段或没有候选值`,
+		);
+	}
+	if (fields.developerFieldName) {
+		const user = await fetchUserInfo(config);
+		const developer = user?.nick ? tapdUserChooser(user.nick) : "";
+		if (developer) {
+			extraFields[fields.developerFieldName] = developer;
+			updates.push(`bug/${item.shortId}: 开发人员 ${user?.nick}`);
+		} else {
+			updates.push(`bug/${item.shortId}: 开发人员未修改 - 无法获取当前用户`);
+		}
+	} else {
+		updates.push(`bug/${item.shortId}: 开发人员未修改 - 未找到字段`);
+	}
+	progress(`正在同步状态 ${status}、负责人、合入版本、根因大类和开发人员...`);
 	await updateTapdStatus(config, item, status, currentOwner, extraFields);
 	updates.push(`bug/${item.shortId} → ${status}`);
 	if (!item.author) {

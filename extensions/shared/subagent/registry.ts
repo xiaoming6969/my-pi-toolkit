@@ -74,3 +74,30 @@ export function abortAllLiveSubagents(): void {
 	runs.clear();
 	notifySubagentRegistryChanged();
 }
+
+export function waitForLiveSubagent(
+	match: (run: LiveSubagentRun) => boolean,
+	signal?: AbortSignal,
+): Promise<LiveSubagentRun> {
+	const existing = listLiveSubagents().find(match);
+	if (existing) return Promise.resolve(existing);
+	return new Promise((resolve, reject) => {
+		let unsubscribe = () => {};
+		const finish = (error?: Error, run?: LiveSubagentRun) => {
+			signal?.removeEventListener("abort", onAbort);
+			unsubscribe();
+			if (error) reject(error);
+			else if (run) resolve(run);
+		};
+		const onAbort = () => finish(new Error("子 Agent 已取消"));
+		if (signal?.aborted) {
+			onAbort();
+			return;
+		}
+		signal?.addEventListener("abort", onAbort, { once: true });
+		unsubscribe = subscribeSubagentRegistry(() => {
+			const found = listLiveSubagents().find(match);
+			if (found) finish(undefined, found);
+		});
+	});
+}

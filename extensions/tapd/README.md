@@ -126,7 +126,7 @@ TAPD Open API 索引见 [`../../docs/tapd-api.md`](../../docs/tapd-api.md)。
 - Bug 默认标签为 `二组`、`迭代bug(每日发布)`，状态更新为 `已解决`，负责人为 `沈瑞昀`。
 - 需求/任务默认标签为 `二组`、`迭代任务(随迭代发布)`。Ready MR 中，关联项是开发子需求或 TAPD 任务时更新为 `开发完成`；关联项是测试需求时，仅在处理人为当前 Token 用户时更新为 `已通过`；关联项是顶层功能需求时，仅更新当前用户负责的功能需求本身及其直属开发、测试需求，其中功能需求和开发子需求更新为 `开发完成`，测试需求更新为 `已通过`。每个实际流转的 TAPD 任务、功能需求、开发子需求和测试需求都会将完成工时同步为自身的有效预估工时；首次批量更新后会回读完成工时，仅在 TAPD 状态流转覆盖工时值时单独补写并再次校验。预估工时缺失、为零或无效时只更新状态，不写完成工时，也不阻断 MR。其他处理人的需求不会被修改，所有更新均不修改负责人。
 - 纯需求/任务的 `/tapd mr` 保持一次执行完成，不触发根因填写。
-- 含 Bug 的 Ready `/tapd mr` 在同一次执行中完成：先分析修复 diff 和 `git blame` 候选并选择/手动输入引入 commit，再打开编辑器由用户填写【产生原因】与【修复】（可留空），确认后直接创建或更新 MR 并回写 TAPD。不再交给 Agent 分析，也不再要求二次执行 `/tapd mr`。
+- 含 Bug 的 Ready `/tapd mr` 在同一次执行中完成：先分析修复 diff 和 `git blame` 候选并选择/手动输入引入 commit，再用只读子 Agent **只根据已收集证据**预填【产生原因】与【修复】（不重复搜仓库，无超时）。总结开始后自动打开与 `/subagents` 相同的只读过程 Overlay；完成后 Overlay 自动关闭。按 `Esc` 取消本次总结并回退为空模板，不取消整次 MR。此期间 slash 命令不可用，进度看 Overlay。子 Agent 会从 TAPD「根因大类」级联候选中选一行「大类 / 子项」；选不出或对不上候选时，再弹出大类、子类选择器。打开编辑器确认或修改（可留空）后直接创建或更新 MR 并回写 TAPD。流转时写入根因大类（`大类/子项`），以及当前 Token 用户为「开发人员」。子 Agent 失败、被取消或当前会话没有模型时回退为空模板，不阻断 MR，也不要求二次执行 `/tapd mr`。再次执行 Ready `/tapd mr` 会再次 POST 更新这两项。
 - 若仓库 `.pi/tapd-root-cause/{bugId}.json` 已有与当前 `HEAD` 匹配的草稿，会直接复用并跳过填写；TAPD 流转成功后自动删除该草稿。选择“未能定位”时使用 TAPD 真实候选值 `其他(历史缺陷)`。
 - 引入 commit 经验证后，会拉取远端 tags，优先取直接指向 commit 的第一个 tag，否则取第一个包含该 commit 的 tag。
 - 合入版本从 TAPD `/bugs/get_fields_info` 的“合入版本”候选值中选择。普通版本精确匹配；`.0` 等存在多个迭代候选时，根据引入 commit 中 TAPD keyword 关联事项的迭代唯一匹配；关联事项没有迭代时会列出候选值让用户手动选择。
@@ -145,4 +145,4 @@ TAPD Open API 索引见 [`../../docs/tapd-api.md`](../../docs/tapd-api.md)。
 | `todo/` | 待办编排与 Overlay；`tree-list.ts`、`table-view.ts`、`session-picker*.ts` 分别负责树表、响应式主表和会话/路径 viewport |
 | `review/` | 需求实现审核上下文、只读子代理、进度和报告渲染 |
 | `working.ts` | TAPD 侧 `withTapdWorking`；底层实现见 `extensions/shared/tui/working-cancel.ts` |
-| `git/` | Git 仓库、TAPD keyword、GitLab MR、状态回写和根因备注；`commands.ts` 单卡、`commit-workflow.ts` 提交推送 |
+| `git/` | Git 仓库、TAPD keyword、GitLab MR、状态回写和根因备注；`commands.ts` 单卡、`commit-workflow.ts` 提交推送、`root-cause-*.ts` 根因证据与总结子 Agent、`bug-fields.ts` 缺陷字段信息 |

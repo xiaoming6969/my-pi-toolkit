@@ -22,6 +22,7 @@ import {
 	loadBugRootCauseDraft,
 	type BugRootCauseDraft,
 } from "./root-cause-draft.js";
+import { generateBugRootCauseSummary } from "./root-cause-subagent.js";
 import {
 	updateStoryForDraftMergeRequest,
 	updateStoryForMergeRequest,
@@ -99,21 +100,59 @@ export async function runMergeRequest(
 			reportProgress?.({
 				step: 2,
 				total: 5,
-				message: `Bug ${bug.shortId}: 正在选择引入 commit，随后请手动填写根因...`,
+				message: `Bug ${bug.shortId}: 正在选择引入 commit，随后将总结根因...`,
 			});
-			const candidate = await selectIntroducedCommitCandidate(
-				ctx,
-				repository.root,
-				targetBranch,
-				bug.shortId,
-			);
-			const manualDraft = await collectManualBugRootCauseDraft(
-				ctx,
-				bug.shortId,
-				head,
-				candidate,
-			);
+			cancel?.suspend();
+			let candidate: Awaited<
+				ReturnType<typeof selectIntroducedCommitCandidate>
+			>;
+			try {
+				candidate = await selectIntroducedCommitCandidate(
+					ctx,
+					repository.root,
+					targetBranch,
+					bug.shortId,
+				);
+			} finally {
+				cancel?.resume("Working...");
+			}
+			cancel?.throwIfAborted();
+			reportProgress?.({
+				step: 2,
+				total: 5,
+				message: `Bug ${bug.shortId}: 正在总结产生原因和修复方式...`,
+			});
+			cancel?.suspend();
+			let generated: Awaited<ReturnType<typeof generateBugRootCauseSummary>>;
+			try {
+				generated = await generateBugRootCauseSummary({
+					ctx,
+					config,
+					bug,
+					cwd: repository.root,
+					targetBranch,
+					candidate,
+					signal: cancel?.signal,
+				});
+			} finally {
+				cancel?.resume("Working...");
+			}
+			cancel?.throwIfAborted();
+			cancel?.suspend();
+			let manualDraft: BugRootCauseDraft | null;
+			try {
+				manualDraft = await collectManualBugRootCauseDraft(
+					ctx,
+					bug.shortId,
+					head,
+					candidate,
+					generated ?? undefined,
+				);
+			} finally {
+				cancel?.resume("Working...");
+			}
 			if (!manualDraft) throw new Error(`Bug ${bug.shortId}: 用户取消根因填写`);
+			if (generated?.category) manualDraft.category = generated.category;
 			bugDrafts.set(bug.shortId, manualDraft);
 		}
 	}
