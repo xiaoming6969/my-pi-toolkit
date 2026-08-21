@@ -82,7 +82,7 @@ export default function agentTodosExtension(pi: ExtensionAPI) {
 		updateUI(ctx);
 	};
 
-	registerAboveEditorRestack((ctx) => {
+	const unregisterRestack = registerAboveEditorRestack((ctx) => {
 		if (panelVisible) restackTodoUI(ctx as ExtensionContext, store);
 	});
 
@@ -92,20 +92,22 @@ export default function agentTodosExtension(pi: ExtensionAPI) {
 	pi.on("session_tree", async (_event: unknown, ctx: ExtensionContext) =>
 		reconstruct(ctx),
 	);
-	pi.on("session_shutdown", async (_event: unknown, ctx: ExtensionContext) =>
-		clearTodoUI(ctx),
-	);
+	pi.on("session_shutdown", (_event: unknown, ctx: ExtensionContext) => {
+		unregisterRestack();
+		clearTodoUI(ctx);
+	});
 
 	pi.registerCommand("todos", {
 		description: "Show or hide the todo panel above the editor",
-		handler: (_args: string, ctx: ExtensionCommandContext) => {
+		handler: (_args: string, ctx: ExtensionCommandContext): Promise<void> => {
 			if (store.getTodos().length === 0) {
 				ctx.ui.notify("No todos to show.", "info");
-				return;
+				return Promise.resolve();
 			}
 			panelVisible = !panelVisible;
 			updateUI(ctx);
 			ctx.ui.notify(`Todo panel ${panelVisible ? "shown" : "hidden"}.`, "info");
+			return Promise.resolve();
 		},
 	});
 
