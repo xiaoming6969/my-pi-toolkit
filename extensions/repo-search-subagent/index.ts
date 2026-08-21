@@ -5,8 +5,8 @@ import type {
 	Theme,
 	ToolRenderResultOptions,
 } from "@earendil-works/pi-coding-agent";
-// @ts-expect-error -- TypeBox's .d.mts exports require a newer resolver than the workspace LSP.
 import { Type } from "typebox";
+import { thinkingLevelForModel } from "../shared/subagent/thinking-level.js";
 import { previewLines, resultText, formatModelWithThinking } from "../shared/tui/tool-format.js";
 import { toolCall, toolResult } from "../shared/tui/tool-render.js";
 import { registerRepoSearchCommand } from "./command.js";
@@ -74,7 +74,14 @@ export default function repoSearchSubagentExtension(pi: ExtensionAPI) {
 			const result = await runRepoSearchSubagent({
 				cwd: ctx.cwd,
 				task: params.task,
-				config: { ...config, thinkingLevel: ctx.thinkingLevel },
+				config: {
+					...config,
+					thinkingLevel: thinkingLevelForModel(
+						config.model,
+						ctx.thinkingLevel,
+						ctx.modelRegistry,
+					),
+				},
 				parentSessionId: ctx.sessionManager.getSessionId(),
 				signal,
 				onUpdate: (details) =>

@@ -62,7 +62,7 @@
 { "action": "cancel", "batchId": "..." }
 ```
 
-`status` 适合用户明确要求查看或排错，不是后台进度通知机制。`model` 可选，控制 implementation worker，默认继承主 Agent 当前模型。思考等级同样继承主会话，并显示在聚合卡片与 Subagent Overlay Header 中。research worker 沿用 Repo Search 的模型优先级：受信任项目配置、用户配置、当前主 Agent 模型。Batch 内 research 强制使用内联 RPC/manual 执行并在聚合卡片中更新，不采用 Repo Search 的 split/tab 展示配置。单批最多 8 个任务，并发数范围为 1–6，默认 3；两类 worker 共用同一个并发上限。
+`status` 适合用户明确要求查看或排错，不是后台进度通知机制。`model` 可选，控制 implementation worker，默认继承主 Agent 当前模型。目标 worker 模型支持 reasoning 时，思考等级继承主会话并显示在聚合卡片与 Subagent Overlay Header 中；不支持 reasoning 时不会显示或传递思考等级。research worker 沿用 Repo Search 的模型优先级：受信任项目配置、用户配置、当前主 Agent 模型。Batch 内 research 强制使用内联 RPC/manual 执行并在聚合卡片中更新，不采用 Repo Search 的 split/tab 展示配置。单批最多 8 个任务，并发数范围为 1–6，默认 3；两类 worker 共用同一个并发上限。
 
 ## 调度边界
 

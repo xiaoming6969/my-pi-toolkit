@@ -6,9 +6,6 @@ import type {
 	ToolRenderResultOptions,
 } from "@earendil-works/pi-coding-agent";
 import { toolCall, toolResult } from "../shared/tui/tool-render.js";
-import { resolveRepoSearchConfig } from "../repo-search-subagent/config.js";
-import type { RepoSearchRunConfig } from "../repo-search-subagent/types.js";
-// @ts-expect-error -- TypeBox's .d.mts exports require a newer resolver than the workspace LSP.
 import { Type } from "typebox";
 import {
 	cancelBatch,
@@ -17,6 +14,7 @@ import {
 	getBatch,
 	startBatch,
 } from "./manager.js";
+import { currentThinkingLevel, researchConfig } from "./model-config.js";
 import type {
 	MultiTaskBatch,
 	MultiTaskBatchView,
@@ -55,17 +53,6 @@ function implementationTools(pi: ExtensionAPI): string[] {
 	return pi.getActiveTools().filter((name: string) => name !== "repo_search");
 }
 
-function researchConfig(
-	params: MultiTaskInput,
-	ctx: ExtensionContext,
-): RepoSearchRunConfig | undefined {
-	if (!params.tasks?.some((task) => task.kind === "research")) return undefined;
-	return {
-		...resolveRepoSearchConfig(ctx.cwd, ctx.isProjectTrusted(), ctx.model),
-		thinkingLevel: ctx.thinkingLevel,
-	};
-}
-
 interface MultiTaskExecutionOptions {
 	params: MultiTaskInput;
 	signal: AbortSignal | undefined;
@@ -87,10 +74,11 @@ async function runBatch(
 ): Promise<MultiTaskBatch> {
 	const { params, ctx, signal, onUpdate } = options;
 	if (!params.tasks) throw new Error("multi_task run 需要 tasks");
+	const model = currentModel(params, ctx);
 	const handle = startBatch({
 		cwd: ctx.cwd,
-		model: currentModel(params, ctx),
-		thinkingLevel: ctx.thinkingLevel,
+		model,
+		thinkingLevel: currentThinkingLevel(model, ctx),
 		parentSessionId: ctx.sessionManager.getSessionId(),
 		tasks: params.tasks,
 		maxConcurrency: params.maxConcurrency ?? 3,
@@ -116,10 +104,11 @@ function startBackgroundBatch(
 ): MultiTaskBatch {
 	const { params, ctx, pi } = options;
 	if (!params.tasks) throw new Error("multi_task start 需要 tasks");
+	const model = currentModel(params, ctx);
 	const handle = startBatch({
 		cwd: ctx.cwd,
-		model: currentModel(params, ctx),
-		thinkingLevel: ctx.thinkingLevel,
+		model,
+		thinkingLevel: currentThinkingLevel(model, ctx),
 		parentSessionId: ctx.sessionManager.getSessionId(),
 		tasks: params.tasks,
 		maxConcurrency: params.maxConcurrency ?? 3,

@@ -26,7 +26,7 @@ async function runImplementation(
 		cwd: batch.cwd,
 		title: `Multi Task · ${worker.id}`,
 		model: worker.model,
-		thinkingLevel: worker.thinkingLevel ?? batch.thinkingLevel,
+		thinkingLevel: worker.thinkingLevel,
 		task: buildWorkerTask(worker.task, worker.paths),
 		systemPrompt: MULTI_TASK_WORKER_PROMPT,
 		tools: batch.implementationTools.join(","),

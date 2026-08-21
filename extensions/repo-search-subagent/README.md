@@ -62,7 +62,7 @@ ast_grep_outline, ast_grep_dump
 2. 用户级 `~/.pi/agent/repo-search-subagent.json`
 3. 当前主 Agent 模型
 
-思考等级始终继承主会话当前的 `thinkingLevel`，并显示在工具卡 summary 与 Subagent Overlay Header 中。
+目标模型支持 reasoning 时，思考等级继承主会话当前的 `thinkingLevel`，并显示在工具卡 summary 与 Subagent Overlay Header 中；不支持 reasoning 的模型不会显示或传递思考等级。
 
 未受信任项目的项目配置不会被读取。配置文件不是合法 JSON、`model` 为空或 Pi 无法解析/使用指定模型时，工具会明确失败，不会静默换用其他模型。
 

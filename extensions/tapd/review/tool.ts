@@ -7,8 +7,8 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import { getMarkdownTheme } from "@earendil-works/pi-coding-agent";
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
-// @ts-expect-error -- TypeBox's .d.mts exports require a newer resolver than the workspace LSP.
 import { Type } from "typebox";
+import { thinkingLevelForModel } from "../../shared/subagent/thinking-level.js";
 import {
 	compactText,
 	formatModelWithThinking,
@@ -114,7 +114,11 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 			const config = loadConfig();
 			if (!config) throw new Error("请先配置 ~/.pi/agent/tapd.json");
 			const model = resolveReviewModel(config, ctx.model);
-			const thinkingLevel = ctx.thinkingLevel;
+			const thinkingLevel = thinkingLevelForModel(
+				model,
+				ctx.thinkingLevel,
+				ctx.modelRegistry,
+			);
 			const scope = params.scope ?? "branch";
 			const baseRef =
 				params.baseRef?.trim() || DEFAULT_GIT_WORKFLOW_POLICY.baseRef;

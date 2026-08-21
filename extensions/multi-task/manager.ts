@@ -52,9 +52,7 @@ function workerFrom(
 				? (researchConfig?.model ?? implementationModel)
 				: implementationModel,
 		thinkingLevel:
-			task.kind === "research"
-				? (researchConfig?.thinkingLevel ?? thinkingLevel)
-				: thinkingLevel,
+			task.kind === "research" ? researchConfig?.thinkingLevel : thinkingLevel,
 		status: "queued",
 		toolCalls: [],
 		controller: new AbortController(),

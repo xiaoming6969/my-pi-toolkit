@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { waitForLiveSubagent } from "../../shared/subagent/registry.js";
+import { thinkingLevelForModel } from "../../shared/subagent/thinking-level.js";
 import { runTerminalSubagent } from "../../shared/subagent/terminal-runner.js";
 import { watchLiveSubagentOverlay } from "../../subagent-console/overlay.js";
 import type { TapdConfig } from "../types.js";
@@ -58,7 +59,11 @@ export async function generateBugRootCauseSummary(options: {
 			cwd,
 			title,
 			model,
-			thinkingLevel: ctx.thinkingLevel,
+			thinkingLevel: thinkingLevelForModel(
+				model,
+				ctx.thinkingLevel,
+				ctx.modelRegistry,
+			),
 			task: buildRootCauseTask({
 				bugId: bug.shortId,
 				workspaceId: bug.workspaceId,
