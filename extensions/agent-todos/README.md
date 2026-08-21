@@ -18,7 +18,7 @@
 
 ### `agent_todo_write`
 
-工具名刻意避开 Cursor 原生 `todo_write`，避免在 Open Cursor 桥接里被当成原生工具过滤掉。
+工具名使用 `agent_todo_write`，与其它扩展常见的 `todo_write` 区分。
 
 ```ts
 agent_todo_write({
@@ -55,18 +55,11 @@ agent_todo_write({
 
 日常查看不依赖命令；仅在需要手动隐藏或恢复面板时使用 `/todos`。
 
-## Cursor provider
-
-- Cursor 原生工具名 `todo_write` 仍保留在 `CURSOR_NATIVE_TOOL_NAMES`（服务端原生 todo）。
-- 本扩展使用 `agent_todo_write`，经 MCP 暴露，本地面板才会更新。
-- Prompt 会要求模型优先用 `agent_todo_write`，不要用原生 `todo_write` 维护这份清单。
-
 ## 与其它扩展
 
 | 扩展 | 关系 |
 | --- | --- |
 | 官方示例 `todo` | 工具名不同，可并存；优先用本扩展 |
-| Cursor 原生 `todo_write` | 名称不同；面板只跟随 `agent_todo_write` |
 | plan-mode / pi-codex-goal / TAPD | 正交，可同时安装 |
 
 ## Modules

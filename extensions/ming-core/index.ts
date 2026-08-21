@@ -1,15 +1,13 @@
 /**
  * ming-core — 编排本 toolkit 的通用能力扩展。
  *
- * tapd / context7 仍为独立入口。子 Agent 使用瘦加载路径：
- * Multi Task 只显式加载 cursor-models 和 path-guard，勿改为指向本入口。
+ * tapd / context7 仍为独立入口。子 Agent 使用瘦加载路径，勿改为指向本入口。
  */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import agentTodos from "../agent-todos/index.js";
 import autoFormat from "../auto-format/index.js";
 import builtInToolStyle from "../built-in-tool-style/index.js";
 import chatMode from "../chat-mode/index.js";
-import cursorModels from "../cursor-models/index.js";
 import helps from "../helps/index.js";
 import modelManager from "../model-manager/index.js";
 import multiTask from "../multi-task/index.js";
@@ -22,7 +20,6 @@ import taskDuration from "../task-duration/index.js";
 
 export default function mingCore(pi: ExtensionAPI): void {
 	openaiCompatModels(pi);
-	cursorModels(pi);
 	modelManager(pi);
 	chatMode(pi);
 	builtInToolStyle(pi);

@@ -18,21 +18,6 @@ function modelText(snapshot: FooterSnapshot, theme: Theme): string | undefined {
 	return provider ?? model;
 }
 
-function fastSegment(
-	snapshot: FooterSnapshot,
-	theme: Theme,
-	compact: boolean,
-): FooterSegment | undefined {
-	if (snapshot.fast === undefined) return undefined;
-	if (!snapshot.fast) {
-		return { id: "fast", content: theme.fg("dim", "fast:off") };
-	}
-	return {
-		id: "fast",
-		content: theme.fg("success", compact ? "⚡" : "⚡ fast"),
-	};
-}
-
 export function identitySegments(
 	snapshot: FooterSnapshot,
 	theme: Theme,
@@ -79,7 +64,6 @@ export function runtimeSegments(
 					content: thinkingLevelText(snapshot.thinking, theme, compact),
 				}
 			: undefined,
-		fastSegment(snapshot, theme, compact),
 		snapshot.subagentStatus
 			? {
 					id: "subagent",

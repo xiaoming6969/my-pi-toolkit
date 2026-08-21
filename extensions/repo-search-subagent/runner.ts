@@ -18,10 +18,6 @@ import type {
 const READ_ONLY_TOOLS = REPO_SEARCH_TOOLS.join(",");
 const EXTRA_CLI_ARGS = ["--no-lazy-tools"];
 const EXTENSION_DIR = path.dirname(fileURLToPath(import.meta.url));
-const CURSOR_PROVIDER_EXTENSION = path.resolve(
-	EXTENSION_DIR,
-	"../cursor-models/index.ts",
-);
 const GITIGNORE_GUARD_EXTENSION = path.resolve(
 	EXTENSION_DIR,
 	"gitignore-guard.ts",
@@ -112,11 +108,7 @@ export async function runRepoSearchSubagent(options: {
 		options.cwd,
 		options.config.projectTrusted ?? false,
 	);
-	const extensionPaths = [
-		CURSOR_PROVIDER_EXTENSION,
-		GITIGNORE_GUARD_EXTENSION,
-		...piLensExtensions,
-	];
+	const extensionPaths = [GITIGNORE_GUARD_EXTENSION, ...piLensExtensions];
 	const terminal = await runTerminalSubagent({
 		cwd: options.cwd,
 		title: "Repo Search Subagent",
@@ -167,8 +159,6 @@ export async function runRepoSearchSubagent(options: {
 		"-p",
 		"--no-session",
 		"--no-extensions",
-		"--extension",
-		CURSOR_PROVIDER_EXTENSION,
 		"--extension",
 		GITIGNORE_GUARD_EXTENSION,
 		...piLensExtensions.flatMap((extension) => ["--extension", extension]),

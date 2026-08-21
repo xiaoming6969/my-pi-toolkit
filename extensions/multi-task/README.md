@@ -103,7 +103,7 @@ implementation worker 会继承主 Agent 启动时可发现的 extensions、skil
 
 `paths` 强制门禁只覆盖 `edit` 和 `write`。如果继承的工具包含 `bash` 或其他可产生文件副作用的扩展工具，这些副作用无法由当前路径守卫可靠识别；worker prompt 仍要求只修改声明路径，但这不是 OS 级沙箱。只应把 implementation 任务派给受信任模型，并避免在不信任项目中开放高风险工具。
 
-research worker 由 Batch manager 直接调用 Repo Search runner，与 implementation worker 平级；它保持 `--no-extensions` 隔离，只加载 Cursor provider、`.gitignore` guard，以及 Pi 设置中已启用且已安装的 `npm:pi-lens` extension path。pi-lens 仅开放 `lens_diagnostics`、`lsp_diagnostics`、`symbol_search`、`project_report`、`module_report`、`read_symbol`、`read_enclosing`、`ast_grep_search`、`ast_grep_outline`、`ast_grep_dump`；未安装时降级到 `read/grep/find/ls`。research 不能使用 shell、写工具、pi-lens 替换/导航/标记/激活工具，也不能调用另一个 `repo_search`。任务声明的 `paths` 会写入搜索请求作为范围，报告应包含文件、行号和调用关系证据。
+research worker 由 Batch manager 直接调用 Repo Search runner，与 implementation worker 平级；它保持 `--no-extensions` 隔离，只加载 `.gitignore` guard，以及 Pi 设置中已启用且已安装的 `npm:pi-lens` extension path。pi-lens 仅开放 `lens_diagnostics`、`lsp_diagnostics`、`symbol_search`、`project_report`、`module_report`、`read_symbol`、`read_enclosing`、`ast_grep_search`、`ast_grep_outline`、`ast_grep_dump`；未安装时降级到 `read/grep/find/ls`。research 不能使用 shell、写工具、pi-lens 替换/导航/标记/激活工具，也不能调用另一个 `repo_search`。任务声明的 `paths` 会写入搜索请求作为范围，报告应包含文件、行号和调用关系证据。
 
 这是共享工作区模式，不是 Git worktree 隔离。路径锁可以避免已声明范围之间的竞争，但主 Agent 仍应只并行派发真正独立的任务，并在收集后检查整体 diff、运行诊断与测试。
 

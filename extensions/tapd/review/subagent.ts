@@ -17,7 +17,6 @@ const READ_ONLY_TOOLS = "read,grep,find,ls";
 const EXTENSION_DIR = dirname(fileURLToPath(import.meta.url));
 const MODEL_EXTENSIONS = [
 	resolve(EXTENSION_DIR, "../../openai-compat-models/index.ts"),
-	resolve(EXTENSION_DIR, "../../cursor-models/index.ts"),
 ].filter(existsSync);
 
 function getPiInvocation(args: string[]): { command: string; args: string[] } {

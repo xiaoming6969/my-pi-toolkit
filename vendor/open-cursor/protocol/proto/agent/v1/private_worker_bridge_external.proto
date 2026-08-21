@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package agent.v1;
-
-import "agent/v1/agent.proto";
-
-service PrivateWorkerBridgeExternalService {
-  rpc Connect(Frame) returns (Frame);
-}

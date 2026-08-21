@@ -25,14 +25,13 @@
 | Built-in Tool Style | 通过官方 tool factory 为 Pi 七个内置工具提供可选 Grok 时间线；`/grok-tools` 配置 | [`built-in-tool-style/README.md`](built-in-tool-style/README.md) |
 | Auto Format | 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 格式化主会话本轮修改文件 | [`auto-format/README.md`](auto-format/README.md) |
 | OpenAI Compat Models | 对 `models.json` 中未手写 `models` 的 OpenAI 兼容 provider 在 `/model` 时拉取 `/models` | [`openai-compat-models/README.md`](openai-compat-models/README.md) |
-| Cursor Models | Cursor 模型折叠、思考等级和 Fast 模式 | [`cursor-models/README.md`](cursor-models/README.md) |
 | Model Manager | 为新对话应用可配置的默认模型和思考等级；`/effort` 选择当前模型思考等级 | [`model-manager/README.md`](model-manager/README.md) |
 | M-PI Dashboard | M-PI 响应式启动面板、自定义 Header 与模型 Footer；兼容第三方扩展 `setStatus()` 状态 | [`startup-dashboard/README.md`](startup-dashboard/README.md) |
 | Task Duration | 在最终回复下方持久显示本次 Agent 任务耗时，不进入 LLM 上下文 | [`task-duration/README.md`](task-duration/README.md) |
 | Helps | `/helps` 打开 toolkit GitHub 仓库页 | [`helps/index.ts`](helps/index.ts) |
 | Hello | 用于确认 toolkit 已加载的简单 smoke test（未注册） | `hello.ts` |
 
-子 Agent 仍通过瘦路径单独加载 `cursor-models`（以及 Repo Search 的 `gitignore-guard` 或 Multi Task 的 `path-guard`），不要改为加载 `ming-core`。
+子 Agent 仍通过瘦路径单独加载 Repo Search 的 `gitignore-guard` 或 Multi Task 的 `path-guard`，不要改为加载 `ming-core`。
 
 ## TUI 视觉层
 

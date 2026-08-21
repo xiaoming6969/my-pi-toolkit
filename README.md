@@ -2,7 +2,7 @@
 
 # my-pi-toolkit
 
-面向 [Pi](https://pi.dev/) coding-agent 的扩展包：会话模式、TAPD 工作流、Context7、Cursor 模型桥、主题与 Skills。
+面向 [Pi](https://pi.dev/) coding-agent 的扩展包：会话模式、TAPD 工作流、Context7、主题与 Skills。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Node](https://img.shields.io/badge/Node-%3E%3D22.19-brightgreen.svg)](https://nodejs.org/)
@@ -98,8 +98,6 @@ pi install git:github.com/BigGoblin/my-pi-toolkit@main
 }
 ```
 
-本仓库已 vendored Open Cursor（Cursor ↔ Pi 桥），无需再单独安装 `npm:@open-cursor/pi-agent`。
-
 ## Quick Start
 
 ```bash
@@ -129,7 +127,6 @@ pi --no-session
 | TAPD | `~/.pi/agent/tapd.json`（详见 [`extensions/tapd/README.md`](extensions/tapd/README.md)） |
 | Context7 | `~/.pi/agent/context7.json` 或环境变量 `CONTEXT7_API_KEY` |
 | GitLab（TAPD MR 等） | `tapd.json` 的 `gitlab.token` 或 `GITLAB_PERSONAL_ACCESS_TOKEN` |
-| Cursor 模型 | Pi 内 `/login`（OAuth） |
 | OpenAI 兼容模型自动发现 | `~/.pi/agent/models.json` 中省略 `models`（或 `[]`）；打开 `/model` 时刷新；详见 [`extensions/openai-compat-models/README.md`](extensions/openai-compat-models/README.md) |
 | Agent 自动格式化 | 无 toolkit 配置；项目本地安装 `eslint` / `prettier` 并维护各自配置即可；详见 [`extensions/auto-format/README.md`](extensions/auto-format/README.md) |
 
@@ -161,13 +158,6 @@ pi --no-session
 
 </details>
 
-<details>
-<summary><strong>Vendored provider</strong></summary>
-
-[`vendor/open-cursor/`](vendor/open-cursor/) 是本地化的 Cursor ↔ Pi 桥，由 `ming-core` 内的 `cursor-models` 加载。协议或流式行为相关改动见该目录文档。
-
-</details>
-
 ## Troubleshooting
 
 <details>
@@ -192,7 +182,7 @@ pi install git:github.com/BigGoblin/my-pi-toolkit@main
 
 ## Development
 
-修改扩展或 vendored provider 后，在 Pi 中执行 `/reload`。依赖变更后于仓库根目录执行 `npm install`。
+修改扩展后，在 Pi 中执行 `/reload`。依赖变更后于仓库根目录执行 `npm install`。
 
 扩展入口与依赖版本统一维护在 [`package.json`](package.json)。
 
