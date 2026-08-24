@@ -91,8 +91,10 @@ export function processReviewSubmission(
 	if (!body || typeof body !== "object") throw new Error("提交内容无效");
 	if (body.action === "cancel") return { status: "closed" };
 	const annotations = validateAnnotations(source, body.annotations);
-	if (body.action === "approve" && source.kind === "plan") {
-		return { status: "approved", annotations };
+	if (source.kind === "plan") {
+		if (body.action === "approve") return { status: "approved", annotations };
+		if (body.action === "defer") return { status: "deferred" };
+		if (body.action === "abandon") return { status: "abandoned" };
 	}
 	if (body.action !== "feedback" || annotations.length === 0) {
 		throw new Error("请至少添加一条批注");

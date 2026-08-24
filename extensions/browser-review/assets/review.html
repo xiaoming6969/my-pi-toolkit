@@ -7,34 +7,43 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <div>
-      <p class="eyebrow">M-PI · BROWSER REVIEW</p>
+  <header class="titlebar">
+    <p class="product">M-PI</p>
+    <div class="document-title">
       <h1 id="title">正在载入…</h1>
       <p id="subtitle" class="subtitle"></p>
     </div>
-    <button id="cancel" class="secondary" type="button">取消</button>
+    <button id="cancel" class="secondary titlebar-action" type="button">关闭审阅</button>
   </header>
-  <main>
-    <section class="source" aria-label="审阅内容">
-      <div id="view-toggle" class="view-toggle" role="group" aria-label="Markdown 视图" hidden>
-        <button id="preview-tab" type="button" aria-pressed="true">预览</button>
-        <button id="source-tab" type="button" aria-pressed="false">源码</button>
+  <main class="workbench">
+    <section class="editor" aria-label="审阅内容">
+      <div class="editor-tabs">
+        <span class="editor-tab" aria-hidden="true">审阅内容</span>
+        <div id="view-toggle" class="view-toggle" role="group" aria-label="Markdown 视图" hidden>
+          <button id="preview-tab" type="button" aria-pressed="true">预览</button>
+          <button id="source-tab" type="button" aria-pressed="false">源码</button>
+        </div>
       </div>
-      <article id="preview" class="markdown-preview" aria-label="Markdown 预览" hidden></article>
-      <div id="lines" class="lines" role="list"></div>
+      <div class="editor-content">
+        <article id="preview" class="markdown-preview" aria-label="Markdown 预览" hidden></article>
+        <div id="lines" class="lines" role="list"></div>
+      </div>
     </section>
-    <aside aria-label="批注编辑器">
-      <h2>批注</h2>
-      <p id="selection" class="hint">选择起止行后添加评论</p>
-      <label for="comment">评论</label>
-      <textarea id="comment" rows="5" placeholder="说明需要修改的内容"></textarea>
-      <button id="add" type="button">添加批注</button>
-      <div id="annotations" class="annotations" aria-live="polite"></div>
-      <p id="error" class="error" role="alert"></p>
+    <aside class="sidebar" aria-label="批注编辑器">
+      <div class="sidebar-title"><h2>批注</h2></div>
+      <div class="sidebar-content">
+        <p id="selection" class="hint">选择起止行后添加评论</p>
+        <label for="comment">评论</label>
+        <textarea id="comment" rows="5" placeholder="说明需要修改的内容"></textarea>
+        <button id="add" type="button">添加批注</button>
+        <div id="annotations" class="annotations" aria-live="polite"></div>
+        <p id="error" class="error" role="alert"></p>
+      </div>
       <div class="actions">
         <button id="approve" class="approve" type="button" hidden>批准并实现</button>
+        <button id="defer" class="secondary" type="button" hidden>批准但暂不实现</button>
         <button id="feedback" type="button">发送批注</button>
+        <button id="abandon" class="danger" type="button" hidden>取消计划</button>
       </div>
     </aside>
   </main>

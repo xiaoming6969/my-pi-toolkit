@@ -40,6 +40,8 @@ export interface ReviewAnnotation {
 
 export type BrowserReviewResult =
 	| { status: "approved"; annotations: ReviewAnnotation[] }
+	| { status: "deferred" }
+	| { status: "abandoned" }
 	| { status: "feedback"; annotations: ReviewAnnotation[]; feedback: string }
 	| { status: "closed" }
 	| { status: "unavailable"; error: string };

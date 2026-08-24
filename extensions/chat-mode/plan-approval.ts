@@ -39,8 +39,10 @@ export async function requestPlanApproval(
 				: undefined,
 		};
 	}
+	if (browser.status === "deferred") return { decision: "defer" };
+	if (browser.status === "abandoned") return { decision: "abandon" };
 	if (browser.status === "feedback") {
-		return { decision: "revise", feedback: browser.feedback };
+		return { decision: "revise", feedback: browser.feedback || undefined };
 	}
 	if (browser.status === "closed") return { decision: "closed" };
 

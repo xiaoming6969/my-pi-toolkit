@@ -47,5 +47,17 @@ test("submission maps cancel, feedback and plan approval", () => {
 		{ action: "approve", annotations: [] },
 	);
 	assert.equal(approved.status, "approved");
+	const plan = { ...source, kind: "plan" };
+	assert.deepEqual(
+		processReviewSubmission(plan, { action: "defer", annotations: [] }),
+		{ status: "deferred" },
+	);
+	assert.deepEqual(
+		processReviewSubmission(plan, { action: "abandon", annotations: [] }),
+		{ status: "abandoned" },
+	);
+	assert.throws(() =>
+		processReviewSubmission(plan, { action: "feedback", annotations: [] }),
+	);
 	assert.throws(() => processReviewSubmission(source, { action: "approve", annotations: [] }));
 });

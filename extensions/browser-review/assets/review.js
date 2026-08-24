@@ -16,17 +16,14 @@ function lineLabel(index) {
   else if (line.oldLine != null) position = `old L${line.oldLine}`;
   return line.file ? `${line.file}:${position}` : position;
 }
-
 function selectedRange() {
   if (state.start == null) return null;
   const end = state.end == null ? state.start : state.end;
   return [Math.min(state.start, end), Math.max(state.start, end)];
 }
-
 function overlaps(leftStart, leftEnd, rightStart, rightEnd) {
   return leftStart <= rightEnd && rightStart <= leftEnd;
 }
-
 function selectionHint(range) {
   if (range) {
     const end = range[0] === range[1] ? "" : `–${lineLabel(range[1])}`;
@@ -36,7 +33,6 @@ function selectionHint(range) {
     ? "选择一个内容块后添加评论"
     : "选择起止行后添加评论";
 }
-
 function updateSelection() {
   const range = selectedRange();
   $("selection").textContent = selectionHint(range);
@@ -248,9 +244,16 @@ async function submit(action) {
     const body = await response.json();
     if (!response.ok) throw new Error(body.error || "提交失败");
     state.submitted = true;
+    const messages = {
+      approve: "计划已批准并进入实现，可以关闭此页面。",
+      defer: "计划已批准但暂不实现，可以关闭此页面。",
+      feedback: "批注已发送，计划将继续编辑，可以关闭此页面。",
+      abandon: "计划已取消，可以关闭此页面。",
+      cancel: "审阅已关闭，计划保持不变。",
+    };
     document.body.replaceChildren(Object.assign(document.createElement("p"), {
       className: "submitted",
-      textContent: action === "cancel" ? "已取消，可以关闭此页面。" : "审阅意见已发送，可以关闭此页面。",
+      textContent: messages[action] || "操作已提交，可以关闭此页面。",
     }));
   } catch (error) {
     $("error").textContent = error instanceof Error ? error.message : String(error);
@@ -264,7 +267,11 @@ async function start() {
   document.title = state.source.title;
   $("title").textContent = state.source.title;
   $("subtitle").textContent = state.source.subtitle || "";
-  $("approve").hidden = state.source.kind !== "plan";
+  const isPlan = state.source.kind === "plan";
+  $("approve").hidden = !isPlan;
+  $("defer").hidden = !isPlan;
+  $("abandon").hidden = !isPlan;
+  $("feedback").textContent = isPlan ? "继续编辑" : "发送批注";
   renderLines();
   const hasPreview = Boolean(state.source.markdownBlocks?.length);
   $("view-toggle").hidden = !hasPreview;
@@ -274,7 +281,9 @@ async function start() {
   $("source-tab").addEventListener("click", () => setView("source"));
   $("add").addEventListener("click", addAnnotation);
   $("approve").addEventListener("click", () => submit("approve"));
+  $("defer").addEventListener("click", () => submit("defer"));
   $("feedback").addEventListener("click", () => submit("feedback"));
+  $("abandon").addEventListener("click", () => submit("abandon"));
   $("cancel").addEventListener("click", () => submit("cancel"));
 }
 
