@@ -1,3 +1,4 @@
+import { renderMarkdownBlocks } from "./markdown-preview.js";
 import type { BrowserReviewKind, BrowserReviewSource } from "./types.js";
 
 export function textReviewSource(
@@ -11,5 +12,6 @@ export function textReviewSource(
 		title,
 		subtitle,
 		lines: content.split(/\r?\n/).map((text) => ({ text, style: "plain" })),
+		markdownBlocks: renderMarkdownBlocks(content),
 	};
 }

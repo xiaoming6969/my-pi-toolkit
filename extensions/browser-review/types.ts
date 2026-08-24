@@ -17,11 +17,18 @@ export interface ReviewLine {
 	newLine?: number;
 }
 
+export interface MarkdownReviewBlock {
+	startLine: number;
+	endLine: number;
+	html: string;
+}
+
 export interface BrowserReviewSource {
 	kind: BrowserReviewKind;
 	title: string;
 	subtitle?: string;
 	lines: ReviewLine[];
+	markdownBlocks?: MarkdownReviewBlock[];
 }
 
 export interface ReviewAnnotation {

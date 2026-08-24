@@ -17,6 +17,11 @@
   </header>
   <main>
     <section class="source" aria-label="审阅内容">
+      <div id="view-toggle" class="view-toggle" role="group" aria-label="Markdown 视图" hidden>
+        <button id="preview-tab" type="button" aria-pressed="true">预览</button>
+        <button id="source-tab" type="button" aria-pressed="false">源码</button>
+      </div>
+      <article id="preview" class="markdown-preview" aria-label="Markdown 预览" hidden></article>
       <div id="lines" class="lines" role="list"></div>
     </section>
     <aside aria-label="批注编辑器">

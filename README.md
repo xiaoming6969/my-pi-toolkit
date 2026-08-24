@@ -32,7 +32,7 @@
 | 能力 | 说明 |
 | --- | --- |
 | 会话模式 | `Shift+Tab` 循环 Build → Plan → Ask → Debug；Plan 支持浏览器逐行批注与审批，Debug 以实时日志完成假设、插桩、复现、修复与清理闭环 |
-| 浏览器审阅 | 内置 localhost Plan / Markdown / 最近答复批注和 Git diff review；反馈自动交回 Agent，无第三方审阅依赖 |
+| 浏览器审阅 | 内置 localhost Markdown 渲染预览/源码批注和 Git diff review；反馈自动交回 Agent，无第三方审阅依赖 |
 | TAPD 工作流 | 待办 Overlay、需求分析 / 技术设计 / 协作评审及浏览器批阅、Bug 定位、子需求同步，以及关联分支 / 提交 / GitLab MR |
 | Context7 | 为 Agent 提供第三方库最新文档，减少对训练数据的依赖 |
 | 会话与分支门禁 | 恢复会话时校验 Git 分支，降低跨分支误操作 |

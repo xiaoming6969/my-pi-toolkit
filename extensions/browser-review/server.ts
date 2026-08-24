@@ -25,7 +25,7 @@ function securityHeaders(response: ServerResponse): void {
 	response.setHeader("Cache-Control", "no-store");
 	response.setHeader("X-Content-Type-Options", "nosniff");
 	response.setHeader("Referrer-Policy", "no-referrer");
-	response.setHeader("Content-Security-Policy", "default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'none'; frame-ancestors 'none'");
+	response.setHeader("Content-Security-Policy", "default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src data:; frame-ancestors 'none'");
 }
 
 function json(response: ServerResponse, status: number, value: unknown): void {
