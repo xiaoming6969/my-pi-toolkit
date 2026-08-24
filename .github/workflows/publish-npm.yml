@@ -24,8 +24,16 @@ jobs:
           package-manager-cache: false
 
       - name: 校验版本
-        run: test "v$(node -p "require('./package.json').version")" = "${{ github.event.release.tag_name }}"
+        id: package
+        run: |
+          version=$(node -p "require('./package.json').version")
+          test "v$version" = "${{ github.event.release.tag_name }}"
+          name=$(node -p "require('./package.json').name")
+          npm view "$name@$version" version >/dev/null 2>&1 && echo "exists=true" >> "$GITHUB_OUTPUT" || true
 
-      - run: npm ci
-      - run: npm pack --dry-run
-      - run: npm publish --access public --provenance
+      - if: steps.package.outputs.exists != 'true'
+        run: npm ci
+      - if: steps.package.outputs.exists != 'true'
+        run: npm pack --dry-run
+      - if: steps.package.outputs.exists != 'true'
+        run: npm publish --access public --provenance
