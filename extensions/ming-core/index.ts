@@ -6,6 +6,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import agentTodos from "../agent-todos/index.js";
 import autoFormat from "../auto-format/index.js";
+import browserReview from "../browser-review/index.js";
 import builtInToolStyle from "../built-in-tool-style/index.js";
 import chatMode from "../chat-mode/index.js";
 import helps from "../helps/index.js";
@@ -21,6 +22,7 @@ import taskDuration from "../task-duration/index.js";
 export default function mingCore(pi: ExtensionAPI): void {
 	openaiCompatModels(pi);
 	modelManager(pi);
+	browserReview(pi);
 	chatMode(pi);
 	builtInToolStyle(pi);
 	autoFormat(pi);

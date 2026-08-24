@@ -21,7 +21,8 @@
 | Subagent Console | 用 `/subagents` 查看和管理子 Agent、用 `Alt+A` 进入最近任务；实时与历史详情复用主界面消息/工具样式，并在 Footer 显示活跃数量 | [`subagent-console/README.md`](subagent-console/README.md) |
 | Session Branch Guard | 会话与 Git 分支绑定：恢复会话时校验分支，dirty 工作区提供 stash/直接切换/rebind，阻止跨分支误操作 | [`session-branch-guard/README.md`](session-branch-guard/README.md) |
 | Agent Todos | Cursor TodoWrite 风格任务清单，editor 上方完整进度 | [`agent-todos/README.md`](agent-todos/README.md) |
-| Chat Mode | 使用 `Shift+Tab` 循环 Build/Plan/Ask/Debug；Plan 提供 session `plan.md` 审批，Debug 提供完整工具、`/debuglog` 实时日志面板与 `finish_debug_cleanup` 清理闭环 | [`chat-mode/README.md`](chat-mode/README.md) |
+| Browser Review | localhost 浏览器 Plan / Markdown / 最近答复批注和 Git diff review，提交后自动反馈 Agent | [`browser-review/README.md`](browser-review/README.md) |
+| Chat Mode | 使用 `Shift+Tab` 循环 Build/Plan/Ask/Debug；Plan 提供 browser-first session `plan.md` 审批，Debug 提供完整工具、`/debuglog` 实时日志面板与 `finish_debug_cleanup` 清理闭环 | [`chat-mode/README.md`](chat-mode/README.md) |
 | Built-in Tool Style | 通过官方 tool factory 为 Pi 七个内置工具提供可选 Grok 时间线；`/grok-tools` 配置 | [`built-in-tool-style/README.md`](built-in-tool-style/README.md) |
 | Auto Format | 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 格式化主会话本轮修改文件 | [`auto-format/README.md`](auto-format/README.md) |
 | OpenAI Compat Models | 对 `models.json` 中未手写 `models` 的 OpenAI 兼容 provider 在 `/model` 时拉取 `/models` | [`openai-compat-models/README.md`](openai-compat-models/README.md) |
@@ -37,7 +38,7 @@
 
 `shared/tui/visual-language.ts` 统一状态字符、模式 badge、间距与行宽处理；`overlay-shell.ts` 统一复杂 Overlay 的 Header/viewport/Footer、高度预算和边框；`tool-render.ts` 和 `tool-format.ts` 为 toolkit 工具提供运行/成功/失败时间线。`built-in-tool-style` 可选择性覆盖仍由 Pi builtin 提供的工具 definition；它不替换 Pi 内置主对话 renderer，也不承诺主对话区鼠标点击。
 
-TUI 层兼容 Pi 0.84 的 `regular` 与 `fullscreen` renderer：扩展不清屏、不依赖 `pi-tui/dist/*`，Overlay 高度预算与 `maxHeight`/margin 对齐。Plan、Debug Logs 与 Subagent overlay 在 regular 模式按引用计数启停 SGR mouse tracking；regular 支持 wheel，Pi 0.84 fullscreen 会在 Overlay 前消费 wheel，因此只显示键盘滚动提示，且关闭时不会发送 disable 序列影响宿主。Overlay 不承诺鼠标点击。Plan Review 与 Subagent live/history/fallback Markdown 继承 `markdown.mermaid` 设置，并使用 Pi 0.84 Unicode LaTeX。共享 RPC 子 Agent同时接受旧版累计 `message_update.message` 与 0.84 的 `assistantMessageEvent` delta，并以 `message_end` 覆盖最终消息。
+TUI 层兼容 Pi 0.84 的 `regular` 与 `fullscreen` renderer：扩展不清屏、不依赖 `pi-tui/dist/*`，Overlay 高度预算与 `maxHeight`/margin 对齐。Plan、Debug Logs 与 Subagent overlay 在 regular 模式按引用计数启停 SGR mouse tracking；regular 支持 wheel，Pi 0.84 fullscreen 会在 Overlay 前消费 wheel，因此只显示键盘滚动提示，且关闭时不会发送 disable 序列影响宿主。Overlay 不承诺鼠标点击。Browser Review 启动失败时，Plan/TAPD fallback Markdown 与 Subagent live/history Markdown 继承 `markdown.mermaid` 设置，并使用 Pi 0.84 Unicode LaTeX。共享 RPC 子 Agent同时接受旧版累计 `message_update.message` 与 0.84 的 `assistantMessageEvent` delta，并以 `message_end` 覆盖最终消息。
 
 `auto-format` 只使用 Pi notification 报告 formatter 失败，不注册 Widget、Overlay、Footer、快捷键或长期生命周期资源。
 

@@ -10,7 +10,7 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 | `/tapd analyze [补充要求]` | 生成 `understanding.md` |
 | `/tapd design [补充要求]` | 调研后通过选项式提问确认关键决策，再生成 `design.md` 和结构化开发子需求拆分 |
 | `/tapd collaboration [补充要求]` | 生成供产品、后端和前端 Leader 评审的 `collaboration.md` |
-| `/tapd preview [understanding\|design\|collaboration]` | 预览当前需求的本地 Markdown 文档；不带参数时先选择文档，且不需要 TAPD Token |
+| `/tapd preview [understanding\|design\|collaboration]` | 在浏览器批阅当前需求的本地 Markdown 文档并把意见交给 Agent；不带参数时先选择文档，且不需要 TAPD Token |
 | `/tapd review [--base origin/dev] [补充要求]` | 选择“仅未提交”或“当前分支全部修改”后，启动只读子代理审核实现与过度设计，并将分级报告返回主 Agent |
 | `/tapd sub-task` | 根据 `design.md` 创建或同步设计、开发子需求 |
 | `/tapd bug` | 获取当前 Bug 完整信息并让 Agent 定位代码原因；定位提示对用户隐藏；结果只输出原因、带具体代码的因果链与置信度，不写长篇分析报告 |
@@ -34,7 +34,7 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 
 - `Ctrl+Shift+T`：打开 TAPD 待办。
 
-`/tapd` 的待办、类型筛选、关联会话、select 和 confirm 页面统一显示在当前 TUI 上方的居中 Overlay 中，与 Subagent 共用单层 Header/viewport/Footer shell（宽度 `92%`、最大高度 `88%`）。`/tapd preview` 使用与 chat-mode Plan Review 一致的只读 Markdown Overlay（宽度 `90%`、最大高度 `84%`），支持 Mermaid、LaTeX、`↑/↓`、`PageUp/PageDown`、`Home/End`、Enter/Esc 关闭，以及 regular 模式滚轮；过宽的 `LR`/`RL` 流程图会自动改为纵向布局以适应视口，fullscreen 模式不显示无效的滚轮提示。主表在 `<80`、`80–119`、`>=120` 列下依次显示紧凑、普通、完整字段；长待办、会话和路径历史使用围绕当前选择的 viewport，并显示 `start-end/total`。`↑/↓`、`PageUp/PageDown`、`Home/End` 导航；主表的操作提示（导航 · Enter 关联 · `/` 搜索 · Tab 切换 · `i` 迭代 · `t` 类型 · `o` 打开 · Esc/Ctrl+C 退出，窄屏自动缩减）统一显示在 Overlay 最底部 Footer 一行，不重复出现在面板内；会话 picker、select/confirm 对话框的操作提示同样显示在底部 Footer；`i` 键在“当前迭代/所有迭代”待办范围间切换。需求/Bug 和工作项类型使用 `[REQ]`、`[BUG]`、`[DEV]` 等稳定文本标签；主表「设计」列仅出现在需求视图（Bug 视图不显示）；`●` 表示当前项目或关联会话目录中已存在对应的 `design.md`，`○` 表示尚未设计。打开待办时会先扫描会话目录再计算该状态，之后每次重新打开主表时也会重新计算。新建关联会话时，“会话名称”默认使用 TAPD 标题，也可以在创建前编辑；创建后该名称会显示在 `/resume` 会话列表中。选中一个项目路径时，新会话直接在该目录中创建；多选路径时会追加一步工作目录选择；未选路径或所选路径等于当前目录时，行为与原先一致。切到未信任目录时 Pi 会弹出项目信任确认。跨目录创建的会话会写入 `model-manager-new-conversation` 标记 entry，让 model-manager 按新对话规则应用默认模型（普通 `/resume` 不受影响）。
+`/tapd` 的待办、类型筛选、关联会话、select 和 confirm 页面统一显示在当前 TUI 上方的居中 Overlay 中，与 Subagent 共用单层 Header/viewport/Footer shell（宽度 `92%`、最大高度 `88%`）。`/tapd preview` 和三个文档生成后的自动预览优先打开 localhost 浏览器：默认显示渲染后的 Markdown（含 Mermaid 图），点击内容块可批注对应源行，也可切换源码精确批注；提交后自动发送 follow-up，仅要求 Agent 修改目标文档，取消/关闭不操作。浏览器启动失败时回退原只读 Markdown Overlay（宽度 `90%`、最大高度 `84%`），保留 Mermaid、LaTeX、键盘滚动和 regular wheel。主表在 `<80`、`80–119`、`>=120` 列下依次显示紧凑、普通、完整字段；长待办、会话和路径历史使用围绕当前选择的 viewport，并显示 `start-end/total`。`↑/↓`、`PageUp/PageDown`、`Home/End` 导航；主表的操作提示（导航 · Enter 关联 · `/` 搜索 · Tab 切换 · `i` 迭代 · `t` 类型 · `o` 打开 · Esc/Ctrl+C 退出，窄屏自动缩减）统一显示在 Overlay 最底部 Footer 一行，不重复出现在面板内；会话 picker、select/confirm 对话框的操作提示同样显示在底部 Footer；`i` 键在“当前迭代/所有迭代”待办范围间切换。需求/Bug 和工作项类型使用 `[REQ]`、`[BUG]`、`[DEV]` 等稳定文本标签；主表「设计」列仅出现在需求视图（Bug 视图不显示）；`●` 表示当前项目或关联会话目录中已存在对应的 `design.md`，`○` 表示尚未设计。打开待办时会先扫描会话目录再计算该状态，之后每次重新打开主表时也会重新计算。新建关联会话时，“会话名称”默认使用 TAPD 标题，也可以在创建前编辑；创建后该名称会显示在 `/resume` 会话列表中。选中一个项目路径时，新会话直接在该目录中创建；多选路径时会追加一步工作目录选择；未选路径或所选路径等于当前目录时，行为与原先一致。切到未信任目录时 Pi 会弹出项目信任确认。跨目录创建的会话会写入 `model-manager-new-conversation` 标记 entry，让 model-manager 按新对话规则应用默认模型（普通 `/resume` 不受影响）。
 
 ## Story workflow
 
@@ -45,7 +45,7 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 → /tapd sub-task
 ```
 
-- 三个文档命令在 Agent 完成且目标文件确实新增或更新后自动打开对应预览；取消确认、生成失败或文件未变化时不会误开旧内容。之后可随时执行 `/tapd preview` 选择文档，或通过参数直接打开。
+- 三个文档命令在 Agent 完成且目标文件确实新增或更新后自动打开对应浏览器批阅；提交逐行批注后自动交给 Agent 修订该文件，取消/关闭不触发下一轮。生成失败或文件未变化时不会误开旧内容。之后可随时执行 `/tapd preview` 选择文档，或通过参数直接打开。
 - `/tapd design` 会先读取需求理解、检查相关代码，再识别影响范围、架构、兼容性、接口契约或验收标准的关键待确认决策。存在待确认项时，Agent 使用通用的 `ask_user_choice` 一次提交全部当前已知问题；用户用 Tab / Shift+Tab 切换并集中提交答案。每题提供 2～5 个候选方案，可标记一个推荐项，最后固定提供“其他（自定义输入）”；用户取消时停止流程且不创建或覆盖 `design.md`。没有关键待确认项时直接生成设计。
 - `/tapd analyze`、`/tapd design`、`/tapd collaboration` 启动时会写入 `chat-mode-ensure-ask-for-docs` 标记，由 chat-mode 在本轮 Agent 启动前切到 Ask（可写项目 `.pi/**`，避免 Plan 只能写 session `plan.md` 导致 `design.md` 落错位置）。prompt 同时禁止调用 `enter_plan_mode`。
 - 开发任务拆分来源：`design.md`。
@@ -56,6 +56,13 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 - 每次执行 `/tapd sub-task` 都会先与 TAPD 远端子需求对账：仍存在的计划项会更新描述和基础字段，远端已删除的计划项会清理本地陈旧记录并按原计划重建；远端查询失败时停止操作，避免重复创建。设计中移除的旧项不会自动删除。
 
 ## Code review
+
+两种 review 分工明确：
+
+- `/tapd review`：AI 子 Agent 检查需求/设计符合度、隐藏 Bug 和过度设计，返回分级报告并等待确认。
+- `/review [uncommitted|branch] [--base origin/dev]`：人在浏览器逐行查看 Git diff；提交批注后自动交给主 Agent 修改，关闭不操作。
+
+两者不会自动串行启动，避免一个命令阻塞两个长流程。
 
 `/tapd review` 会先显示审核范围选择器：
 

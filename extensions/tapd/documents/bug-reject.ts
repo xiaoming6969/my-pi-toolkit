@@ -179,7 +179,7 @@ export async function rejectTapdBug(
 			}
 			ctx.ui.notify(
 				`Bug ${state.itemId} → 已拒绝 · ${resolution.label} · FAQ ${draft.needFaq} · 处理人=测试人员\n${bugUrl(state.workspaceId, state.itemId)}`,
-				"success",
+				"info",
 			);
 			return;
 		}

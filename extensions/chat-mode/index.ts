@@ -2,6 +2,7 @@ import type {
 	ExtensionAPI,
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
+import { BrowserReviewManager } from "../browser-review/server.js";
 import { registerAskUserChoiceTool } from "../shared/ask-user-choice-tool.js";
 import { registerDebugCommand, type DebugPanelActions } from "./debug-command.js";
 import { createDebugPanelController } from "./debug-dialog.js";
@@ -27,6 +28,7 @@ export default function chatModeExtension(pi: ExtensionAPI): void {
 	registerSessionPlanCleanup(pi);
 	let planFile: SessionPlanFile | undefined;
 	let debugCollector: DebugSessionCollector | undefined;
+	const planReviews = new BrowserReviewManager();
 	let debugPanel: DebugPanelActions;
 	let pendingImplementationKickoff = false;
 
@@ -68,18 +70,20 @@ export default function chatModeExtension(pi: ExtensionAPI): void {
 		markImplementationKickoff: () => {
 			pendingImplementationKickoff = true;
 		},
-	});
+	}, planReviews);
 
 	registerPlanCommand(pi, {
 		getMode: getChatMode,
 		getPlan: () => planFile,
 		enterPlan: (ctx) => enterPlan(ctx, "user"),
-	});
+	}, planReviews);
 	registerDebugCommand(pi, modeController, debugPanel);
 	registerFinishDebugTool(pi, {
 		getCollector: () => debugCollector,
 		modeController,
 	});
+
+	pi.on("session_shutdown", () => planReviews.dispose());
 
 	registerChatModeLifecycle(pi, {
 		modeController,

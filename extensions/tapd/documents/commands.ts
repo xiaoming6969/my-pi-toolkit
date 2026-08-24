@@ -2,6 +2,7 @@ import type {
 	ExtensionAPI,
 	ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
+import type { BrowserReviewManager } from "../../browser-review/server.js";
 import {
 	ANALYZE_TRIGGER_PROMPT,
 	COLLABORATION_TRIGGER_PROMPT,
@@ -29,6 +30,8 @@ const WORKFLOWS: Record<
 };
 
 export async function handleTapdPreviewCommand(
+	pi: ExtensionAPI,
+	reviews: BrowserReviewManager,
 	ctx: ExtensionCommandContext,
 	subcommand: string,
 	args: string[],
@@ -45,7 +48,7 @@ export async function handleTapdPreviewCommand(
 		);
 		return true;
 	}
-	await previewTapdDocument(ctx, requested);
+	await previewTapdDocument(pi, reviews, ctx, requested);
 	return true;
 }
 

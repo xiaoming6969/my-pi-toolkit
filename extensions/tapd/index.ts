@@ -7,6 +7,7 @@ import type {
 	ExtensionContext,
 	SessionEntry,
 } from "@earendil-works/pi-coding-agent";
+import { BrowserReviewManager } from "../browser-review/server.js";
 import { tapdArgumentCompletions } from "./command-completions.js";
 import { fetchUserInfo, fetchWorkspaces } from "./core/api.js";
 import { loadConfig } from "./core/config.js";
@@ -68,17 +69,30 @@ async function openTapdTodoList(
 export default function tapdExtension(pi: ExtensionAPI) {
 	const STATE_KEY = "tapd-view-state";
 	let pendingPreview: TapdDocumentSnapshot | undefined;
+	const documentReviews = new BrowserReviewManager();
 	registerTapdReviewTool(pi);
 	registerTapdGitMessageRenderer(pi);
 
 	pi.on(
 		"agent_settled",
-		async (_event: AgentSettledEvent, ctx: ExtensionContext) => {
+		(_event: AgentSettledEvent, ctx: ExtensionContext) => {
 			const preview = pendingPreview;
 			pendingPreview = undefined;
-			if (preview) await previewUpdatedTapdDocument(ctx, preview);
+			if (!preview) return;
+			void previewUpdatedTapdDocument(
+				pi,
+				documentReviews,
+				ctx,
+				preview,
+			).catch((error: unknown) => {
+				ctx.ui.notify(
+					error instanceof Error ? error.message : String(error),
+					"error",
+				);
+			});
 		},
 	);
+	pi.on("session_shutdown", () => documentReviews.dispose());
 
 	pi.registerCommand("tapd", {
 		description: "查看 TAPD 待办；生成需求文档或审核需求实现代码",
@@ -87,7 +101,16 @@ export default function tapdExtension(pi: ExtensionAPI) {
 			const trimmedArgs = args.trim();
 			const [sub = "", ...restArgs] = trimmedArgs.split(/\s+/);
 			const additionalInstructions = restArgs.join(" ").trim();
-			if (await handleTapdPreviewCommand(ctx, sub, restArgs)) return;
+			if (
+				await handleTapdPreviewCommand(
+					pi,
+					documentReviews,
+					ctx,
+					sub,
+					restArgs,
+				)
+			)
+				return;
 
 			const config = loadConfig();
 			if (!config) {
@@ -166,13 +189,13 @@ export default function tapdExtension(pi: ExtensionAPI) {
 
 	pi.registerShortcut("ctrl+shift+t", {
 		description: "打开 TAPD 待办",
-		handler: async (ctx: ExtensionCommandContext) => {
+		handler: async (ctx: ExtensionContext) => {
 			const config = loadConfig();
 			if (!config) {
 				ctx.ui.notify("请先配置 ~/.pi/agent/tapd.json", "warning");
 				return;
 			}
-			await openTapdTodoList(ctx, config, true);
+			await openTapdTodoList(ctx as ExtensionCommandContext, config, true);
 		},
 	});
 }

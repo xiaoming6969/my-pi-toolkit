@@ -3,6 +3,8 @@ import type {
 	ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
 import type { AutocompleteItem } from "@earendil-works/pi-tui";
+import type { BrowserReviewManager } from "../browser-review/server.js";
+import { textReviewSource } from "../browser-review/sources.js";
 import { showPlanDialog } from "./plan-dialog.js";
 import { readPlanFile, type SessionPlanFile } from "./plan-file.js";
 import type { ChatMode } from "./state.js";
@@ -22,7 +24,9 @@ const COMPLETIONS: AutocompleteItem[] = [
 ];
 
 async function reviewPlan(
+	pi: ExtensionAPI,
 	ctx: ExtensionCommandContext,
+	reviews: BrowserReviewManager,
 	plan: SessionPlanFile | undefined,
 ): Promise<void> {
 	if (!plan) {
@@ -34,12 +38,23 @@ async function reviewPlan(
 		ctx.ui.notify("当前 session 尚无可查看的 Plan。", "warning");
 		return;
 	}
-	await showPlanDialog(ctx, plan.absolutePath, content);
+	const result = await reviews.open(
+		textReviewSource("document", "PLAN REVIEW", content, plan.absolutePath),
+	);
+	if (result.status === "feedback") {
+		const prompt = `请按以下用户浏览器批注继续修改本 session 的 Plan：${plan.absolutePath}\n\n${result.feedback}`;
+		if (ctx.isIdle()) pi.sendUserMessage(prompt);
+		else pi.sendUserMessage(prompt, { deliverAs: "followUp" });
+	} else if (result.status === "unavailable") {
+		ctx.ui.notify(`浏览器审阅不可用，已回退终端：${result.error}`, "warning");
+		await showPlanDialog(ctx, plan.absolutePath, content);
+	}
 }
 
 export function registerPlanCommand(
 	pi: ExtensionAPI,
 	options: PlanCommandOptions,
+	reviews: BrowserReviewManager,
 ): void {
 	pi.registerCommand("plan", {
 		description: "进入 Plan Mode；使用 /plan review 再次查看方案",
@@ -50,7 +65,7 @@ export function registerPlanCommand(
 		handler: async (args: string, ctx: ExtensionCommandContext) => {
 			const action = args.trim().toLowerCase();
 			if (action === "review") {
-				await reviewPlan(ctx, options.getPlan());
+				await reviewPlan(pi, ctx, reviews, options.getPlan());
 				return;
 			}
 			if (!ctx.isIdle()) {
