@@ -11,7 +11,6 @@ import {
 	type ResolvedNewConversationConfig,
 } from "./config.js";
 import { wantsNewConversationDefaults } from "./pending-new-conversation.js";
-import { registerThinkingCommand } from "./thinking-command.js";
 
 const CONVERSATION_ENTRY_TYPES = new Set([
 	"message",
@@ -98,8 +97,6 @@ function describeConfig(config: ResolvedNewConversationConfig): string {
 }
 
 export default function modelManagerExtension(pi: ExtensionAPI): void {
-	registerThinkingCommand(pi);
-
 	pi.on(
 		"session_start",
 		async (event: SessionStartEvent, ctx: ExtensionContext) => {

@@ -59,7 +59,7 @@
 
 ### 思考等级
 
-`/effort` 等能力依赖模型的 `reasoning: true`。解析顺序：
+Pi 内置 `/thinking` 等能力依赖模型的 `reasoning: true`。解析顺序：
 
 1. `modelDefaults.reasoning` 显式 `true` / `false`（整站强制）
 2. 否则按模型 `id` 启发式：包含 `gpt-5`、`o1`、`o3`、`o4`、`reason`、`thinking` 等 → `true`
