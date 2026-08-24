@@ -31,8 +31,9 @@
 
 | 能力 | 说明 |
 | --- | --- |
-| 会话模式 | `Shift+Tab` 循环 Build → Plan → Ask → Debug；Plan 支持选项确认式关键决策，Debug 以实时日志完成假设、插桩、复现、修复与清理闭环 |
-| TAPD 工作流 | 待办 Overlay、需求分析 / 技术设计 / 协作评审及 Markdown 自动预览、Bug 定位、子需求同步，以及关联分支 / 提交 / GitLab MR |
+| 会话模式 | `Shift+Tab` 循环 Build → Plan → Ask → Debug；Plan 支持浏览器逐行批注与审批，Debug 以实时日志完成假设、插桩、复现、修复与清理闭环 |
+| 浏览器审阅 | 内置 localhost Plan / Markdown / 最近答复批注和 Git diff review；反馈自动交回 Agent，无第三方审阅依赖 |
+| TAPD 工作流 | 待办 Overlay、需求分析 / 技术设计 / 协作评审及浏览器批阅、Bug 定位、子需求同步，以及关联分支 / 提交 / GitLab MR |
 | Context7 | 为 Agent 提供第三方库最新文档，减少对训练数据的依赖 |
 | 会话与分支门禁 | 恢复会话时校验 Git 分支，降低跨分支误操作 |
 | 自动格式化 | 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 格式化本轮修改文件 |
@@ -110,6 +111,8 @@ pi --no-session
 | 操作 | 说明 |
 | --- | --- |
 | `Shift+Tab` | 循环 Build → Plan → Ask → Debug → Build |
+| `/review [uncommitted\|branch]` | 在本地浏览器逐行审阅 Git 修改并把批注交给 Agent |
+| `/annotate <path>` / `/annotate-last` | 批注项目 Markdown 或最近一条 Assistant 消息 |
 | `/debuglog` | 进入 Debug；已在 Debug 时重新打开实时日志面板（`/debug` 为 Pi 内置诊断日志命令） |
 | `/tapd` | 打开 TAPD 待办（需配置） |
 | `/context7 <query>` | 查询第三方库文档 |
@@ -136,7 +139,7 @@ pi --no-session
 
 | 扩展 | 简介 | 文档 |
 | --- | --- | --- |
-| ming-core | 通用能力编排：模型、Plan / Debug、自动格式化、子 Agent、Dashboard、Session Branch Guard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
+| ming-core | 通用能力编排：模型、浏览器审阅、Plan / Debug、自动格式化、子 Agent、Dashboard、Session Branch Guard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
 | TAPD | 待办、需求分析、选项确认式技术设计、协作评审、三文档预览、Bug 定位与子需求同步 | [`extensions/tapd/README.md`](extensions/tapd/README.md) |
 | Context7 | 第三方库最新文档查询 | [`extensions/context7/README.md`](extensions/context7/README.md) |
 

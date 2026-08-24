@@ -1,7 +1,15 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { formatReviewFeedback } from "../browser-review/feedback.js";
+import type { BrowserReviewManager } from "../browser-review/server.js";
+import { textReviewSource } from "../browser-review/sources.js";
 import { showPlanDialog } from "./plan-dialog.js";
 
-export type PlanApprovalDecision = "implement" | "defer" | "revise" | "abandon";
+export type PlanApprovalDecision =
+	| "implement"
+	| "defer"
+	| "revise"
+	| "abandon"
+	| "closed";
 
 export interface PlanApprovalResult {
 	decision: PlanApprovalDecision;
@@ -10,11 +18,33 @@ export interface PlanApprovalResult {
 
 export async function requestPlanApproval(
 	ctx: ExtensionContext,
+	reviews: BrowserReviewManager,
 	planPath: string,
 	planContent: string | undefined,
 ): Promise<PlanApprovalResult> {
 	if (!ctx.hasUI) return { decision: "implement" };
 
+	const source = textReviewSource(
+		"plan",
+		"PLAN REVIEW",
+		planContent ?? "",
+		planPath,
+	);
+	const browser = await reviews.open(source, { signal: ctx.signal });
+	if (browser.status === "approved") {
+		return {
+			decision: "implement",
+			feedback: browser.annotations.length
+				? formatReviewFeedback(source, browser.annotations)
+				: undefined,
+		};
+	}
+	if (browser.status === "feedback") {
+		return { decision: "revise", feedback: browser.feedback };
+	}
+	if (browser.status === "closed") return { decision: "closed" };
+
+	ctx.ui.notify(`浏览器审阅不可用，已回退终端：${browser.error}`, "warning");
 	await showPlanDialog(ctx, planPath, planContent);
 	const choice = await ctx.ui.select(`PLAN APPROVAL · ${planPath}`, [
 		"批准并实现",

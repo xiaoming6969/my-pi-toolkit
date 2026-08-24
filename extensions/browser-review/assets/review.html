@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Browser Review</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div>
+      <p class="eyebrow">M-PI · BROWSER REVIEW</p>
+      <h1 id="title">正在载入…</h1>
+      <p id="subtitle" class="subtitle"></p>
+    </div>
+    <button id="cancel" class="secondary" type="button">取消</button>
+  </header>
+  <main>
+    <section class="source" aria-label="审阅内容">
+      <div id="lines" class="lines" role="list"></div>
+    </section>
+    <aside aria-label="批注编辑器">
+      <h2>批注</h2>
+      <p id="selection" class="hint">选择起止行后添加评论</p>
+      <label for="comment">评论</label>
+      <textarea id="comment" rows="5" placeholder="说明需要修改的内容"></textarea>
+      <button id="add" type="button">添加批注</button>
+      <div id="annotations" class="annotations" aria-live="polite"></div>
+      <p id="error" class="error" role="alert"></p>
+      <div class="actions">
+        <button id="approve" class="approve" type="button" hidden>批准并实现</button>
+        <button id="feedback" type="button">发送批注</button>
+      </div>
+    </aside>
+  </main>
+  <script src="review.js" defer></script>
+</body>
+</html>

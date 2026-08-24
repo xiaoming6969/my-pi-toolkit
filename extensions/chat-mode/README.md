@@ -12,7 +12,7 @@ Plan Mode 对齐 [Grok Build](https://github.com/xai-org/grok-build) 的 `PlanMo
 BUILD → PLAN → ASK → DEBUG → BUILD
 ```
 
-也可使用 `/plan` 进入 Plan，使用 `/plan review` 随时重新打开当前 session 已写入的方案；`/debuglog` 进入 Debug，已在 Debug 时则重新打开实时日志面板（`/debug` 是 Pi 内置诊断日志命令）。Agent 运行时不能通过快捷键或模式切换命令进入其他模式；但 `/plan review` 是只读浏览，可在 Agent 运行中打开，不会暂停 Agent、触发审批、切换模式或修改 Plan。模型在运行中仍可调用 Enter/Exit Plan 工具。Pi 无法可靠地为已发出的模型请求动态替换工具集合，因此没有照搬 Grok 的 mid-turn toggle。
+也可使用 `/plan` 进入 Plan，使用 `/plan review` 随时在浏览器重新打开当前 session 已写入的方案并提交逐行批注；`/debuglog` 进入 Debug，已在 Debug 时则重新打开实时日志面板（`/debug` 是 Pi 内置诊断日志命令）。Agent 运行时不能通过快捷键或模式切换命令进入其他模式；但 `/plan review` 不触发审批或切换模式，运行中提交的批注只排为 follow-up。模型在运行中仍可调用 Enter/Exit Plan 工具。Pi 无法可靠地为已发出的模型请求动态替换工具集合，因此没有照搬 Grok 的 mid-turn toggle。
 
 ## Build
 
@@ -62,18 +62,12 @@ Plan 用于实施前的只读调研与方案审批：
 | 工具 | 作用 |
 | --- | --- |
 | `enter_plan_mode` | 征得同意后进入 Plan，seed 并返回本 session 固定的 `plan.md` |
-| `exit_plan_mode` | 从磁盘读取 Plan，以带背景色的 Markdown 对话框展示全文，再显示审批选项 |
+| `exit_plan_mode` | 从磁盘读取 Plan，在本地浏览器逐行审阅并批准或退回；浏览器失败时回退 TUI |
 | `ask_user_choice` | 在写 Plan 前集中确认全部关键决策；多题用 Tab 切换，每题提供推荐选项和最后一项自定义输入 |
 
-TUI 中 Plan 正文和审批选择分开显示：先在 Grok 风格的 `PLAN REVIEW` 单线边框 Markdown overlay 中展示完整方案，底部单独显示滚动和关闭提示；关闭后选择组件只显示操作。overlay 有固定视口，高度预算与 Pi 的 `maxHeight`/margin 对齐，不会撑高终端内容。regular 模式支持鼠标滚轮、↑/↓、PageUp/PageDown、Home/End；Pi 0.84 fullscreen 会先消费 wheel，Overlay 因此只提供键盘滚动，Footer 会隐藏无效的 wheel 提示。Enter/Esc 关闭。Plan Markdown 继承 `markdown.mermaid` 设置并启用 Pi 0.84 Unicode LaTeX；`/plan review` 与审批前的 Plan Review 均支持 Mermaid/LaTeX。`/plan review` 仅重新打开该 overlay，不触发审批或切换模式；即使 Agent 正在运行也可只读浏览当前已写入的 Plan。
+有 UI 时优先启动只监听 `127.0.0.1` 的一次性浏览器审阅页。每行均可用键盘选择起止范围并添加多条评论；内容按纯文本渲染，不执行 Plan 中的 HTML/脚本。**批准并实现**切 Build，并把批准时附带的批注加入 implementation kickoff；**发送批注并退回**保持 Plan，把结构化 feedback 返回模型继续修改同一个 `plan.md`；**取消/关闭**保持 Plan 并停止当前 loop，不产生后续动作。无 UI 模式仍默认“批准并实现”。
 
-审批选项：
-
-- **批准并实现**：切 Build；下一次模型请求只注入一次实现 kickoff，并过滤历史 Plan reminder，模型应立即使用 `write` / `edit` 开始实现。扩展不会直接代替模型修改文件。
-- **批准但暂不实现**：切 Build 并结束当前 agent loop，等待后续明确的实施指令。
-- **继续编辑**：留在 Plan，继续修改同一个 `plan.md`。
-- **取消计划**：切 Build 并结束当前 agent loop，不实施；Plan 文件仍保留供同 session 重入。
-- 无 UI 模式默认“批准并实现”。
+浏览器启动失败时回退原有 Grok 风格 `PLAN REVIEW` Markdown overlay 和四个终端选项（批准实现、批准但暂不实现、继续编辑、取消计划）。fallback overlay 保持固定高度预算、键盘滚动、regular wheel、Mermaid 和 Unicode LaTeX。`/plan review` 本身只做浏览器批注；提交后自动把意见交给 Agent，关闭不操作，也不会切换模式或触发 implementation kickoff。
 
 ## Debug
 

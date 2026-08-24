@@ -17,6 +17,7 @@ import {
 } from "./plan-file.js";
 import { IMPLEMENTATION_KICKOFF, planFileStructure } from "./prompt.js";
 import type { ChatMode } from "./state.js";
+import type { BrowserReviewManager } from "../browser-review/server.js";
 import {
 	toolCall,
 	toolResult,
@@ -98,6 +99,7 @@ function planResultView(
 		already_active: { status: "success", summary: "already active" },
 		declined: { status: "error", summary: "declined" },
 		revise: { status: "pending", summary: "revision requested" },
+		review_closed: { status: "pending", summary: "review closed" },
 		abandoned: { status: "error", summary: "abandoned" },
 		approved_deferred: { status: "pending", summary: "approved · deferred" },
 		approved_implement: { status: "success", summary: "approved" },
@@ -114,7 +116,7 @@ function planResultView(
 
 function renderPlanResult(
 	tool: "enter" | "exit",
-	result: AgentToolResult<PlanToolDetails>,
+	result: AgentToolResult<unknown>,
 	expanded: boolean,
 	theme: Theme,
 ) {
@@ -134,6 +136,7 @@ function renderPlanResult(
 export function registerPlanTools(
 	pi: ExtensionAPI,
 	actions: PlanModeActions,
+	reviews: BrowserReviewManager,
 ): void {
 	pi.registerTool<typeof EmptyParams>({
 		name: ENTER_PLAN_TOOL,
@@ -193,11 +196,11 @@ export function registerPlanTools(
 				},
 			);
 		}),
-		renderCall(_args: Record<string, never>, theme: Theme) {
+		renderCall(_args: unknown, theme: Theme) {
 			return toolCall(theme, "Enter Plan Mode", "requesting access");
 		},
 		renderResult(
-			result: AgentToolResult<PlanToolDetails>,
+			result: AgentToolResult<unknown>,
 			{ expanded }: ToolRenderResultOptions,
 			theme: Theme,
 		) {
@@ -233,9 +236,17 @@ export function registerPlanTools(
 			const planContent = await readPlanFile(plan);
 			const approval = await requestPlanApproval(
 				ctx,
+				reviews,
 				plan.absolutePath,
 				planContent,
 			);
+			if (approval.decision === "closed") {
+				return textResult(
+					"The user closed Plan review without a decision. Remain in Plan mode and wait for the user.",
+					{ outcome: "review_closed", planFile: plan.absolutePath },
+					true,
+				);
+			}
 			if (approval.decision === "revise") {
 				return textResult(revisePlanMessage(approval.feedback), {
 					outcome: "revise",
@@ -262,16 +273,19 @@ export function registerPlanTools(
 
 			actions.markImplementationKickoff();
 			const body = planContent ? `\n\n## Plan:\n${planContent}` : "";
+			const notes = approval.feedback
+				? `\n\n## User review notes:\n${approval.feedback}`
+				: "";
 			return textResult(
-				`${IMPLEMENTATION_KICKOFF}\n\nThe Plan is saved at ${plan.absolutePath}.${body}`,
+				`${IMPLEMENTATION_KICKOFF}\n\nThe Plan is saved at ${plan.absolutePath}.${body}${notes}`,
 				{ outcome: "approved_implement", planFile: plan.absolutePath },
 			);
 		}),
-		renderCall(_args: Record<string, never>, theme: Theme) {
+		renderCall(_args: unknown, theme: Theme) {
 			return toolCall(theme, "Exit Plan Mode", "presenting plan");
 		},
 		renderResult(
-			result: AgentToolResult<PlanToolDetails>,
+			result: AgentToolResult<unknown>,
 			{ expanded }: ToolRenderResultOptions,
 			theme: Theme,
 		) {
