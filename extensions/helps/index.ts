@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { openUrl } from "../shared/open-url.js";
 
-export const TOOLKIT_REPO_URL = "https://github.com/BigGoblin/my-pi-toolkit";
+export const TOOLKIT_REPO_URL = "https://github.com/xiaoming6969/my-pi-toolkit";
 
 export default function helpsExtension(pi: ExtensionAPI): void {
 	pi.registerCommand("helps", {

@@ -1,5 +1,17 @@
 # 更新日志
 
+## [1.1.1] - 2026-08-24
+
+### 新增
+
+- 发布公开 npm 包 `@xiaoming6969/my-pi-toolkit`，支持通过 Pi 直接安装。
+- 新增 GitHub Release 触发的 npm Trusted Publishing 工作流，通过 OIDC 自动发布同版本包并生成来源证明。
+
+### 改进
+
+- 补充 npm 包文件白名单、仓库元数据、Node.js 版本要求和 MIT 许可证。
+- 将仓库链接更新为 `xiaoming6969/my-pi-toolkit`。
+
 ## [1.1.0] - 2026-08-24
 
 ### 新增
@@ -21,4 +33,5 @@
 - 修复 Windows 下启动面板发现路径的分隔符显示问题。
 - 修复 TAPD 审阅工作流使用不受支持的通知级别问题。
 
-[1.1.0]: https://github.com/BigGoblin/my-pi-toolkit/compare/v1.0.0...v1.1.0
+[1.1.1]: https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.0.0...v1.1.0

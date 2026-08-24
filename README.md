@@ -72,10 +72,16 @@
 
 ## Install
 
+### 从 npm（推荐）
+
+```bash
+pi install npm:@xiaoming6969/my-pi-toolkit
+```
+
 ### 从源码
 
 ```bash
-git clone https://github.com/BigGoblin/my-pi-toolkit.git
+git clone https://github.com/xiaoming6969/my-pi-toolkit.git
 cd my-pi-toolkit
 npm install
 pi install .
@@ -86,7 +92,7 @@ pi install .
 可钉分支 / commit：
 
 ```bash
-pi install git:github.com/BigGoblin/my-pi-toolkit@main
+pi install git:github.com/xiaoming6969/my-pi-toolkit@main
 ```
 
 ### 本地 packages 路径
@@ -118,7 +124,7 @@ pi --no-session
 | `/context7 <query>` | 查询第三方库文档 |
 | `/subagents` | 管理子 Agent |
 | `/settings` | 切换主题等设置 |
-| `/helps` | 打开 [my-pi-toolkit](https://github.com/BigGoblin/my-pi-toolkit) 文档仓库 |
+| `/helps` | 打开 [my-pi-toolkit](https://github.com/xiaoming6969/my-pi-toolkit) 文档仓库 |
 | `/reload` | 修改扩展后重新加载运行时 |
 
 ## Configuration
@@ -169,16 +175,16 @@ pi --no-session
 若 git 安装目录缺少依赖（例如 `pi install` 显示已安装但缺少 `marked`），在缓存目录强制重装：
 
 ```bash
-cd ~/.pi/agent/git/github.com/BigGoblin/my-pi-toolkit
+cd ~/.pi/agent/git/github.com/xiaoming6969/my-pi-toolkit
 rm -rf node_modules && npm install --omit=dev
 ```
 
 或卸干净后重装：
 
 ```bash
-pi remove git:github.com/BigGoblin/my-pi-toolkit
-rm -rf ~/.pi/agent/git/github.com/BigGoblin/my-pi-toolkit
-pi install git:github.com/BigGoblin/my-pi-toolkit@main
+pi remove git:github.com/xiaoming6969/my-pi-toolkit
+rm -rf ~/.pi/agent/git/github.com/xiaoming6969/my-pi-toolkit
+pi install git:github.com/xiaoming6969/my-pi-toolkit@main
 ```
 
 </details>
@@ -197,4 +203,4 @@ pi install git:github.com/BigGoblin/my-pi-toolkit@main
 
 ## License
 
-MIT · 欢迎 [Issue](https://github.com/BigGoblin/my-pi-toolkit/issues) 与 PR；较大行为或 API 变更请先开 Issue 讨论。
+MIT · 欢迎 [Issue](https://github.com/xiaoming6969/my-pi-toolkit/issues) 与 PR；较大行为或 API 变更请先开 Issue 讨论。
