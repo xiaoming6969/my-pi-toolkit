@@ -74,21 +74,21 @@ export async function runCreateBranch(
 
 	const branch = `${branchPrefix(keyword.kind)}/${keyword.shortId}`;
 	reportProgress?.({ step: 5, total, message: `正在检查目标分支 ${branch}` });
-	if (await refExists(root, `refs/heads/${branch}`))
-		throw new Error(`本地分支已存在: ${branch}`);
+	const branchExists = await refExists(root, `refs/heads/${branch}`);
 
 	const currentBranch = repository.branch || "(detached)";
 	let result: string;
-	if (!repository.dirty) {
-		reportProgress?.({
-			step: 6,
-			total,
-			message: "工作区干净，无需迁移改动",
-		});
-		reportProgress?.({ step: 7, total, message: `正在创建分支 ${branch}` });
-		await createBranch(root, branch, baseRef, signal);
-		result = `已从 ${baseRef} 创建分支 ${branch}（未设置 upstream）`;
-	} else {
+	if (branchExists) {
+		reportProgress?.({ step: 6, total, message: "目标分支已存在，无需创建" });
+		if (repository.branch === branch) {
+			reportProgress?.({ step: 7, total, message: `当前已在 ${branch}` });
+			result = `当前已在分支 ${branch}`;
+		} else {
+			reportProgress?.({ step: 7, total, message: `正在切换到 ${branch}` });
+			await git(root, ["switch", branch], signal);
+			result = `已切换到已有分支 ${branch}`;
+		}
+	} else if (repository.dirty) {
 		reportProgress?.({
 			step: 6,
 			total,
@@ -134,6 +134,15 @@ export async function runCreateBranch(
 				total,
 				reportProgress,
 			);
+	} else {
+		reportProgress?.({
+			step: 6,
+			total,
+			message: "工作区干净，无需迁移改动",
+		});
+		reportProgress?.({ step: 7, total, message: `正在创建分支 ${branch}` });
+		await createBranch(root, branch, baseRef, signal);
+		result = `已从 ${baseRef} 创建分支 ${branch}（未设置 upstream）`;
 	}
 
 	cancel?.throwIfAborted();
