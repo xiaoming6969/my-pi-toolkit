@@ -122,7 +122,7 @@ pi --no-session
 | `/annotate <path>` / `/annotate-last` | 批注项目 Markdown 或最近一条 Assistant 消息 |
 | `/debuglog` | 进入 Debug；已在 Debug 时重新打开实时日志面板（`/debug` 为 Pi 内置诊断日志命令） |
 | `/tapd` | 打开 TAPD 待办（需配置） |
-| `/new-worktree` | 创建 worktree 并迁入当前改动和同一会话；TAPD 会话使用 TAPD 分支规则，普通会话生成 `worktree/<timestamp>` |
+| `/new-worktree` | 从已提交状态创建干净的 worktree 并切入同一会话，完成结果保留在会话中；当前未提交改动留在原目录；TAPD 会话使用 TAPD 分支规则，普通会话生成 `worktree/<timestamp>` |
 | `/apply-worktree` | 把 worktree 未提交改动迁回原目录并切回同一会话；worktree 保留 |
 | `/delete-worktree` | 删除已切回原目录的 worktree；dirty 时二次确认后强制删除 |
 | `/context7 <query>` | 查询第三方库文档 |
@@ -151,7 +151,7 @@ pi --no-session
 | --- | --- | --- |
 | ming-core | 通用能力编排：模型、浏览器审阅、Plan / Debug、自动格式化、可复用子 Agent、Dashboard、Session Branch Guard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
 | TAPD | 待办、需求分析、选项确认式技术设计、协作评审、三文档预览、Bug 定位与子需求同步 | [`extensions/tapd/README.md`](extensions/tapd/README.md) |
-| Worktree | 当前改动与同一 Pi 会话一起进入/退出独立 Git worktree | 本页 Quick Start |
+| Worktree | 同一 Pi 会话切入干净的独立 Git worktree，并可将 worktree 改动 apply 回原目录 | 本页 Quick Start |
 | Context7 | 第三方库最新文档查询 | [`extensions/context7/README.md`](extensions/context7/README.md) |
 
 完整模块列表见 [`extensions/README.md`](extensions/README.md)。

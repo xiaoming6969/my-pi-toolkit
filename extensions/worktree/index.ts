@@ -34,7 +34,7 @@ async function runSwitch(
 
 export default function worktreeExtension(pi: ExtensionAPI): void {
 	pi.registerCommand("new-worktree", {
-		description: "创建 worktree，并将当前改动和会话迁入该目录",
+		description: "创建干净的 worktree，并将当前会话切入该目录",
 		handler: async (_args, ctx) =>
 			runSwitch(ctx, () => createWorktree(pi, ctx)),
 	});

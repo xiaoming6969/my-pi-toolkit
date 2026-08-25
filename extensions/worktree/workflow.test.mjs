@@ -29,30 +29,22 @@ function fixture() {
 	return root;
 }
 
-test("create/apply/remove migrates tracked and untracked changes", async () => {
+test("create leaves current changes in the original checkout", async () => {
 	const root = fixture();
 	const branch = "worktree/test";
 	const path = defaultWorktreePath(root, branch);
 	writeFileSync(join(root, "tracked.txt"), "changed\n");
 	writeFileSync(join(root, "untracked.txt"), "new\n");
 
-	const created = await createGitWorktree({
-		git,
-		root,
-		branch,
-		baseRef: "HEAD",
-		path,
-	});
-	assert.equal(created.moved, true);
-	assert.equal(gitSync(root, "branch", "--show-current"), "main");
-	assert.equal(await gitStatus(git, root), "");
-	assert.equal(readFileSync(join(path, "tracked.txt"), "utf8"), "changed\n");
-	assert.equal(readFileSync(join(path, "untracked.txt"), "utf8"), "new\n");
+	await createGitWorktree({ git, root, branch, baseRef: "HEAD", path });
 
-	const applied = await applyGitWorktree(git, root, path);
-	assert.equal(applied.moved, true);
+	assert.equal(gitSync(root, "branch", "--show-current"), "main");
+	assert.match(await gitStatus(git, root), /tracked\.txt/);
+	assert.match(await gitStatus(git, root), /untracked\.txt/);
 	assert.equal(readFileSync(join(root, "tracked.txt"), "utf8"), "changed\n");
 	assert.equal(readFileSync(join(root, "untracked.txt"), "utf8"), "new\n");
+	assert.equal(readFileSync(join(path, "tracked.txt"), "utf8"), "base\n");
+	assert.equal(existsSync(join(path, "untracked.txt")), false);
 	assert.equal(await gitStatus(git, path), "");
 
 	await removeGitWorktree(git, root, path, false);

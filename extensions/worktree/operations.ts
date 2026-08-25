@@ -28,30 +28,12 @@ export async function createGitWorktree(options: {
 	branch: string;
 	baseRef: string;
 	path?: string;
-}): Promise<{ moved: boolean; migrationWarning?: string }> {
+}): Promise<void> {
 	const { git, root, branch, baseRef } = options;
 	const path = options.path ?? defaultWorktreePath(root, branch);
 	if (existsSync(path)) throw new Error(`worktree 目录已存在: ${path}`);
 	mkdirSync(dirname(path), { recursive: true });
-	const moved = await stash(git, root, `pi new-worktree ${branch}`);
-	try {
-		await git(root, ["worktree", "add", "-b", branch, path, baseRef]);
-	} catch (error) {
-		if (moved) await popStash(git, root);
-		throw error;
-	}
-	if (!moved) return { moved };
-	try {
-		await popStash(git, path);
-		return { moved };
-	} catch (error) {
-		return {
-			moved,
-			migrationWarning: `迁移改动时发生冲突，请在 worktree 解决；stash 已保留。${
-				error instanceof Error ? `\n${error.message}` : ""
-			}`,
-		};
-	}
+	await git(root, ["worktree", "add", "-b", branch, path, baseRef]);
 }
 
 export async function applyGitWorktree(

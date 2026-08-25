@@ -70,7 +70,7 @@ export async function createWorktree(
 	if (!(await refExists(root, target.baseRef)))
 		throw new Error(`基础分支不存在: ${target.baseRef}`);
 	const path = defaultWorktreePath(root, target.branch);
-	const { migrationWarning } = await createGitWorktree({
+	await createGitWorktree({
 		git: runGit,
 		root,
 		branch: target.branch,
@@ -87,7 +87,7 @@ export async function createWorktree(
 		phase: "active",
 	});
 	rebindSessionBranch(pi, path, target.branch, head);
-	const message = `已创建 ${target.source === "tapd" ? "TAPD " : ""}worktree\n分支: ${target.branch}\n目录: ${path}${migrationWarning ? `\n警告: ${migrationWarning}` : ""}`;
+	const message = `已创建 ${target.source === "tapd" ? "TAPD " : ""}worktree\n分支: ${target.branch}\n目录: ${path}`;
 	await switchCurrentSessionCwd(ctx, path, message);
 	return message;
 }

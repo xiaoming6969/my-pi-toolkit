@@ -61,7 +61,11 @@ export async function switchCurrentSessionCwd(
 	try {
 		const result = await ctx.switchSession(sessionFile, {
 			withSession: async (replacementCtx) => {
-				replacementCtx.ui.notify(notifyMessage, "info");
+				await replacementCtx.sendMessage({
+					customType: "worktree-command-result",
+					content: notifyMessage,
+					display: true,
+				});
 			},
 		});
 		if (result.cancelled) throw new Error("会话目录切换已取消");
