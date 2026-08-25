@@ -1,6 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import type { RepoSearchRunConfig } from "../repo-search-subagent/types.js";
+import { getLiveSubagent, setLiveSubagentIdleTimeout, setSubagentFollowupGuard } from "../shared/subagent/registry.js";
+import { batches } from "./batch-store.js";
+import {
+	findFollowupPathOwner,
+	reserveFollowupPaths,
+} from "./followup-lock.js";
+import { createProgressEmitter, type ProgressEmitter } from "./progress.js";
 import {
 	normalizeTaskPath,
 	pathsOverlap,
@@ -14,29 +21,9 @@ import type {
 	NormalizedMultiTaskTask,
 } from "./types.js";
 import { executeWorker } from "./worker-runner.js";
+import { acquireWorkerSlot } from "./worker-semaphore.js";
 
-const BATCHES_KEY = Symbol.for("my-pi-toolkit.multi-task-batches");
-const PROGRESS_DEBOUNCE_MS = 150;
-const globalState = globalThis as Record<PropertyKey, unknown>;
-const existing = globalState[BATCHES_KEY];
-const batches =
-	existing instanceof Map
-		? (existing as Map<string, MultiTaskBatch>)
-		: new Map<string, MultiTaskBatch>();
-globalState[BATCHES_KEY] = batches;
-batches.forEach((batch) => {
-	batch.workers.forEach((worker) => {
-		worker.toolCalls ??= [];
-		worker.kind ??= "implementation";
-		worker.model ??= batch.model;
-	});
-});
-
-interface ProgressEmitter {
-	emit(): void;
-	flush(): void;
-}
-
+const WORKER_IDLE_TIMEOUT_MS = 2 * 60_000;
 const progressEmitters = new Map<string, ProgressEmitter>();
 
 function workerFrom(
@@ -59,58 +46,36 @@ function workerFrom(
 	};
 }
 
-function progressKey(batch: MultiTaskBatch): string {
-	return batch.workers
-		.map((worker) => {
-			const lastCall = worker.toolCalls.slice(-1)[0];
-			return [
-				worker.id,
-				worker.status,
-				worker.progress ?? "",
-				worker.toolCalls.length,
-				lastCall?.name ?? "",
-			].join(":");
-		})
-		.join("|");
-}
-
-function createProgressEmitter(
+function installWorkerFollowupGuard(
 	batch: MultiTaskBatch,
-	onProgress: ((batch: MultiTaskBatch) => void) | undefined,
-): ProgressEmitter {
-	let timer: ReturnType<typeof setTimeout> | undefined;
-	let lastKey: string | undefined;
-	let pending = false;
-
-	const flush = () => {
-		pending = false;
-		if (timer !== undefined) {
-			clearTimeout(timer);
-			timer = undefined;
+	worker: MultiTaskWorker,
+): void {
+	if (
+		worker.status !== "completed" ||
+		!worker.reusable ||
+		!worker.subagentId
+	)
+		return;
+	const subagentId = worker.subagentId;
+	const includeResearch = worker.kind === "implementation";
+	const installed = setSubagentFollowupGuard(subagentId, () => {
+		for (const path of worker.paths) {
+			const owner = activePathOwner(batch.cwd, path, includeResearch);
+			if (owner)
+				throw new Error(
+					`任务路径正由 worker ${owner.workerId} 使用（batch ${owner.batchId}）: ${path}`,
+				);
 		}
-		if (!onProgress) return;
-		const key = progressKey(batch);
-		if (key === lastKey) return;
-		lastKey = key;
-		try {
-			onProgress(batch);
-		} catch {
-			// UI progress must never interrupt worker execution.
-		}
-	};
-
-	return {
-		emit() {
-			if (!onProgress) return;
-			pending = true;
-			if (timer !== undefined) return;
-			timer = setTimeout(() => {
-				timer = undefined;
-				if (pending) flush();
-			}, PROGRESS_DEBOUNCE_MS);
-		},
-		flush,
-	};
+		return reserveFollowupPaths({
+			subagentId,
+			kind: worker.kind,
+			batchId: batch.id,
+			workerId: worker.id,
+			cwd: batch.cwd,
+			paths: worker.paths,
+		});
+	});
+	if (!installed) worker.reusable = false;
 }
 
 async function executeBatch(options: {
@@ -125,13 +90,30 @@ async function executeBatch(options: {
 	const runNext = async (): Promise<void> => {
 		if (cursor >= batch.workers.length || batch.cancelRequested) return;
 		const worker = batch.workers[cursor++];
-		await executeWorker({
-			batch,
-			worker,
-			extensionPaths,
-			researchConfig,
-			emitProgress: progress.emit,
-		});
+		try {
+			const release = await acquireWorkerSlot(worker.controller.signal);
+			try {
+				await executeWorker({
+					batch,
+					worker,
+					extensionPaths,
+					researchConfig,
+					emitProgress: progress.emit,
+				});
+			} finally {
+				release();
+			}
+		} catch (error) {
+			if (worker.status === "queued") {
+				worker.status = batch.cancelRequested ? "cancelled" : "failed";
+				worker.progress = worker.status;
+				worker.error =
+					error instanceof Error ? error.message : String(error);
+				worker.completedAt = new Date().toISOString();
+				progress.emit();
+			}
+		}
+		installWorkerFollowupGuard(batch, worker);
 		return runNext();
 	};
 	await Promise.all(
@@ -153,6 +135,16 @@ async function executeBatch(options: {
 			: "completed";
 	}
 	batch.completedAt = new Date().toISOString();
+	for (const worker of batch.workers)
+		if (
+			worker.reusable &&
+			worker.subagentId &&
+			!setLiveSubagentIdleTimeout(
+				worker.subagentId,
+				WORKER_IDLE_TIMEOUT_MS,
+			)
+		)
+			worker.reusable = false;
 	progress.flush();
 	try {
 		onSettled?.(batch);
@@ -170,6 +162,7 @@ export function startBatch(options: {
 	maxConcurrency: number;
 	implementationTools: string[];
 	extensionPaths: string[];
+	keepOpen: boolean;
 	researchConfig?: RepoSearchRunConfig;
 	onProgress?: (batch: MultiTaskBatch) => void;
 	onSettled?: (batch: MultiTaskBatch) => void;
@@ -197,6 +190,7 @@ export function startBatch(options: {
 		createdAt: new Date().toISOString(),
 		maxConcurrency: Math.min(6, Math.max(1, options.maxConcurrency)),
 		implementationTools: options.implementationTools,
+		keepOpen: options.keepOpen,
 		cancelRequested: false,
 		workers: tasks.map((task) =>
 			workerFrom(
@@ -243,7 +237,8 @@ export function cancelBatch(batch: MultiTaskBatch): void {
 	if (batch.status !== "running") return;
 	batch.cancelRequested = true;
 	for (const worker of batch.workers) {
-		if (worker.status === "running") worker.controller.abort();
+		if (worker.status === "running" || worker.status === "queued")
+			worker.controller.abort();
 		if (worker.status === "queued") worker.status = "cancelled";
 	}
 	progressEmitters.get(batch.id)?.emit();
@@ -278,19 +273,27 @@ function findActiveTaskConflict(
 	path: string,
 	kind: NormalizedMultiTaskTask["kind"],
 ): { batchId: string; workerId: string } | undefined {
-	return activePathOwner(cwd, path, kind === "implementation");
+	const includeResearch = kind === "implementation";
+	return (
+		activePathOwner(cwd, path, includeResearch) ??
+		findFollowupPathOwner(cwd, path, includeResearch)
+	);
 }
 
 export function findActivePathOwner(
 	cwd: string,
 	path: string,
 ): { batchId: string; workerId: string } | undefined {
-	return activePathOwner(cwd, path, false);
+	return (
+		activePathOwner(cwd, path, false) ?? findFollowupPathOwner(cwd, path)
+	);
 }
 
 export function cancelBatchesForSession(parentSessionId: string): void {
 	batches.forEach((batch) => {
-		if (batch.parentSessionId === parentSessionId && batch.status === "running")
-			cancelBatch(batch);
+		if (batch.parentSessionId !== parentSessionId) return;
+		if (batch.status === "running") cancelBatch(batch);
+		for (const worker of batch.workers)
+			if (worker.subagentId) getLiveSubagent(worker.subagentId)?.dispose();
 	});
 }

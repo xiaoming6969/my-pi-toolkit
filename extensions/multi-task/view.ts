@@ -8,6 +8,8 @@ import { statusGlyph } from "../shared/tui/visual-language.js";
 import type {
 	MultiTaskBatch,
 	MultiTaskBatchView,
+	MultiTaskWorker,
+	MultiTaskWorkerView,
 } from "./types.js";
 
 const MAX_RESULT_BYTES = 50 * 1024;
@@ -36,6 +38,14 @@ function previewToolCall(
 	return TOOL_PREVIEWERS[name]?.(args, clip) ?? clip(name, 72);
 }
 
+function workerHandle(
+	worker: MultiTaskBatchView["workers"][number],
+): string {
+	return worker.reusable && worker.subagentId
+		? ` · #${worker.subagentId.slice(0, 8)} · turn ${worker.turn ?? 0}`
+		: "";
+}
+
 function workerStatusVisual(
 	status: MultiTaskBatchView["workers"][number]["status"],
 ): "active" | "success" | "error" | "pending" {
@@ -43,6 +53,34 @@ function workerStatusVisual(
 	if (status === "completed") return "success";
 	if (status === "queued") return "pending";
 	return "error";
+}
+
+function snapshotWorker(
+	worker: MultiTaskWorker,
+	includeOutput: boolean,
+): MultiTaskWorkerView {
+	const view: MultiTaskWorkerView = {
+		id: worker.id,
+		task: worker.task,
+		paths: worker.paths,
+		kind: worker.kind,
+		model: worker.model,
+		thinkingLevel: worker.thinkingLevel,
+		status: worker.status,
+		startedAt: worker.startedAt,
+		completedAt: worker.completedAt,
+		progress: worker.progress,
+		toolCalls: worker.toolCalls,
+		subagentId: worker.subagentId,
+		reusable: worker.reusable,
+		turn: worker.turn,
+		error: worker.error,
+	};
+	if (includeOutput) {
+		view.output = worker.output;
+		view.runDir = worker.runDir;
+	}
+	return view;
 }
 
 export function snapshot(
@@ -57,23 +95,9 @@ export function snapshot(
 		createdAt: batch.createdAt,
 		completedAt: batch.completedAt,
 		maxConcurrency: batch.maxConcurrency,
-		workers: batch.workers.map((worker) => ({
-			id: worker.id,
-			task: worker.task,
-			paths: worker.paths,
-			kind: worker.kind,
-			model: worker.model,
-			thinkingLevel: worker.thinkingLevel,
-			status: worker.status,
-			startedAt: worker.startedAt,
-			completedAt: worker.completedAt,
-			progress: worker.progress,
-			toolCalls: worker.toolCalls,
-			...(includeOutput
-				? { output: worker.output, runDir: worker.runDir }
-				: {}),
-			error: worker.error,
-		})),
+		workers: batch.workers.map((worker) =>
+			snapshotWorker(worker, includeOutput),
+		),
 	};
 }
 
@@ -114,7 +138,7 @@ export function progressDetails(
 		);
 		if (expanded) {
 			details.push(
-				`  └ ${truncateToWidth(`${formatModelWithThinking(worker.model, worker.thinkingLevel)} · ${worker.paths.length} scope${worker.paths.length === 1 ? "" : "s"}`, 116, "…")}`,
+				`  └ ${truncateToWidth(`${formatModelWithThinking(worker.model, worker.thinkingLevel)}${workerHandle(worker)} · ${worker.paths.length} scope${worker.paths.length === 1 ? "" : "s"}`, 116, "…")}`,
 			);
 			for (const call of worker.toolCalls.slice(-4, -1))
 				details.push(
@@ -130,14 +154,24 @@ export function collectText(batch: MultiTaskBatchView): string {
 		const result = worker.output ?? worker.error ?? "No result yet.";
 		return `## ${worker.id} · ${worker.kind} · ${worker.status}\n\n${result}`;
 	});
+	const handles = batch.workers.flatMap((worker) =>
+		worker.reusable && worker.subagentId
+			? [
+					`- ${worker.id}: Reusable subagentId: ${worker.subagentId} (turn ${worker.turn ?? 0}).`,
+				]
+			: [],
+	);
 	const output = `${summarize(batch)}\n\n${reports.join("\n\n")}`;
 	const truncated = truncateHead(output, {
 		maxBytes: MAX_RESULT_BYTES,
 		maxLines: MAX_RESULT_LINES,
 	});
-	return truncated.truncated
+	const visible = truncated.truncated
 		? `${truncated.content}\n\n[Multi Task 输出已截断；完整 worker 输出保存在工具 details 中。]`
 		: truncated.content;
+	return handles.length > 0
+		? `${visible}\n\nReusable workers:\n${handles.join("\n")}`
+		: visible;
 }
 
 export function workerSummary(

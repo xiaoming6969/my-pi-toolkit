@@ -138,6 +138,9 @@ export async function runReviewSubagent(options: {
 			model: terminal.model ?? options.model,
 			thinkingLevel: options.thinkingLevel,
 			toolCalls: terminal.toolCalls,
+			subagentId: terminal.subagentId,
+			reusable: terminal.reusable,
+			turn: terminal.turn,
 		};
 
 	const args = [
@@ -230,5 +233,7 @@ export async function runReviewSubagent(options: {
 		model: options.model,
 		thinkingLevel: options.thinkingLevel,
 		toolCalls,
+		reusable: false,
+		turn: 1,
 	};
 }

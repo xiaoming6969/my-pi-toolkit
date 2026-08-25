@@ -10,9 +10,15 @@ import {
 } from "./entry-render.js";
 
 export interface HistoricalSubagentView {
+	id?: string;
 	title: string;
 	model: string;
 	thinkingLevel?: string;
+	reusable?: boolean;
+	turnCount?: number;
+	queuedCount?: number;
+	turnStartedAt?: string;
+	idleDeadlineAt?: string;
 	cwd: string;
 	status: string;
 	markdown?: string;

@@ -5,6 +5,7 @@ import type {
 	Theme,
 	ToolRenderResultOptions,
 } from "@earendil-works/pi-coding-agent";
+import { loadSubagentUiConfig } from "../shared/subagent/config.js";
 import { toolCall, toolResult } from "../shared/tui/tool-render.js";
 import { Type } from "typebox";
 import {
@@ -50,7 +51,12 @@ function currentModel(params: MultiTaskInput, ctx: ExtensionContext): string {
 }
 
 function implementationTools(pi: ExtensionAPI): string[] {
-	return pi.getActiveTools().filter((name: string) => name !== "repo_search");
+	return pi
+		.getActiveTools()
+		.filter(
+			(name: string) =>
+				name !== "repo_search" && name !== "subagent_followup",
+		);
 }
 
 interface MultiTaskExecutionOptions {
@@ -84,6 +90,7 @@ async function runBatch(
 		maxConcurrency: params.maxConcurrency ?? 3,
 		implementationTools: implementationTools(options.pi),
 		extensionPaths: IMPLEMENTATION_WORKER_EXTENSIONS,
+		keepOpen: loadSubagentUiConfig().keepOpen,
 		researchConfig: researchConfig(params, ctx),
 		signal,
 		onProgress: (current) => {
@@ -114,6 +121,7 @@ function startBackgroundBatch(
 		maxConcurrency: params.maxConcurrency ?? 3,
 		implementationTools: implementationTools(pi),
 		extensionPaths: IMPLEMENTATION_WORKER_EXTENSIONS,
+		keepOpen: loadSubagentUiConfig().keepOpen,
 		researchConfig: researchConfig(params, ctx),
 		onSettled: (settled) =>
 			pi.sendMessage(

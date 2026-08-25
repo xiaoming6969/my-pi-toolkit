@@ -24,6 +24,14 @@ function previewToolCall(name: string, args: Record<string, unknown>): string {
 	return name;
 }
 
+function resultSummary(details: RepoSearchDetails): string {
+	const handle =
+		details.reusable && details.subagentId
+			? ` · #${details.subagentId.slice(0, 8)} · turn ${details.turn ?? 0}`
+			: "";
+	return `${formatModelWithThinking(details.model, details.thinkingLevel)}${handle}`;
+}
+
 function runningText(details: RepoSearchDetails): string {
 	const recent = details.toolCalls
 		.slice(-6)
@@ -123,7 +131,7 @@ export default function repoSearchSubagentExtension(pi: ExtensionAPI) {
 				return toolResult(theme, {
 					status: "active",
 					title: "searching",
-					summary: formatModelWithThinking(details.model, details.thinkingLevel),
+					summary: resultSummary(details),
 					details: visibleCalls.map(
 						(call) => `→ ${previewToolCall(call.name, call.arguments)}`,
 					),
@@ -135,7 +143,7 @@ export default function repoSearchSubagentExtension(pi: ExtensionAPI) {
 				return toolResult(theme, {
 					status,
 					title: "repo_search",
-					summary: `${formatModelWithThinking(details.model, details.thinkingLevel)} (${details.modelSource})`,
+					summary: `${resultSummary(details)} (${details.modelSource})`,
 					details: details.toolCalls.map(
 						(call) => `→ ${previewToolCall(call.name, call.arguments)}`,
 					),
@@ -147,7 +155,7 @@ export default function repoSearchSubagentExtension(pi: ExtensionAPI) {
 			return toolResult(theme, {
 				status,
 				title: "repo_search",
-				summary: formatModelWithThinking(details.model, details.thinkingLevel),
+				summary: resultSummary(details),
 				body: preview.text,
 				hint: preview.truncated ? "(Ctrl+O to expand)" : undefined,
 			});

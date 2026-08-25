@@ -33,7 +33,7 @@ async function runImplementation(
 		extensionPaths,
 		loadDefaultResources: true,
 		parentSessionId: batch.parentSessionId,
-		keepOpen: false,
+		keepOpen: batch.keepOpen,
 		signal: worker.controller.signal,
 		env: {
 			PI_MULTI_TASK_ALLOWED_PATHS: JSON.stringify(worker.paths),
@@ -41,11 +41,17 @@ async function runImplementation(
 		onUpdate: (update: TerminalSubagentUpdate) => {
 			worker.progress = update.status;
 			worker.toolCalls = update.toolCalls.slice(-MAX_VISIBLE_TOOL_CALLS);
+			worker.subagentId = update.subagentId;
+			worker.reusable = update.reusable;
+			worker.turn = update.turn;
 			emitProgress();
 		},
 	});
 	worker.output = result.output;
 	worker.runDir = result.runDir;
+	worker.subagentId = result.subagentId;
+	worker.reusable = result.reusable;
+	worker.turn = result.turn;
 }
 
 async function runResearch(
@@ -58,17 +64,23 @@ async function runResearch(
 		cwd: batch.cwd,
 		task: researchTask(worker),
 		config: { ...config, presentation: "manual" },
-		keepOpen: false,
+		keepOpen: batch.keepOpen,
 		parentSessionId: batch.parentSessionId,
 		signal: worker.controller.signal,
 		onUpdate: (details) => {
 			worker.progress = "searching";
 			worker.toolCalls = details.toolCalls.slice(-MAX_VISIBLE_TOOL_CALLS);
+			worker.subagentId = details.subagentId;
+			worker.reusable = details.reusable;
+			worker.turn = details.turn;
 			emitProgress();
 		},
 	});
 	worker.output = result.details.output;
 	worker.runDir = result.details.runDir;
+	worker.subagentId = result.details.subagentId;
+	worker.reusable = result.details.reusable;
+	worker.turn = result.details.turn;
 }
 
 export async function executeWorker(options: {

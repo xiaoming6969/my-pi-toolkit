@@ -37,7 +37,7 @@
 | Context7 | 为 Agent 提供第三方库最新文档，减少对训练数据的依赖 |
 | 会话与分支门禁 | 恢复会话时校验 Git 分支，降低跨分支误操作 |
 | 自动格式化 | 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 格式化本轮修改文件 |
-| 子 Agent 控制台 | `/subagents` 与 `Alt+A` 查看、管理并行任务过程 |
+| 可复用子 Agent | `/subagents` 与 `Alt+A` 查看 queued/运行/idle 时间并管理过程；相关任务可凭 `subagentId` 在同一上下文中继续执行 |
 | 启动面板与主题 | M-PI Dashboard；Footer 兼容第三方扩展状态；推荐主题 `grok-build-dark` |
 
 能力由三个扩展入口编排：`ming-core`、`tapd`、`context7`。通用模块细节见 [`extensions/README.md`](extensions/README.md)。
@@ -58,7 +58,7 @@
 
 <img src="assets/chat.png" alt="Chat session with BUILD mode" width="900" />
 
-**Subagents** — `/subagents`：Repo Search / TAPD Review 等任务列表
+**Subagents** — `/subagents`：Repo Search / TAPD Review 等任务列表与可复用 turn
 
 <img src="assets/subagents.png" alt="Subagents overlay" width="900" />
 
@@ -122,7 +122,7 @@ pi --no-session
 | `/debuglog` | 进入 Debug；已在 Debug 时重新打开实时日志面板（`/debug` 为 Pi 内置诊断日志命令） |
 | `/tapd` | 打开 TAPD 待办（需配置） |
 | `/context7 <query>` | 查询第三方库文档 |
-| `/subagents` | 管理子 Agent |
+| `/subagents` | 查看、取消或终止子 Agent；列表与详情显示 queued、运行时长、idle 剩余时间及可复用 ID/turn |
 | `/settings` | 切换主题等设置 |
 | `/helps` | 打开 [my-pi-toolkit](https://github.com/xiaoming6969/my-pi-toolkit) 文档仓库 |
 | `/reload` | 修改扩展后重新加载运行时 |
@@ -145,7 +145,7 @@ pi --no-session
 
 | 扩展 | 简介 | 文档 |
 | --- | --- | --- |
-| ming-core | 通用能力编排：模型、浏览器审阅、Plan / Debug、自动格式化、子 Agent、Dashboard、Session Branch Guard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
+| ming-core | 通用能力编排：模型、浏览器审阅、Plan / Debug、自动格式化、可复用子 Agent、Dashboard、Session Branch Guard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
 | TAPD | 待办、需求分析、选项确认式技术设计、协作评审、三文档预览、Bug 定位与子需求同步 | [`extensions/tapd/README.md`](extensions/tapd/README.md) |
 | Context7 | 第三方库最新文档查询 | [`extensions/context7/README.md`](extensions/context7/README.md) |
 

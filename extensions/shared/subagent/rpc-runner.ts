@@ -87,6 +87,7 @@ async function writeLaunchMetadata(
 				thinkingLevel: options.thinkingLevel,
 				cwd: options.cwd,
 				parentSessionId: options.parentSessionId,
+				reusable: options.keepOpen !== false,
 				mode: "manual-rpc",
 				startedAt: new Date().toISOString(),
 			},

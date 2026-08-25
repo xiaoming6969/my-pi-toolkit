@@ -68,6 +68,12 @@ function reportRisk(report: string): string {
 	);
 }
 
+function reviewHandle(details: TapdReviewToolDetails): string {
+	return details.reusable && details.subagentId
+		? ` · #${details.subagentId.slice(0, 8)} · turn ${details.turn ?? 0}`
+		: "";
+}
+
 export function registerTapdReviewTool(pi: ExtensionAPI): void {
 	pi.registerTool({
 		name: "tapd_review",
@@ -182,14 +188,22 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 				const details: TapdReviewToolDetails = {
 					running: false,
 					phase: "审核完成",
-					model,
+					model: result.model,
 					thinkingLevel,
-					toolCalls,
+					toolCalls: result.toolCalls,
+					subagentId: result.subagentId,
+					reusable: result.reusable,
+					turn: result.turn,
 					report: result.report,
 					metadata,
 				};
+				const handle = result.reusable && result.subagentId
+					? `\n\nReusable subagentId: ${result.subagentId} (turn ${result.turn}).`
+					: "";
 				return {
-					content: [{ type: "text" as const, text: result.report }],
+					content: [
+						{ type: "text" as const, text: `${result.report}${handle}` },
+					],
 					details,
 				};
 			} finally {
@@ -244,7 +258,7 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 			const view = {
 				status: "success" as const,
 				title: "TAPD review",
-				summary: `risk:${reportRisk(report)} · ${formatModelWithThinking(details.model, details.thinkingLevel)}`,
+				summary: `risk:${reportRisk(report)} · ${formatModelWithThinking(details.model, details.thinkingLevel)}${reviewHandle(details)}`,
 			};
 			if (!expanded) {
 				const preview = previewLines(report, 14);

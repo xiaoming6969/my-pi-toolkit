@@ -10,7 +10,10 @@ export interface RpcAssistantMessageEvent {
 }
 
 export interface RpcEvent {
+	id?: string;
 	type?: string;
+	command?: string;
+	success?: boolean;
 	message?: unknown;
 	assistantMessageEvent?: RpcAssistantMessageEvent;
 	toolCallId?: string;

@@ -10,6 +10,9 @@ export interface RepoSearchDetails {
 	exitCode: number;
 	stderr: string;
 	truncated: boolean;
+	subagentId?: string;
+	reusable: boolean;
+	turn?: number;
 	runDir?: string;
 }
 

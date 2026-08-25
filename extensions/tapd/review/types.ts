@@ -21,6 +21,9 @@ export interface ReviewSubagentResult {
 	model: string;
 	thinkingLevel?: string;
 	toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>;
+	subagentId?: string;
+	reusable: boolean;
+	turn: number;
 }
 
 export interface TapdReviewMetadata {
@@ -41,6 +44,9 @@ export interface TapdReviewToolDetails {
 	model: string;
 	thinkingLevel?: string;
 	toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>;
+	subagentId?: string;
+	reusable?: boolean;
+	turn?: number;
 	report?: string;
 	metadata?: TapdReviewMetadata;
 }

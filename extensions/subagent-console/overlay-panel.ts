@@ -6,6 +6,8 @@ import {
 import {
 	Markdown,
 	matchesKey,
+	truncateToWidth,
+	visibleWidth,
 	type Component,
 	type KeybindingsManager,
 	type TUI,
@@ -16,10 +18,16 @@ import {
 	overlayViewportHeight,
 	renderOverlayShell,
 } from "../shared/tui/overlay-shell.js";
-import { thinkingLevelText } from "../shared/tui/visual-language.js";
+import {
+	formatDuration,
+	statusGlyph,
+	thinkingLevelText,
+	type VisualStatus,
+} from "../shared/tui/visual-language.js";
 import {
 	createSubagentDetailNavigator,
 	type SubagentDetailItem,
+	type SubagentView,
 } from "./detail-navigation.js";
 import {
 	acquireMouseTracking,
@@ -27,10 +35,61 @@ import {
 	overlayWheelSupported,
 } from "./mouse.js";
 
-function subagentStatusColor(status: string): "accent" | "success" | "error" {
-	if (status === "running") return "accent";
+function visualStatus(status: string): VisualStatus {
+	if (status === "starting" || status === "running") return "active";
 	if (status === "completed") return "success";
-	return "error";
+	if (status === "failed") return "error";
+	return "pending";
+}
+
+export function subagentOperationalText(
+	run: SubagentView,
+	now = Date.now(),
+): string {
+	const parts: string[] = [];
+	if ((run.queuedCount ?? 0) > 0) parts.push(`queued ${run.queuedCount}`);
+	if (run.status === "running" && run.turnStartedAt) {
+		const startedAt = Date.parse(run.turnStartedAt);
+		if (Number.isFinite(startedAt))
+			parts.push(`running ${formatDuration(now - startedAt)}`);
+	} else if (run.idleDeadlineAt) {
+		const deadline = Date.parse(run.idleDeadlineAt);
+		if (Number.isFinite(deadline))
+			parts.push(`idle ${formatDuration(deadline - now)}`);
+	}
+	return parts.join(" · ");
+}
+
+export function renderSubagentHeader(
+	run: SubagentView,
+	position: string,
+	theme: Theme,
+	width: number,
+	now = Date.now(),
+): string {
+	const operation = subagentOperationalText(run, now);
+	const status = visualStatus(run.status);
+	const prefix = `${theme.bold(theme.fg("text", "SUBAGENT"))} ${theme.fg("dim", position)} `;
+	const statusText = `${statusGlyph(theme, status)} ${theme.fg("muted", run.status.toUpperCase())}`;
+	const operationText = operation ? ` ${theme.fg("muted", `· ${operation}`)}` : "";
+	const titleWidth = Math.max(
+		8,
+		width - visibleWidth(prefix) - visibleWidth(statusText + operationText) - 2,
+	);
+	const title = theme.fg(
+		"accent",
+		truncateToWidth(run.title, titleWidth, "…", true),
+	);
+	let header = `${prefix}${title}  ${statusText}${operationText}`;
+	if (width >= 80) header += theme.fg("muted", ` · ${run.model}`);
+	if (width >= 100 && run.reusable && run.id)
+		header += theme.fg(
+			"muted",
+			` · #${run.id.slice(0, 8)} · turn ${run.turnCount ?? 0}`,
+		);
+	if (width >= 120 && run.thinkingLevel)
+		header += `${theme.fg("muted", " · ")}${thinkingLevelText(run.thinkingLevel, theme, true)}`;
+	return truncateToWidth(header, width, "…", true);
 }
 
 function configuredHint(
@@ -57,7 +116,7 @@ interface SubagentOverlayPanelOptions {
 
 export function createSubagentOverlay(
 	options: SubagentOverlayPanelOptions,
-): Component {
+): Component & { dispose(): void } {
 	const navigator = createSubagentDetailNavigator(
 		options.items,
 		options.initialId,
@@ -72,6 +131,16 @@ export function createSubagentOverlay(
 	let autoFollow = true;
 	let toolOutputExpanded = false;
 	let thinkingHidden = true;
+	let disposed = false;
+	const refreshTimer = setInterval(options.requestRender, 1_000);
+	refreshTimer.unref?.();
+	const cleanup = () => {
+		if (disposed) return;
+		disposed = true;
+		clearInterval(refreshTimer);
+		navigator.dispose();
+		releaseMouseTracking();
+	};
 
 	const scrollTo = (offset: number, follow: boolean) => {
 		const maximum = Math.max(0, contentHeight - viewportHeight);
@@ -115,7 +184,7 @@ export function createSubagentOverlay(
 			},
 			{ key: "home", offset: 0, follow: false },
 			{ key: "end", offset: maximum, follow: true },
-		];
+		] as const;
 		const command = commands.find(({ key }) => matchesKey(data, key));
 		if (command) scrollTo(command.offset, command.follow);
 	};
@@ -130,7 +199,7 @@ export function createSubagentOverlay(
 		}
 		if (handleDisplayToggle(data)) return;
 		if (matchesKey(data, "escape")) {
-			navigator.dispose();
+			cleanup();
 			options.close();
 			return;
 		}
@@ -168,11 +237,12 @@ export function createSubagentOverlay(
 		scrollOffset = autoFollow ? maximum : Math.min(scrollOffset, maximum);
 		const visible = content.slice(scrollOffset, scrollOffset + viewportHeight);
 		while (visible.length < viewportHeight) visible.push("");
-		const statusColor = subagentStatusColor(run.status);
-		const thinking = run.thinkingLevel
-			? `${options.theme.fg("muted", " · ")}${thinkingLevelText(run.thinkingLevel, options.theme, true)}`
-			: "";
-		const header = `${options.theme.bold(options.theme.fg("text", "SUBAGENT"))} ${options.theme.fg("dim", navigator.position())}  ${options.theme.fg("accent", run.title)}  ${options.theme.fg(statusColor, run.status.toUpperCase())} ${options.theme.fg("muted", `· ${run.model}`)}${thinking}`;
+		const header = renderSubagentHeader(
+			run,
+			navigator.position(),
+			options.theme,
+			innerWidth,
+		);
 		const endLine = Math.min(contentHeight, scrollOffset + viewportHeight);
 		const position = contentHeight
 			? `${scrollOffset + 1}-${endLine}/${contentHeight}`
@@ -207,9 +277,6 @@ export function createSubagentOverlay(
 		handleInput,
 		render,
 		invalidate: () => {},
-		dispose: () => {
-			navigator.dispose();
-			releaseMouseTracking();
-		},
+		dispose: cleanup,
 	};
 }

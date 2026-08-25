@@ -50,6 +50,9 @@ export interface MultiTaskWorker {
 	output?: string;
 	error?: string;
 	runDir?: string;
+	subagentId?: string;
+	reusable?: boolean;
+	turn?: number;
 	progress?: string;
 	toolCalls: MultiTaskToolCall[];
 	controller: AbortController;
@@ -66,6 +69,7 @@ export interface MultiTaskBatch {
 	completedAt?: string;
 	maxConcurrency: number;
 	implementationTools: string[];
+	keepOpen: boolean;
 	cancelRequested: boolean;
 	workers: MultiTaskWorker[];
 }
@@ -83,6 +87,9 @@ export interface MultiTaskWorkerView {
 	output?: string;
 	error?: string;
 	runDir?: string;
+	subagentId?: string;
+	reusable?: boolean;
+	turn?: number;
 	progress?: string;
 	toolCalls: MultiTaskToolCall[];
 }

@@ -1,53 +1,49 @@
-import { appendFileSync } from "node:fs";
-import { join } from "node:path";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import {
+	acquireSubagentFollowup,
 	notifySubagentRegistryChanged,
 	registerLiveSubagent,
 	removeLiveSubagent,
 	type LiveSubagentRun,
-	type SubagentTranscriptEntry,
+	type SubagentRequestOptions,
+	type SubagentTurnResult,
 } from "./registry.js";
-import { RpcAssistantStream } from "./rpc-assistant-stream.js";
+import { RpcProcessStream } from "./rpc-process-stream.js";
+import { sendRpc } from "./rpc-protocol.js";
+import { writeRpcExited, writeRpcReady } from "./rpc-run-metadata.js";
+import { RpcSessionEvents } from "./rpc-session-events.js";
+import { RpcSubagentTranscript } from "./rpc-transcript.js";
 import {
-	parseRpcEvent,
-	sendRpc,
-	writeRunJson,
-	type RpcEvent,
-} from "./rpc-protocol.js";
+	emitRpcTurnUpdate,
+	RpcTurnQueue,
+	type RpcTurnRequest,
+} from "./rpc-turn-queue.js";
 import type {
 	TerminalSubagentOptions,
 	TerminalSubagentResult,
 } from "./terminal-runner.js";
+
+export const RPC_TURN_TIMEOUT_MS = 30 * 60_000;
+
 export class RpcSubagentSession {
-	private readonly lines: string[] = [];
-	private readonly entries: SubagentTranscriptEntry[] = [];
-	private readonly listeners = new Set<() => void>();
-	private readonly toolCalls: TerminalSubagentResult["toolCalls"] = [];
+	private readonly turns = new RpcTurnQueue();
+	private readonly transcript: RpcSubagentTranscript;
+	private readonly processStream: RpcProcessStream;
 	private status: LiveSubagentRun["status"] = "starting";
-	private streaming = false;
-	private readonly assistantStream = new RpcAssistantStream(this.entries, () =>
-		this.notify(),
-	);
-	private lastOutput = "";
-	private stderr = "";
-	private settled = false;
-	private buffer = "";
-	private resolveResult!: (value: TerminalSubagentResult) => void;
-	private rejectResult!: (error: Error) => void;
-	private readonly result = new Promise<TerminalSubagentResult>(
-		(resolve, reject) => {
-			this.resolveResult = resolve;
-			this.rejectResult = reject;
-		},
-	);
+	private disposed = false;
 	private readonly run: LiveSubagentRun;
+
 	constructor(
 		private readonly child: ChildProcessWithoutNullStreams,
 		private readonly id: string,
 		private readonly runDir: string,
 		private readonly options: TerminalSubagentOptions,
 	) {
+		this.transcript = new RpcSubagentTranscript(
+			runDir,
+			() => this.turns.current?.turn,
+			() => this.notifyTurn(),
+		);
 		this.run = {
 			id,
 			title: options.title,
@@ -57,239 +53,229 @@ export class RpcSubagentSession {
 			status: this.status,
 			startedAt: new Date().toISOString(),
 			parentSessionId: options.parentSessionId,
-			lines: this.lines,
-			entries: this.entries,
-			send: (message) => this.send(message),
-			abort: () => sendRpc(this.child, { type: "abort" }),
+			reusable: options.keepOpen !== false,
+			turnCount: 0,
+			queuedCount: 0,
+			lines: this.transcript.lines,
+			entries: this.transcript.entries,
+			request: (message, requestOptions) =>
+				this.requestFollowup(message, requestOptions),
+			abort: () => this.abortCurrent(),
 			dispose: () => this.dispose(),
-			subscribe: (listener) => {
-				this.listeners.add(listener);
-				return () => this.listeners.delete(listener);
-			},
+			subscribe: (listener) => this.transcript.subscribe(listener),
 		};
+		const events = new RpcSessionEvents({
+			turns: this.turns,
+			transcript: this.transcript,
+			run: this.run,
+			runDir,
+			options,
+			setStatus: (status) => this.setStatus(status),
+			finishTurn: (request, result, error) =>
+				this.finishTurn(request, result, error),
+		});
+		this.processStream = new RpcProcessStream(
+			child,
+			(event) => events.handle(event),
+			(error) => this.handleError(error),
+			(code, stderr) => this.handleClose(code, stderr),
+		);
 	}
+
 	start(task: string): Promise<TerminalSubagentResult> {
 		registerLiveSubagent(this.run);
-		this.writeReady();
-		this.attachProcessListeners();
-		if (this.options.signal?.aborted) {
-			this.stop();
-			return this.result;
-		}
-		this.options.signal?.addEventListener("abort", this.stop, { once: true });
-		this.setStatus("running");
-		this.append("Starting manual subagent…");
+		writeRpcReady(this.runDir, this.child.pid, this.run);
+		this.processStream.attach();
 		if (this.options.thinkingLevel)
 			sendRpc(this.child, {
 				type: "set_thinking_level",
 				level: this.options.thinkingLevel,
 			});
-		this.send(task);
-		return this.result;
-	}
-	private readonly stop = () => {
-		this.dispose();
-		if (!this.settled) this.rejectResult(new Error("子 Agent 已取消"));
-	};
-	private send(message: string): void {
-		if (!message.trim()) return;
-		this.entries.push({ kind: "user", text: message.trim() });
-		this.append(`YOU: ${message.trim()}`);
-		sendRpc(this.child, {
-			type: "prompt",
-			message: message.trim(),
-			...(this.streaming ? { streamingBehavior: "steer" } : {}),
+		return this.enqueue(task, true, {
+			signal: this.options.signal,
+			onUpdate: this.options.onUpdate,
 		});
 	}
-	private dispose(): void {
+
+	private requestFollowup(
+		message: string,
+		options?: SubagentRequestOptions,
+	): Promise<SubagentTurnResult> {
+		if (!this.run.reusable)
+			return Promise.reject(new Error("该子 Agent 以一次性模式启动，不能复用"));
+		if (this.disposed) return Promise.reject(new Error("该子 Agent 已退出，不能复用"));
+		return this.enqueue(message, false, options);
+	}
+
+	private enqueue(
+		message: string,
+		initial: boolean,
+		options: SubagentRequestOptions = {},
+	): Promise<SubagentTurnResult> {
+		const task = message.trim();
+		if (!task) return Promise.reject(new Error("子 Agent 任务不能为空"));
+		const { request, result } = this.turns.enqueue({
+			task,
+			initial,
+			...options,
+		});
+		request.abortListener = () => this.abortRequest(request);
+		if (request.signal?.aborted) request.abortListener();
+		else
+			request.signal?.addEventListener("abort", request.abortListener, {
+				once: true,
+			});
+		this.syncTurnState();
+		if (this.turns.current)
+			emitRpcTurnUpdate(request, "queued", this.id, this.run.reusable);
+		else void this.dispatchNext();
+		return result;
+	}
+
+	private async dispatchNext(): Promise<void> {
+		if (this.disposed) return;
+		const request = this.turns.activateNext();
+		if (!request) return;
+		this.syncTurnState();
+		this.setStatus("running");
+		try {
+			if (!request.initial) {
+				const release = await acquireSubagentFollowup(this.id);
+				if (this.disposed || this.turns.current !== request) {
+					release();
+					return;
+				}
+				request.release = release;
+			}
+			if (request.cancelled) {
+				this.finishTurn(request);
+				return;
+			}
+			this.run.turnCount = request.turn;
+			this.transcript.resetAssistant();
+			this.transcript.entries.push({ kind: "user", text: request.task });
+			this.transcript.append(`YOU: ${request.task}`);
+			sendRpc(this.child, {
+				id: request.commandId,
+				type: "prompt",
+				message: request.task,
+			});
+			request.promptSent = true;
+			request.startedAt = new Date().toISOString();
+			this.syncTurnState();
+			this.turns.armTurnTimeout(request, RPC_TURN_TIMEOUT_MS, () =>
+				this.timeoutRequest(request),
+			);
+			emitRpcTurnUpdate(request, "running", this.id, this.run.reusable);
+		} catch (error) {
+			if (this.disposed || this.turns.current !== request) return;
+			const failure = asError(error);
+			this.setStatus("failed");
+			this.transcript.append(`ERROR: ${failure.message}`);
+			this.finishTurn(request, undefined, failure);
+		}
+	}
+
+	private timeoutRequest(request: RpcTurnRequest): void {
+		const error = new Error("子 Agent turn 运行超过 30 分钟");
+		if (
+			!this.turns.timeoutActive(request, error, {
+				delayMs: this.options.abortSettleTimeoutMs ?? 5_000,
+				onTimeout: () =>
+					this.dispose(new Error(`${error.message}，abort 后 5 秒未结束`)),
+			})
+		)
+			return;
+		this.syncTurnState();
+		this.setStatus("failed");
+		this.transcript.append(`ERROR: ${error.message}`);
+		sendRpc(this.child, { type: "abort" });
+	}
+
+	private abortRequest(request: RpcTurnRequest): void {
+		const error = new Error("子 Agent 已取消");
+		const state = this.turns.cancel(request, error, {
+			delayMs: this.options.abortSettleTimeoutMs ?? 5_000,
+			onTimeout: () => this.dispose(new Error("子 Agent 取消后未结束")),
+		});
+		this.syncTurnState();
+		if (state === "queued" && request.initial) this.dispose(error);
+		if (state !== "active") return;
+		if (request.initial) this.dispose(error);
+		else if (!request.promptSent) {
+			this.setStatus("completed");
+			this.finishTurn(request);
+		} else sendRpc(this.child, { type: "abort" });
+	}
+
+	private abortCurrent(): void {
+		const request = this.turns.current;
+		if (request) this.abortRequest(request);
+		else sendRpc(this.child, { type: "abort" });
+	}
+
+	private finishTurn(
+		request: RpcTurnRequest,
+		result?: SubagentTurnResult,
+		error?: Error,
+	): void {
+		if (!this.turns.completeActive(request, result, error)) return;
+		this.syncTurnState();
+		if (this.run.reusable) {
+			void this.dispatchNext();
+			return;
+		}
+		this.turns.rejectAll(new Error("该子 Agent 以一次性模式启动，不能复用"));
+		this.dispose();
+	}
+
+	private dispose(error = new Error("子 Agent 已终止")): void {
+		if (this.disposed) return;
+		this.disposed = true;
+		this.turns.rejectAll(error);
+		this.syncTurnState();
 		sendRpc(this.child, { type: "abort" });
 		this.child.stdin.end();
 		setTimeout(() => this.child.kill("SIGTERM"), 1000).unref?.();
+	}
+
+	private syncTurnState(): void {
+		this.run.queuedCount = this.turns.queuedCount;
+		this.run.turnStartedAt = this.turns.current?.startedAt;
+		this.transcript.touch();
 	}
 
 	private setStatus(status: LiveSubagentRun["status"]): void {
 		if (this.status === status) return;
 		this.status = status;
 		this.run.status = status;
-		notifySubagentRegistryChanged();
+		notifySubagentRegistryChanged(this.run);
 	}
 
-	private append(line: string): void {
-		this.lines.push(line);
-		appendFileSync(
-			join(this.runDir, "transcript.jsonl"),
-			`${JSON.stringify({ at: new Date().toISOString(), line })}\n`,
-			{ encoding: "utf8", mode: 0o600 },
-		);
-		while (this.lines.length > 1000) this.lines.shift();
-		this.notify();
-	}
-
-	private notify(): void {
-		this.listeners.forEach((listener) => listener());
-		this.options.onUpdate?.({
-			status: this.status,
-			toolCalls: [...this.toolCalls],
-		});
-	}
-
-	private attachProcessListeners(): void {
-		this.child.stdout.on("data", (data) => this.consume(data.toString()));
-		this.child.stderr.on("data", (data) => {
-			this.stderr += data.toString();
-		});
-		this.child.on("error", (error) => this.handleError(error));
-		this.child.on("close", (code) => this.handleClose(code));
-	}
-
-	private consume(chunk: string): void {
-		this.buffer += chunk;
-		const records = this.buffer.split("\n");
-		this.buffer = records.pop() ?? "";
-		for (const record of records) this.parseRecord(record.replace(/\r$/, ""));
-	}
-
-	private parseRecord(record: string): void {
-		const event = parseRpcEvent(record);
-		if (!event) return;
-		switch (event.type) {
-			case "agent_start":
-				this.handleAgentStart();
-				break;
-			case "tool_execution_start":
-				this.handleToolStart(event);
-				break;
-			case "tool_execution_end":
-				this.handleToolEnd(event);
-				break;
-			case "message_start":
-				this.assistantStream.start(event.message);
-				break;
-			case "message_update":
-				if (event.message !== undefined)
-					this.assistantStream.update(event.message);
-				else this.assistantStream.apply(event.assistantMessageEvent);
-				break;
-			case "message_end":
-				this.handleMessage(event.message);
-				break;
-			case "agent_settled":
-				this.handleSettled();
-				break;
-			case "extension_error":
-				this.append(`ERROR: ${event.error ?? "extension error"}`);
-				break;
-			default:
-				break;
-		}
-	}
-
-	private handleAgentStart(): void {
-		this.streaming = true;
-		this.assistantStream.reset();
-		this.setStatus("running");
-		this.append("Agent started");
-	}
-
-	private handleToolStart(event: RpcEvent): void {
-		if (!event.toolName) return;
-		const args = event.args ?? {};
-		this.toolCalls.push({ name: event.toolName, arguments: args });
-		this.entries.push({
-			kind: "tool",
-			id: event.toolCallId ?? `${event.toolName}-${this.toolCalls.length}`,
-			name: event.toolName,
-			args,
-		});
-		this.append(`→ ${event.toolName} ${JSON.stringify(args)}`);
-	}
-
-	private handleToolEnd(event: RpcEvent): void {
-		if (!event.toolName) return;
-		const entry = this.entries
-			.slice()
-			.reverse()
-			.find(
-				(item) =>
-					item.kind === "tool" &&
-					(event.toolCallId
-						? item.id === event.toolCallId
-						: item.name === event.toolName),
-			);
-		if (entry?.kind === "tool") {
-			entry.result = event.result;
-			entry.isError = event.isError;
-		}
-		this.append(`${event.isError ? "✗" : "✓"} ${event.toolName}`);
-	}
-
-	private handleMessage(message: unknown): void {
-		const text = this.assistantStream.finish(message);
-		if (text === undefined) return;
-		if (text) this.lastOutput = text;
-		this.append(text ? `AGENT: ${text}` : "Assistant message completed");
-	}
-
-	private handleSettled(): void {
-		this.streaming = false;
-		this.append("Agent settled");
-		if (this.settled) return;
-		this.settled = true;
-		this.options.signal?.removeEventListener("abort", this.stop);
-		if (!this.lastOutput) {
-			this.setStatus("failed");
-			this.rejectResult(new Error("子 Agent 已结束但未返回文本结果"));
-			if (this.options.keepOpen === false) this.dispose();
-			return;
-		}
-		this.setStatus("completed");
-		this.writeResult();
-		this.resolveResult({
-			output: this.lastOutput,
-			model: this.options.model,
-			toolCalls: this.toolCalls,
-			runDir: this.runDir,
-		});
-		if (this.options.keepOpen === false) this.dispose();
+	private notifyTurn(): void {
+		const request = this.turns.current;
+		if (request)
+			emitRpcTurnUpdate(request, this.status, this.id, this.run.reusable);
 	}
 
 	private handleError(error: Error): void {
 		this.setStatus("failed");
-		this.append(`ERROR: ${error.message}`);
-		if (!this.settled) this.rejectResult(error);
+		this.transcript.append(`ERROR: ${error.message}`);
+		this.dispose(error);
 	}
 
-	private handleClose(code: number | null): void {
-		if (this.buffer.trim()) this.parseRecord(this.buffer.replace(/\r$/, ""));
+	private handleClose(code: number | null, stderr: string): void {
+		this.disposed = true;
+		const hadPendingTurn = Boolean(this.turns.current);
+		const error = new Error(stderr || `子 Agent 进程已退出（${code ?? 1}）`);
+		this.turns.rejectAll(error);
 		removeLiveSubagent(this.id);
-		this.writeExited(code);
-		if (this.status !== "completed") this.setStatus("failed");
-		this.append(`Process exited (${code ?? 1})`);
-		if (!this.settled)
-			this.rejectResult(
-				new Error(this.stderr.trim() || `子 Agent 进程已退出（${code ?? 1}）`),
-			);
+		writeRpcExited(this.runDir, code, this.run.turnCount);
+		if (hadPendingTurn || this.status !== "completed") this.setStatus("failed");
+		this.transcript.append(`Process exited (${code ?? 1})`);
 	}
+}
 
-	private writeReady(): void {
-		writeRunJson(this.runDir, "ready.json", {
-			pid: this.child.pid,
-			startedAt: this.run.startedAt,
-		});
-	}
-
-	private writeResult(): void {
-		writeRunJson(this.runDir, "result.json", {
-			output: this.lastOutput,
-			model: this.options.model,
-			completedAt: new Date().toISOString(),
-		});
-	}
-
-	private writeExited(code: number | null): void {
-		writeRunJson(this.runDir, "exited.json", {
-			exitCode: code ?? 1,
-			exitedAt: new Date().toISOString(),
-		});
-	}
+function asError(error: unknown): Error {
+	return error instanceof Error ? error : new Error(String(error));
 }

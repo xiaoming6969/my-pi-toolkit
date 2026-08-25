@@ -7,21 +7,16 @@ import {
 	resolvePresentation,
 	type SubagentPresentation,
 } from "./config.js";
+import type {
+	SubagentTurnResult,
+	SubagentTurnUpdate,
+} from "./registry.js";
 import { runRpcSubagent } from "./rpc-runner.js";
 import { SUBAGENT_RUNS_ROOT } from "./run-paths.js";
 import { launchWindowsTerminal } from "./windows-terminal.js";
 
-export interface TerminalSubagentUpdate {
-	status: string;
-	toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>;
-}
-
-export interface TerminalSubagentResult {
-	output: string;
-	model?: string;
-	toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>;
-	runDir: string;
-}
+export type TerminalSubagentUpdate = SubagentTurnUpdate;
+export type TerminalSubagentResult = SubagentTurnResult;
 
 export interface TerminalSubagentOptions {
 	cwd: string;
@@ -39,6 +34,7 @@ export interface TerminalSubagentOptions {
 	presentation?: SubagentPresentation;
 	parentSessionId?: string;
 	keepOpen?: boolean;
+	abortSettleTimeoutMs?: number;
 	env?: Record<string, string>;
 	signal?: AbortSignal;
 	onUpdate?: (update: TerminalSubagentUpdate) => void;
@@ -140,7 +136,8 @@ export async function runTerminalSubagent(
 		throw new Error("交互式子 Agent 当前只支持原生 Windows Terminal");
 	}
 	await cleanupOldRuns(config.retainCompletedMinutes);
-	const runDir = join(SUBAGENT_RUNS_ROOT, randomUUID());
+	const subagentId = randomUUID();
+	const runDir = join(SUBAGENT_RUNS_ROOT, subagentId);
 	await mkdir(join(runDir, "sessions"), { recursive: true, mode: 0o700 });
 	const task = await prepareTask(
 		runDir,
@@ -177,7 +174,15 @@ export async function runTerminalSubagent(
 	let seenEvents = 0;
 	let status = "正在 Windows Terminal 中启动子 Agent…";
 	const toolCalls: TerminalSubagentUpdate["toolCalls"] = [];
-	options.onUpdate?.({ status, toolCalls });
+	const update = () =>
+		options.onUpdate?.({
+			status,
+			toolCalls: [...toolCalls],
+			subagentId,
+			reusable: false,
+			turn: 1,
+		});
+	update();
 
 	while (true) {
 		if (options.signal?.aborted) {
@@ -195,7 +200,7 @@ export async function runTerminalSubagent(
 		}
 		if (events.length > seenEvents) {
 			seenEvents = events.length;
-			options.onUpdate?.({ status, toolCalls: [...toolCalls] });
+			update();
 		}
 		if (existsSync(resultPath)) {
 			const result = readResult(resultPath);
@@ -205,6 +210,9 @@ export async function runTerminalSubagent(
 					model: result.model,
 					toolCalls,
 					runDir,
+					subagentId,
+					reusable: false,
+					turn: 1,
 				};
 		}
 		if (existsSync(exitedPath))

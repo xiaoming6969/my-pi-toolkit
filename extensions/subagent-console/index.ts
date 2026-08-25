@@ -22,6 +22,7 @@ import type {
 import { openSubagentOverlay } from "./overlay.js";
 import { readHistoricalEntries } from "./history.js";
 import { selectSubagentAction } from "./picker.js";
+import { formatRunLabel, type RunDisplayState } from "./run-label.js";
 
 interface RunSummary {
 	dir: string;
@@ -29,7 +30,7 @@ interface RunSummary {
 	model: string;
 	thinkingLevel?: string;
 	cwd: string;
-	state: "starting" | "running" | "completed" | "failed" | "exited";
+	state: RunDisplayState;
 	startedAt?: string;
 	parentSessionId?: string;
 	live?: LiveSubagentRun;
@@ -70,28 +71,6 @@ function runState(completed: boolean, exited: boolean): RunSummary["state"] {
 	if (completed) return "completed";
 	if (exited) return "exited";
 	return "running";
-}
-
-function runIcon(state: RunSummary["state"]): string {
-	if (state === "starting" || state === "running") return "⏳";
-	if (state === "completed") return "✓";
-	if (state === "failed") return "✗";
-	return "○";
-}
-
-function formatLocalTime(value: string | undefined): string {
-	if (!value) return "未就绪";
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return value;
-	return date.toLocaleString(undefined, {
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-		hour: "2-digit",
-		minute: "2-digit",
-		second: "2-digit",
-		hour12: false,
-	});
 }
 
 async function listRuns(): Promise<RunSummary[]> {
@@ -189,7 +168,7 @@ async function showSubagents(ctx: ExtensionContext): Promise<void> {
 			ctx,
 			runs.map((run) => ({
 				id: run.dir,
-				label: `${runIcon(run.state)} ${run.title} · ${run.state} · ${formatLocalTime(run.startedAt)}`,
+				label: formatRunLabel(run),
 				parentSessionId: run.parentSessionId,
 				actions: availableActions(run),
 			})),

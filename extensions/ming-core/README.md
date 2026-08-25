@@ -13,9 +13,9 @@
 5. `built-in-tool-style` — 可选 Grok 风格 Pi 内置工具时间线（`/grok-tools`）
 6. `auto-format` — 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 批量格式化本轮修改文件
 7. `agent-todos` — 任务清单工具与 UI
-8. `multi-task` — 独立文件任务的后台并行 worker 编排
+8. `multi-task` — 独立文件任务的后台并行 worker 编排；所有 Batch 共享进程级固定 6 槽 FIFO 上限
 9. `repo-search-subagent` — 只读 Repo Search 子 Agent
-10. `subagent-console` — `/subagents` 与 `Alt+A`，完整实时/历史消息和工具时间线
+10. `subagent-console` — `/subagents`、`Alt+A` 与 `subagent_followup`；显示 queued/运行/idle 时间并按精确 ID 复用相关 Agent
 11. `session-branch-guard` — 会话与 Git 分支绑定门禁（`/session-branch`），恢复会话时校验分支，dirty 时提供 stash/直接切换/rebind
 12. `task-duration` — 在最终回复下方持久显示首次 `agent_start` 到最终 `agent_settled` 的任务耗时，不进入 LLM 上下文
 13. `startup-dashboard` — 启动面板与 Footer
@@ -34,7 +34,7 @@
 - `extensions/repo-search-subagent/gitignore-guard.ts` — Repo Search 子进程 `.gitignore` 门禁
 - `extensions/multi-task/path-guard.ts` — Multi Task worker 写入路径门禁
 
-`extensions/shared/subagent/` 仍为 repo search / console / tapd 共享库。
+`extensions/shared/subagent/` 仍为 repo search / console / tapd 共享库，并负责 managed RPC 的多 turn FIFO、固定 30 分钟 turn timeout 与当前主会话生命周期。
 
 ## 独立扩展
 

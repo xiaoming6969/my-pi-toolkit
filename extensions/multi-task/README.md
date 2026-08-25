@@ -62,7 +62,15 @@
 { "action": "cancel", "batchId": "..." }
 ```
 
-`status` 适合用户明确要求查看或排错，不是后台进度通知机制。`model` 可选，控制 implementation worker，默认继承主 Agent 当前模型。目标 worker 模型支持 reasoning 时，思考等级继承主会话并显示在聚合卡片与 Subagent Overlay Header 中；不支持 reasoning 时不会显示或传递思考等级。research worker 沿用 Repo Search 的模型优先级：受信任项目配置、用户配置、当前主 Agent 模型。Batch 内 research 强制使用内联 RPC/manual 执行并在聚合卡片中更新，不采用 Repo Search 的 split/tab 展示配置。单批最多 8 个任务，并发数范围为 1–6，默认 3；两类 worker 共用同一个并发上限。
+`status` 适合用户明确要求查看或排错，不是后台进度通知机制。`model` 可选，控制 implementation worker，默认继承主 Agent 当前模型。目标 worker 模型支持 reasoning 时，思考等级继承主会话并显示在聚合卡片与 Subagent Overlay Header 中；不支持 reasoning 时不会显示或传递思考等级。research worker 沿用 Repo Search 的模型优先级：受信任项目配置、用户配置、当前主 Agent 模型。Batch 内 research 强制使用 managed RPC/manual 执行并在聚合卡片中更新，不采用 Repo Search 的 split/tab 展示配置。单批最多 8 个任务，并发数范围为 1–6，默认 3；两类 worker 共用 Batch 上限。所有 Batch 还共享当前 Pi 进程内固定 6 槽的 FIFO worker semaphore，因此多个 Batch 不会叠加突破 6 个 running worker；各 Batch 的较低 `maxConcurrency` 继续生效。
+
+## 复用已完成 worker
+
+全局 `~/.pi/agent/subagents.json` 保持默认 `keepOpen: true` 时，`run` / `collect` 会为成功完成的 research 与 implementation worker 返回完整 `subagentId`。主 Agent 对同一 worker 有直接相关的后续任务时，可使用 `subagent_followup`；原进程、上下文、模型、工具快照和 scope 均保持不变，同一 ID 的请求按 FIFO 串行。Batch 结束后，每个 reusable worker 有 2 分钟空闲期；运行 follow-up 时暂停计时，完成后重新计时并自动回收。
+
+implementation follow-up 发出 prompt 前会重新占用原 `paths`，与运行中 Batch、其他 implementation follow-up 以及主 Agent 的 `edit` / `write` 互斥；结束、失败、取消或子进程退出后释放。子进程内原有 `path-guard.ts` 继续阻止 `edit` / `write` 扩大范围，follow-up 参数也不能提供新 paths。`bash` 和其他扩展工具的副作用仍不受这个门禁可靠覆盖，安全限制与首轮 worker 相同。research follow-up 不取得写锁并保持只读；它只登记允许 research/research 重叠的读占用，用于阻止新的重叠 implementation Batch。
+
+`keepOpen: false` 会恢复一次性 worker，不返回 reusable handle。每个 managed RPC turn 从 prompt 实际写入子进程后开始计算固定 30 分钟硬超时；超时会发送 abort、拒绝同 Agent 尚未发出的 queued turn，并最多再等待 5 秒 settled，之后终止子进程。排队等待全局 worker 槽或 follow-up 路径 guard 的时间不计入 turn 超时。复用仅限当前主会话进程和上述空闲期；超时后子进程若正常 settled 可继续复用，未 settled 而被终止、reload、切换会话、退出或手动终止后必须启动新 worker。
 
 ## 调度边界
 
@@ -99,7 +107,7 @@ implementation: 主 Agent 当前启用的工具（repo_search 除外）
 research:       read, grep, find, ls（可选启用受限 pi-lens 只读工具）
 ```
 
-implementation worker 会继承主 Agent 启动时可发现的 extensions、skills、prompt templates，并使用创建 Batch 时的活跃工具快照；`repo_search` 始终从 allowlist 排除。它另外加载 `path-guard.ts`，在每次 `edit`、`write` 前规范化目标并阻止声明范围外的写入。正常资源加载可能包含 `ming-core`，这是为继承主 Agent 能力而对默认子 Agent 瘦加载规则作出的明确例外。
+implementation worker 会继承主 Agent 启动时可发现的 extensions、skills、prompt templates，并使用创建 Batch 时的活跃工具快照；`repo_search` 与父进程控制工具 `subagent_followup` 始终从 allowlist 排除。它另外加载 `path-guard.ts`，在每次 `edit`、`write` 前规范化目标并阻止声明范围外的写入。正常资源加载可能包含 `ming-core`，这是为继承主 Agent 能力而对默认子 Agent 瘦加载规则作出的明确例外。
 
 `paths` 强制门禁只覆盖 `edit` 和 `write`。如果继承的工具包含 `bash` 或其他可产生文件副作用的扩展工具，这些副作用无法由当前路径守卫可靠识别；worker prompt 仍要求只修改声明路径，但这不是 OS 级沙箱。只应把 implementation 任务派给受信任模型，并避免在不信任项目中开放高风险工具。
 
@@ -111,13 +119,14 @@ research worker 由 Batch manager 直接调用 Repo Search runner，与 implemen
 
 - `run` 等待 worker 完成；进度只在当前工具调用仍运行时通过 partial result 更新，不产生 Agent 轮询。
 - `start` 不等待 worker 完成，因此不会阻塞主 Agent 后续工作；完成 follow-up 是后台模式的通知渠道。
-- 默认最多同时运行 3 个 worker，两类 worker 共用并发槽，其余保持 `queued`。
+- 单 Batch 默认最多同时运行 3 个 worker；所有 Batch 进程级固定最多运行 6 个，等待者按 acquire 到达顺序 FIFO，且仍保持 `queued`。
+- worker 成功、失败或取消都会在实际结束后释放全局槽；取消 Batch 或 session shutdown 会移除尚未运行的 waiter，并中止运行者后释放其槽。
 - 单个 worker 失败不会取消其他独立 worker；批次最终状态为 `failed`。
-- 主会话关闭、切换或 reload 时，该会话启动的运行中批次会被取消。
+- 主会话关闭、切换或 reload 时，该会话启动的运行中批次会被取消，已完成但保留的 reusable worker 也会终止。
 - `run` 和 `collect` 返回主 Agent 的文本最多 50 KB 或 2000 行；完整 worker 输出仍保存在工具 `details` 中。
 - 进度卡片只聚合每个 worker 最近最多 8 个工具调用，避免多 worker 并发时撑爆终端或上下文。
 - worker 正常结束但没有返回文本时会标记失败，不会让批次永久停留在运行中。
-- 批次记录保存在当前 Pi 进程内；重启 Pi 后不能再通过旧 `batchId` 收集，但子 Agent transcript 仍由共享运行目录和控制台管理。
+- 批次记录和 reusable handle 都保存在当前 Pi 进程内；重启 Pi 后不能再通过旧 `batchId` 收集或续接，但子 Agent transcript 仍由共享运行目录和控制台管理。
 
 ## 选择建议
 

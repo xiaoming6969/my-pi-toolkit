@@ -81,6 +81,9 @@ function makeDetails(options: {
 	exitCode: number;
 	stderr: string;
 	truncated?: boolean;
+	subagentId?: string;
+	reusable?: boolean;
+	turn?: number;
 	runDir?: string;
 }): RepoSearchDetails {
 	return {
@@ -93,6 +96,9 @@ function makeDetails(options: {
 		exitCode: options.exitCode,
 		stderr: options.stderr,
 		truncated: options.truncated ?? false,
+		subagentId: options.subagentId,
+		reusable: options.reusable ?? false,
+		turn: options.turn,
 		runDir: options.runDir,
 	};
 }
@@ -126,7 +132,7 @@ export async function runRepoSearchSubagent(options: {
 		keepOpen: options.keepOpen,
 		parentSessionId: options.parentSessionId,
 		signal: options.signal,
-		onUpdate: ({ toolCalls }) =>
+		onUpdate: ({ toolCalls, subagentId, reusable, turn }) =>
 			options.onUpdate?.(
 				makeDetails({
 					task: options.task,
@@ -135,13 +141,18 @@ export async function runRepoSearchSubagent(options: {
 					toolCalls,
 					exitCode: -1,
 					stderr: "",
+					subagentId,
+					reusable,
+					turn,
 				}),
 			),
 	});
 	if (terminal) {
 		const visible = truncateResult(terminal.output);
 		return {
-			content: visible.content,
+			content: terminal.reusable
+				? `${visible.content}\n\nReusable subagentId: ${terminal.subagentId} (turn ${terminal.turn}).`
+				: visible.content,
 			details: makeDetails({
 				task: options.task,
 				config: options.config,
@@ -150,6 +161,9 @@ export async function runRepoSearchSubagent(options: {
 				exitCode: 0,
 				stderr: "",
 				truncated: visible.truncated,
+				subagentId: terminal.subagentId,
+				reusable: terminal.reusable,
+				turn: terminal.turn,
 				runDir: terminal.runDir,
 			}),
 		};

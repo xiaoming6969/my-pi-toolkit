@@ -90,9 +90,15 @@ ast_grep_outline, ast_grep_dump
 
 运行期间，主对话等待工具完成，并在工具区域流式显示最近的只读工具调用；按 `Ctrl+O` 可在运行期间查看全部已记录调用。所有路径是否允许访问由当前 Git 项目的 `.gitignore` 决定：被忽略的文件或目录会在工具执行前直接阻止；未被忽略的路径可以正常检索。非 Git 项目没有 `.gitignore` 守卫。按 Escape 会取消主任务并终止子进程。完成后，主 Agent只接收压缩后的检索报告；展开工具结果可以查看更完整的信息。
 
+## 复用检索上下文
+
+manual/RPC 且 `keepOpen: true` 时，首轮结果会附带完整 `subagentId`。同一调查线程需要补查、修正结论或换一个观察角度时，主 Agent 应调用 `subagent_followup` 并传入该精确 ID，子 Agent 会直接使用已有文件发现和对话上下文，不重新启动进程。新主题、需要不同模型/权限/cwd，或没有 reusable ID 时仍调用新的 `repo_search`；需要独立审查或复核已有结论时也必须新建 reviewer，不能让原 Agent 自我审查。
+
+复用只在当前主会话进程内有效；同一 ID 的 follow-up 按 FIFO 串行。`keepOpen: false` 以及 `inline`、`split`、`tab` backend 不返回可复用 handle。续接后仍保持完全相同的只读工具白名单、扩展隔离和 `.gitignore` guard。
+
 ## 后台子 Agent 与只读 Overlay
 
-默认使用 `presentation: "manual"`：Repo Search 子 Agent 在持久 RPC Session 中后台运行，不会自动抢占焦点或创建分屏。按 `Alt+A` 可在当前 TUI 上方打开居中的大尺寸只读 Overlay，以主 Agent 相同的消息、Markdown、思考块和工具组件查看最近子 Agent 的过程；Overlay 不提供输入框，支持鼠标滚轮以及 `↑`、`↓`、`PageUp`、`PageDown`、`Home`、`End` 滚动，并使用 `Ctrl+O` 展开或折叠工具输出。按 `Esc` 返回主 Agent，但不会终止子 Agent。也可用 `/subagents` 管理指定子 Agent：列表中按 `Enter` 进入实时过程或查看历史详情；completed/exited 历史会从子 Agent session 重建完整消息、思考块和工具时间线，并继续使用主界面组件样式；thinking 可用 `app.thinking.toggle`（默认 `Ctrl+T`）折叠，built-in 工具遵循当前 `/grok-tools` 配置。只有旧记录缺少或损坏 session 时，才回退到最终 Markdown 或 transcript 文本摘要。按 `C` 请求取消，按 `X` 强制终止活跃任务，按 `D` 清理已退出的任务记录。列表默认只显示当前主会话创建的子 Agent，按 `Tab` 可切换到所有会话记录；操作后会刷新列表。首轮任务完成后报告仍会自动返回主 Agent。
+默认使用 `presentation: "manual"`：Repo Search 子 Agent 在持久 RPC Session 中后台运行，不会自动抢占焦点或创建分屏。按 `Alt+A` 可在当前 TUI 上方打开居中的大尺寸只读 Overlay，以主 Agent 相同的消息、Markdown、思考块和工具组件查看最近子 Agent 的过程；Overlay 不提供输入框，支持鼠标滚轮以及 `↑`、`↓`、`PageUp`、`PageDown`、`Home`、`End` 滚动，并使用 `Ctrl+O` 展开或折叠工具输出。按 `Esc` 返回主 Agent，但不会终止子 Agent。也可用 `/subagents` 管理指定子 Agent：列表中按 `Enter` 进入实时过程或查看历史详情；completed/exited 历史会从子 Agent session 重建完整消息、思考块和工具时间线，并继续使用主界面组件样式；thinking 可用 `app.thinking.toggle`（默认 `Ctrl+T`）折叠，built-in 工具遵循当前 `/grok-tools` 配置。只有旧记录缺少或损坏 session 时，才回退到最终 Markdown 或 transcript 文本摘要。按 `C` 请求取消，按 `X` 强制终止活跃任务，按 `D` 清理已退出的任务记录。列表默认只显示当前主会话创建的子 Agent，按 `Tab` 可切换到所有会话记录；操作后会刷新列表。首轮任务完成后报告仍会自动返回主 Agent；可复用 live Agent 的 Header 会显示短 ID 与 turn，完整 ID 在工具结果中。
 
 如需原来的 Windows Terminal 行为，可显式设置 `presentation: "split"` 或 `"tab"`；`"auto"` 会在原生 Windows Terminal 中自动分屏，在其他环境回退到内联模式。
 
@@ -111,7 +117,7 @@ ast_grep_outline, ast_grep_dump
 }
 ```
 
-`presentation` 支持 `manual`、`auto`、`inline`、`split` 和 `tab`。`manual` 是默认值并提供最接近 OpenCode 的手动进入/退出体验；`inline` 使用一次性 JSON 子进程；`split` 和 `tab` 自动打开 Windows Terminal；`auto` 根据环境决定。Repo Search 的用户级或受信任项目配置可以覆盖全局值。所有模式都严格保留只读工具白名单、扩展隔离和 `.gitignore` 守卫。由 `multi_task` 调度时会固定走非持久 RPC/manual 路径，把进度保留在同一张 Batch 工具卡片中；此场景不采用 Repo Search 配置中的 split/tab 展示方式，但仍沿用项目/用户/当前模型的选择优先级。
+`presentation` 支持 `manual`、`auto`、`inline`、`split` 和 `tab`。`manual` 是默认值并提供最接近 OpenCode 的手动进入/退出体验；`inline` 使用一次性 JSON 子进程；`split` 和 `tab` 自动打开 Windows Terminal；`auto` 根据环境决定。Repo Search 的用户级或受信任项目配置可以覆盖全局值。所有模式都严格保留只读工具白名单、扩展隔离和 `.gitignore` 守卫。由 `multi_task` 调度时会固定走 RPC/manual 路径，把进度保留在同一张 Batch 工具卡片中；全局 `keepOpen` 决定是否提供 reusable handle，保活的 worker 会在 Batch 结束后按 Multi Task 的 2 分钟空闲期自动回收。此场景不采用 Repo Search 配置中的 split/tab 展示方式，但仍沿用项目/用户/当前模型的选择优先级。
 
 ## 输出限制
 

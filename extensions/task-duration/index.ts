@@ -7,28 +7,16 @@ import type {
 	Theme,
 } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
-import { mutedLine } from "../shared/tui/visual-language.js";
+import {
+	formatDuration,
+	mutedLine,
+} from "../shared/tui/visual-language.js";
 
 const ENTRY_TYPE = "task-duration";
 
 interface TaskDurationEntry {
 	durationMs: number;
 	completedAt: number;
-}
-
-function formatDuration(durationMs: number): string {
-	const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
-	const hours = Math.floor(totalSeconds / 3600);
-	const minutes = Math.floor((totalSeconds % 3600) / 60);
-	const seconds = totalSeconds % 60;
-
-	if (hours > 0) {
-		return `${hours}h ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
-	}
-	if (minutes > 0) {
-		return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
-	}
-	return `${seconds}s`;
 }
 
 export default function taskDuration(pi: ExtensionAPI): void {
@@ -41,9 +29,11 @@ export default function taskDuration(pi: ExtensionAPI): void {
 			_options: EntryRenderOptions,
 			theme: Theme,
 		) => {
-			const durationMs = Number.isFinite(entry.data?.durationMs)
-				? entry.data.durationMs
-				: 0;
+				const rawDuration = entry.data?.durationMs;
+			const durationMs =
+				typeof rawDuration === "number" && Number.isFinite(rawDuration)
+					? rawDuration
+					: 0;
 			return new Text(
 				mutedLine(theme, `本次任务耗时 ${formatDuration(durationMs)}`),
 				0,
