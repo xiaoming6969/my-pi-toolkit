@@ -9,9 +9,12 @@ import {
 import type { TapdConfig } from "../types.js";
 import type { LinkedTapdObject } from "./types.js";
 import { updateTapdStatus } from "./tapd-api.js";
-
-const DEVELOPMENT_COMPLETE = "开发完成";
-const TEST_PASSED = "已通过";
+import {
+	DEVELOPMENT_COMPLETE,
+	functionalStoryStatus,
+	isOwnedBy,
+	TEST_PASSED,
+} from "./story-status.js";
 
 interface StoryContext {
 	story: TapdStoryDetail;
@@ -33,14 +36,6 @@ function findType(
 			englishNames.includes((type.english_name ?? "").toLowerCase()),
 		) ?? workitemTypes.find((type) => chineseNames.includes(type.name))
 	);
-}
-
-function isOwnedBy(owner: string | undefined, nick: string): boolean {
-	return (owner ?? "")
-		.split(/[;,，]/)
-		.map((value) => value.trim())
-		.filter(Boolean)
-		.includes(nick);
 }
 
 function storyLabel(story: TapdStoryDetail): string {
@@ -107,7 +102,7 @@ async function loadOwnedChildren(
 	config: TapdConfig,
 	object: LinkedTapdObject,
 	story: TapdStoryDetail,
-): Promise<{ nick: string; children: TapdStoryDetail[] }> {
+): Promise<{ nick: string; children: TapdStoryDetail[]; allChildren: TapdStoryDetail[] }> {
 	const [user, children] = await Promise.all([
 		fetchUserInfo(config),
 		fetchStoryChildren(object.workspaceId, story.id, config),
@@ -117,6 +112,7 @@ async function loadOwnedChildren(
 	return {
 		nick: user.nick,
 		children: children.filter((child) => isOwnedBy(child.owner, user.nick)),
+		allChildren: children,
 	};
 }
 
@@ -242,21 +238,20 @@ export async function updateStoryForMergeRequest(
 		];
 	}
 
-	const { nick, children } = await loadOwnedChildren(config, object, story);
+	const { nick, children, allChildren } = await loadOwnedChildren(
+		config, object, story,
+	);
 	const updates: string[] = [];
 	if (isOwnedBy(story.owner, nick)) {
-		reportProgress?.(
-			`功能需求处理人为当前用户，正在更新为 ${DEVELOPMENT_COMPLETE}...`,
+		const status = functionalStoryStatus(
+			allChildren,
+			nick,
+			developmentType.id,
+			testType?.id,
 		);
-		const effort = await updateStoryStatus(
-			config,
-			object.workspaceId,
-			story,
-			DEVELOPMENT_COMPLETE,
-		);
-		updates.push(
-			`功能需求 ${storyLabel(story)} → ${DEVELOPMENT_COMPLETE}${effortSummary(effort)}`,
-		);
+		reportProgress?.(`功能需求处理人为当前用户，正在更新为 ${status}...`);
+		await updateTapdStatus(config, object, status);
+		updates.push(`功能需求 ${storyLabel(story)} → ${status}`);
 	} else {
 		updates.push(`功能需求 ${storyLabel(story)} 跳过（处理人不是当前用户）`);
 	}

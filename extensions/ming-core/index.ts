@@ -19,6 +19,7 @@ import startupDashboard from "../startup-dashboard/index.js";
 import { registerSubagentFollowupTool } from "../subagent-console/followup-tool.js";
 import subagentConsole from "../subagent-console/index.js";
 import taskDuration from "../task-duration/index.js";
+import worktree from "../worktree/index.js";
 
 export default function mingCore(pi: ExtensionAPI): void {
 	openaiCompatModels(pi);
@@ -34,6 +35,7 @@ export default function mingCore(pi: ExtensionAPI): void {
 	subagentConsole(pi);
 	sessionBranchGuard(pi);
 	taskDuration(pi);
+	worktree(pi);
 	startupDashboard(pi);
 	helps(pi);
 }
