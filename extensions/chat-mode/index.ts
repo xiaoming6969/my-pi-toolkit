@@ -31,6 +31,7 @@ export default function chatModeExtension(pi: ExtensionAPI): void {
 	const planReviews = new BrowserReviewManager();
 	let debugPanel: DebugPanelActions;
 	let pendingImplementationKickoff = false;
+	let browserReviewEnabled = true;
 
 	function persistMode(): void {
 		if (!planFile) return;
@@ -70,12 +71,16 @@ export default function chatModeExtension(pi: ExtensionAPI): void {
 		markImplementationKickoff: () => {
 			pendingImplementationKickoff = true;
 		},
+		isBrowserReviewEnabled: () => browserReviewEnabled,
 	}, planReviews);
 
 	registerPlanCommand(pi, {
 		getMode: getChatMode,
 		getPlan: () => planFile,
 		enterPlan: (ctx) => enterPlan(ctx, "user"),
+		setBrowserReviewEnabled: (enabled) => {
+			browserReviewEnabled = enabled;
+		},
 	}, planReviews);
 	registerDebugCommand(pi, modeController, debugPanel);
 	registerFinishDebugTool(pi, {

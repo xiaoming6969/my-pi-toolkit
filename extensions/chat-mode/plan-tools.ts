@@ -7,7 +7,10 @@ import type {
 	Theme,
 	ToolRenderResultOptions,
 } from "@earendil-works/pi-coding-agent";
-import { requestPlanApproval } from "./plan-approval.js";
+import {
+	requestPlanApproval,
+	requestTerminalPlanApproval,
+} from "./plan-approval.js";
 import {
 	ENTER_PLAN_TOOL,
 	EXIT_PLAN_TOOL,
@@ -44,6 +47,7 @@ export interface PlanModeActions {
 		options?: { viaToolApproval?: boolean; entrySource?: "tool" | "user" },
 	) => void;
 	markImplementationKickoff: () => void;
+	isBrowserReviewEnabled: () => boolean;
 }
 
 function textResult(
@@ -234,12 +238,18 @@ export function registerPlanTools(
 			}
 
 			const planContent = await readPlanFile(plan);
-			const approval = await requestPlanApproval(
-				ctx,
-				reviews,
-				plan.absolutePath,
-				planContent,
-			);
+			const approval = actions.isBrowserReviewEnabled()
+				? await requestPlanApproval(
+						ctx,
+						reviews,
+						plan.absolutePath,
+						planContent,
+					)
+				: await requestTerminalPlanApproval(
+						ctx,
+						plan.absolutePath,
+						planContent,
+					);
 			if (approval.decision === "closed") {
 				return textResult(
 					"The user closed Plan review without a decision. Remain in Plan mode and wait for the user.",

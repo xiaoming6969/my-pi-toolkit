@@ -20,7 +20,7 @@
 4. Pi 空闲时立即启动下一轮；Agent 正在运行时排为 follow-up。
 5. “取消”或关闭页面不发送消息。
 
-Chat Mode 的 `exit_plan_mode` 在浏览器恢复终端原有四个选项：**批准并实现**、**批准但暂不实现**、**继续编辑**（必须先添加批注）和**取消计划**。顶部“关闭审阅”仅关闭页面并保持 Plan 不决策；`/plan review` 只批注，不审批或切模式。TAPD 三类需求文档生成后也会使用同一页面，批注只要求修改目标文档。
+Chat Mode 的 `exit_plan_mode` 默认在浏览器恢复终端原有四个选项：**批准并实现**、**批准但暂不实现**、**继续编辑**（必须先添加批注）和**取消计划**。使用 `/browser off` 可在当前 Pi 进程内让自动 Plan 审批直接回到终端，`/browser on` 重新开启；`/plan review` 仍显式打开浏览器且只批注，不审批或切模式。顶部“关闭审阅”仅关闭页面并保持 Plan 不决策。TAPD 三类需求文档生成后也会使用同一页面，批注只要求修改目标文档。
 
 `/tapd review` 不受影响：它继续负责需求/设计符合度、隐藏 Bug 和过度设计的 AI 子 Agent 审查；`/review` 负责人工逐行 diff 批注。
 
@@ -34,6 +34,6 @@ Chat Mode 的 `exit_plan_mode` 在浏览器恢复终端原有四个选项：**�
 
 ## UI
 
-页面采用 VS Code Dark Modern 风格的紧凑工作台：中性灰黑编辑区、顶部文档栏、右侧批注侧栏、细分隔线和语义化 diff 色。Plan、TAPD 文档、`/annotate` 与 `/annotate-last` 默认使用带标题、列表、表格、引用、代码块和 Mermaid 图的 Markdown 预览，并可切回源码；`/review` 仍是 diff 视图。宽屏保持编辑器与侧栏布局，`<=760px` 降为上下单栏并固定主要操作区。预览块、源码行、评论框、删除、提交和取消均可键盘访问。浏览器启动失败时 Chat Plan 和 TAPD 文档回退现有终端 Markdown overlay。
+页面采用 VS Code Dark Modern 风格的紧凑工作台：中性灰黑编辑区、顶部文档栏、右侧批注侧栏、细分隔线和语义化 diff 色。Plan、TAPD 文档、`/annotate` 与 `/annotate-last` 默认使用带标题、列表、表格、引用、代码块和 Mermaid 图的 Markdown 预览，并可切回源码；`/review` 仍是 diff 视图。宽屏保持编辑器与侧栏布局，`<=760px` 降为上下单栏并固定主要操作区。预览块、源码行、评论框、删除、提交和取消均可键盘访问。浏览器启动失败或关闭自动 Plan 浏览器审批时，Chat Plan 回退现有终端 Markdown overlay；TAPD 文档仍只在启动失败时回退。
 
 刻意未实现多人协作、远程分享、图片上传、富文本、云同步或第三方笔记软件集成；有真实需求时再扩展。

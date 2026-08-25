@@ -9,7 +9,7 @@
 1. `openai-compat-models` — 对 `models.json` 中未手写 `models` 的 OpenAI 兼容 provider 注册动态发现（`/model` 时刷新）
 2. `model-manager` — 新对话默认模型与思考等级
 3. `browser-review` — `/review`、`/annotate`、`/annotate-last` 的 localhost 浏览器逐行审阅与自动反馈
-4. `chat-mode` — Build / Plan / Ask / Debug（`Shift+Tab`、browser-first `/plan`、`/debuglog`、`enter_plan_mode` / `exit_plan_mode`、`ask_user_choice`、`finish_debug_cleanup`）
+4. `chat-mode` — Build / Plan / Ask / Debug（`Shift+Tab`、可用 `/browser off` 关闭的 browser-first Plan 审批、`/debuglog`、`enter_plan_mode` / `exit_plan_mode`、`ask_user_choice`、`finish_debug_cleanup`）
 5. `built-in-tool-style` — 可选 Grok 风格 Pi 内置工具时间线（`/grok-tools`）
 6. `auto-format` — 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 批量格式化本轮修改文件
 7. `agent-todos` — 任务清单工具与 UI

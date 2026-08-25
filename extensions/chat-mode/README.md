@@ -12,7 +12,7 @@ Plan Mode 对齐 [Grok Build](https://github.com/xai-org/grok-build) 的 `PlanMo
 BUILD → PLAN → ASK → DEBUG → BUILD
 ```
 
-也可使用 `/plan` 进入 Plan，使用 `/plan review` 随时在浏览器重新打开当前 session 已写入的方案并提交逐行批注；`/debuglog` 进入 Debug，已在 Debug 时则重新打开实时日志面板（`/debug` 是 Pi 内置诊断日志命令）。Agent 运行时不能通过快捷键或模式切换命令进入其他模式；但 `/plan review` 不触发审批或切换模式，运行中提交的批注只排为 follow-up。模型在运行中仍可调用 Enter/Exit Plan 工具。Pi 无法可靠地为已发出的模型请求动态替换工具集合，因此没有照搬 Grok 的 mid-turn toggle。
+也可使用 `/plan` 进入 Plan，使用 `/plan review` 随时在浏览器重新打开当前 session 已写入的方案并提交逐行批注。Plan 完成后的审批默认打开浏览器；使用 `/browser off` 可在当前 Pi 进程内改回终端审批，`/browser on` 重新开启。`/debuglog` 进入 Debug，已在 Debug 时则重新打开实时日志面板（`/debug` 是 Pi 内置诊断日志命令）。Agent 运行时不能通过快捷键或模式切换命令进入其他模式；但 `/plan review` 不触发审批或切换模式，运行中提交的批注只排为 follow-up。模型在运行中仍可调用 Enter/Exit Plan 工具。Pi 无法可靠地为已发出的模型请求动态替换工具集合，因此没有照搬 Grok 的 mid-turn toggle。
 
 ## Build
 
@@ -62,12 +62,12 @@ Plan 用于实施前的只读调研与方案审批：
 | 工具 | 作用 |
 | --- | --- |
 | `enter_plan_mode` | 征得同意后进入 Plan，seed 并返回本 session 固定的 `plan.md` |
-| `exit_plan_mode` | 从磁盘读取 Plan，在本地浏览器逐行审阅并批准或退回；浏览器失败时回退 TUI |
+| `exit_plan_mode` | 从磁盘读取 Plan，默认在本地浏览器逐行审阅并批准或退回；`/browser off` 后直接使用 TUI |
 | `ask_user_choice` | 在写 Plan 前集中确认全部关键决策；多题用 Tab 切换，每题提供推荐选项和最后一项自定义输入 |
 
 有 UI 时优先启动只监听 `127.0.0.1` 的一次性浏览器审阅页。Plan 默认渲染为带标题、列表、表格、引用、代码块和 Mermaid 图的 Markdown 预览；点击内容块可批注对应源行，也可切到源码做精确行批注。raw HTML 被转义，图片不发起请求，链接受协议白名单约束。浏览器提供与终端一致的四个决定：**批准并实现**切 Build 并触发 implementation kickoff；**批准但暂不实现**切 Build 后等待显式实现请求；**继续编辑**要求至少一条批注，并保持 Plan、把结构化 feedback 返回模型修改同一个 `plan.md`；**取消计划**切 Build 但不实现。顶部**关闭审阅**仅保持 Plan 并停止当前 loop。无 UI 模式仍默认“批准并实现”。
 
-浏览器启动失败时回退原有 Grok 风格 `PLAN REVIEW` Markdown overlay 和四个终端选项（批准实现、批准但暂不实现、继续编辑、取消计划）。fallback overlay 保持固定高度预算、键盘滚动、regular wheel、Mermaid 和 Unicode LaTeX。`/plan review` 本身只做浏览器批注；提交后自动把意见交给 Agent，关闭不操作，也不会切换模式或触发 implementation kickoff。
+浏览器启动失败或执行 `/browser off` 时使用原有 Grok 风格 `PLAN REVIEW` Markdown overlay 和四个终端选项（批准实现、批准但暂不实现、继续编辑、取消计划）。该开关只影响当前 Pi 进程中的自动 Plan 审批，重启或 `/reload` 后恢复默认开启；`/plan review` 仍始终显式打开浏览器。fallback overlay 保持固定高度预算、键盘滚动、regular wheel、Mermaid 和 Unicode LaTeX。`/plan review` 本身只做浏览器批注；提交后自动把意见交给 Agent，关闭不操作，也不会切换模式或触发 implementation kickoff。
 
 ## Debug
 

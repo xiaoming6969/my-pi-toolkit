@@ -13,13 +13,14 @@ interface PlanCommandOptions {
 	getMode: () => ChatMode;
 	getPlan: () => SessionPlanFile | undefined;
 	enterPlan: (ctx: ExtensionCommandContext) => Promise<unknown>;
+	setBrowserReviewEnabled: (enabled: boolean) => void;
 }
 
 const COMPLETIONS: AutocompleteItem[] = [
 	{
 		value: "review",
 		label: "review",
-		description: "再次打开当前 session 的 Plan 审阅对话框",
+		description: "再次打开当前 session 的 Plan 浏览器审阅",
 	},
 ];
 
@@ -84,6 +85,27 @@ export function registerPlanCommand(
 				return;
 			}
 			await options.enterPlan(ctx);
+		},
+	});
+
+	pi.registerCommand("browser", {
+		description: "设置 Plan 完成后使用浏览器或终端审批",
+		getArgumentCompletions: (prefix: string) =>
+			["on", "off"]
+				.filter((value) => value.startsWith(prefix.trim().toLowerCase()))
+				.map((value) => ({ value, label: value })),
+		handler: async (args: string, ctx: ExtensionCommandContext) => {
+			const action = args.trim().toLowerCase();
+			if (action !== "on" && action !== "off") {
+				ctx.ui.notify("用法：/browser on 或 /browser off", "warning");
+				return;
+			}
+			const enabled = action === "on";
+			options.setBrowserReviewEnabled(enabled);
+			ctx.ui.notify(
+				`Plan 完成后将使用${enabled ? "浏览器" : "终端"}审批。`,
+				"info",
+			);
 		},
 	});
 }
