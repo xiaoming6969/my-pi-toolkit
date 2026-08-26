@@ -39,12 +39,12 @@ export default function worktreeExtension(pi: ExtensionAPI): void {
 			runSwitch(ctx, () => createWorktree(pi, ctx)),
 	});
 	pi.registerCommand("apply-worktree", {
-		description: "将 worktree 改动迁回原目录，并切回当前会话",
+		description: "应用 worktree：原项目切到该分支并迁回未提交改动，删除工作夹并切回会话",
 		handler: async (_args, ctx) =>
 			runSwitch(ctx, () => applyWorktree(pi, ctx)),
 	});
 	pi.registerCommand("delete-worktree", {
-		description: "删除当前会话记录的 worktree",
+		description: "放弃 worktree：删除工作夹，原项目分支不变；会话在工作夹时一并切回",
 		handler: async (_args, ctx) => run(ctx, () => deleteWorktree(pi, ctx)),
 	});
 }

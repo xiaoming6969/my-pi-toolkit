@@ -22,6 +22,10 @@ async function popStash(git: GitRun, cwd: string): Promise<void> {
 	await git(cwd, ["stash", "pop", "stash@{0}"]);
 }
 
+function errorText(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
+}
+
 export async function createGitWorktree(options: {
 	git: GitRun;
 	root: string;
@@ -33,17 +37,37 @@ export async function createGitWorktree(options: {
 	const path = options.path ?? defaultWorktreePath(root, branch);
 	if (existsSync(path)) throw new Error(`worktree 目录已存在: ${path}`);
 	mkdirSync(dirname(path), { recursive: true });
-	await git(root, ["worktree", "add", "-b", branch, path, baseRef]);
+	await git(root, ["worktree", "add", "--no-track", "-b", branch, path, baseRef]);
 }
 
-export async function applyGitWorktree(
-	git: GitRun,
-	originalCwd: string,
-	worktreePath: string,
-): Promise<{ moved: boolean; applyWarning?: string }> {
+export async function applyGitWorktree(options: {
+	git: GitRun;
+	originalCwd: string;
+	worktreePath: string;
+	worktreeBranch: string;
+}): Promise<{ moved: boolean; applyWarning?: string }> {
+	const { git, originalCwd, worktreePath, worktreeBranch } = options;
 	if (await gitStatus(git, originalCwd))
 		throw new Error("原工作目录有未提交改动，请先处理后再 apply");
 	const moved = await stash(git, worktreePath, "pi apply-worktree");
+	try {
+		await removeGitWorktree(git, originalCwd, worktreePath, false);
+	} catch (error) {
+		throw new Error(
+			moved
+				? `已暂存工作夹改动，但删除工作夹失败。stash 已保留，可用 git stash apply 恢复。${errorText(error)}`
+				: errorText(error),
+		);
+	}
+	try {
+		await git(originalCwd, ["switch", worktreeBranch]);
+	} catch (error) {
+		throw new Error(
+			moved
+				? `工作夹已删除，但无法切到 ${worktreeBranch}。stash 已保留，可用 git stash apply 恢复。${errorText(error)}`
+				: errorText(error),
+		);
+	}
 	if (!moved) return { moved };
 	try {
 		await popStash(git, originalCwd);
@@ -51,9 +75,7 @@ export async function applyGitWorktree(
 	} catch (error) {
 		return {
 			moved,
-			applyWarning: `改动已应用但发生冲突；stash 已保留，请在原目录解决。${
-				error instanceof Error ? `\n${error.message}` : ""
-			}`,
+			applyWarning: `已切到 ${worktreeBranch}，但未提交改动发生冲突；stash 已保留，请在原目录解决。${errorText(error)}`,
 		};
 	}
 }

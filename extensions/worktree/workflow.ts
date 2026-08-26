@@ -99,6 +99,19 @@ function requireBinding(ctx: ExtensionCommandContext): WorktreeBinding {
 	return binding;
 }
 
+async function returnToOriginal(
+	pi: ExtensionAPI,
+	ctx: ExtensionCommandContext,
+	binding: WorktreeBinding,
+	branch: string,
+	message: string,
+): Promise<string> {
+	const head = await git(binding.originalCwd, ["rev-parse", "--short", "HEAD"]);
+	rebindSessionBranch(pi, binding.originalCwd, branch, head);
+	await switchCurrentSessionCwd(ctx, binding.originalCwd, message);
+	return message;
+}
+
 export async function applyWorktree(
 	pi: ExtensionAPI,
 	ctx: ExtensionCommandContext,
@@ -106,26 +119,22 @@ export async function applyWorktree(
 	const binding = requireBinding(ctx);
 	if (!existsSync(binding.originalCwd)) throw new Error("原工作目录不存在");
 	if (binding.phase === "applied") {
-		const message = `worktree 改动已 apply；会话已切回 ${binding.originalCwd}`;
+		const message = `已应用 worktree；会话在 ${binding.originalCwd}`;
 		await switchCurrentSessionCwd(ctx, binding.originalCwd, message);
 		return message;
 	}
 	if (!existsSync(binding.worktreePath)) throw new Error("worktree 目录不存在");
-	const { moved, applyWarning } = await applyGitWorktree(
-		runGit,
-		binding.originalCwd,
-		binding.worktreePath,
-	);
+	const { moved, applyWarning } = await applyGitWorktree({
+		git: runGit,
+		originalCwd: binding.originalCwd,
+		worktreePath: binding.worktreePath,
+		worktreeBranch: binding.worktreeBranch,
+	});
 	appendWorktreeBinding(pi, { ...binding, phase: "applied" });
-	const head = await git(binding.originalCwd, ["rev-parse", "--short", "HEAD"]);
-	rebindSessionBranch(pi, binding.originalCwd, binding.originalBranch, head);
-	let message = `worktree 没有未提交改动；会话已切回 ${binding.originalCwd}`;
-	if (moved) {
-		message = `已将改动 apply 回 ${binding.originalCwd}；worktree 保留在 ${binding.worktreePath}`;
-		if (applyWarning) message += `\n警告: ${applyWarning}`;
-	}
-	await switchCurrentSessionCwd(ctx, binding.originalCwd, message);
-	return message;
+	let message = `已应用 ${binding.worktreeBranch}；会话已回 ${binding.originalCwd}`;
+	if (moved) message = `已应用 ${binding.worktreeBranch} 及未提交改动；会话已回 ${binding.originalCwd}`;
+	if (applyWarning) message += `\n警告: ${applyWarning}`;
+	return returnToOriginal(pi, ctx, binding, binding.worktreeBranch, message);
 }
 
 export async function deleteWorktree(
@@ -133,21 +142,23 @@ export async function deleteWorktree(
 	ctx: ExtensionCommandContext,
 ): Promise<string> {
 	const binding = requireBinding(ctx);
-	if (resolve(ctx.cwd) === resolve(binding.worktreePath))
-		throw new Error("请先执行 /apply-worktree 切回原目录，再删除 worktree");
+	const inWorktree = resolve(ctx.cwd) === resolve(binding.worktreePath);
 	if (!existsSync(binding.worktreePath)) {
 		await git(binding.originalCwd, ["worktree", "prune"]);
 		appendWorktreeBinding(pi, { ...binding, phase: "deleted" });
-		return "worktree 目录已不存在，记录已清理";
+		const message = "worktree 目录已不存在，记录已清理";
+		if (inWorktree)
+			return returnToOriginal(pi, ctx, binding, binding.originalBranch, message);
+		return message;
 	}
 	const dirty = Boolean(await gitStatus(runGit, binding.worktreePath));
 	if (dirty) {
 		if (!ctx.hasUI) throw new Error("worktree 有未提交改动，非交互模式拒绝删除");
 		const confirmed = await ctx.ui.confirm(
-			"强制删除 worktree？",
+			"放弃 worktree？",
 			`未提交改动将永久丢失：\n${binding.worktreePath}`,
 		);
-		if (!confirmed) return "已取消删除 worktree";
+		if (!confirmed) return "已取消放弃 worktree";
 	}
 	await removeGitWorktree(
 		runGit,
@@ -156,5 +167,8 @@ export async function deleteWorktree(
 		dirty,
 	);
 	appendWorktreeBinding(pi, { ...binding, phase: "deleted" });
-	return `已删除 worktree: ${binding.worktreePath}`;
+	const message = `已放弃 worktree: ${binding.worktreePath}`;
+	if (inWorktree)
+		return returnToOriginal(pi, ctx, binding, binding.originalBranch, message);
+	return message;
 }

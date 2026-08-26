@@ -122,9 +122,9 @@ pi --no-session
 | `/annotate <path>` / `/annotate-last` | 批注项目 Markdown 或最近一条 Assistant 消息 |
 | `/debuglog` | 进入 Debug；已在 Debug 时重新打开实时日志面板（`/debug` 为 Pi 内置诊断日志命令） |
 | `/tapd` | 打开 TAPD 待办（需配置） |
-| `/new-worktree` | 从已提交状态创建干净的 worktree 并切入同一会话，完成结果保留在会话中；当前未提交改动留在原目录；TAPD 会话使用 TAPD 分支规则，普通会话生成 `worktree/<timestamp>` |
-| `/apply-worktree` | 把 worktree 未提交改动迁回原目录并切回同一会话；worktree 保留 |
-| `/delete-worktree` | 删除已切回原目录的 worktree；dirty 时二次确认后强制删除 |
+| `/new-worktree` | 从已提交状态创建干净的 worktree 并切入同一会话；当前未提交改动留在原目录；TAPD 会话从 `origin/dev` 建分支且 `--no-track`，普通会话生成 `worktree/<timestamp>` |
+| `/apply-worktree` | 应用：原项目切到 worktree 分支并迁回未提交改动，删除工作夹，会话切回原项目；原项目有未提交改动时拒绝 |
+| `/delete-worktree` | 放弃：删除工作夹，原项目分支不变；会话在工作夹时可直接放弃；dirty 时二次确认后强制删除 |
 | `/context7 <query>` | 查询第三方库文档 |
 | `/subagents` | 查看、取消或终止子 Agent；列表与详情显示 queued、运行时长、idle 剩余时间及可复用 ID/turn |
 | `/settings` | 切换主题等设置 |
