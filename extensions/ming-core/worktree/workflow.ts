@@ -4,13 +4,13 @@ import type {
 	ExtensionAPI,
 	ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
-import type { WorkingCancel } from "../shared/tui/working-cancel.js";
-import { loadConfig } from "../tapd/core/config.js";
-import { parseKeyword } from "../tapd/git/context.js";
-import { branchPrefix, DEFAULT_GIT_WORKFLOW_POLICY } from "../tapd/git/policy.js";
-import { fetchCommitKeyword } from "../tapd/git/tapd-api.js";
-import { git, refExists } from "../tapd/git/repository.js";
-import { readTapdSessionState } from "../tapd/sessions/session-state.js";
+import type { WorkingCancel } from "../../shared/tui/working-cancel.js";
+import { loadConfig } from "../../tapd/core/config.js";
+import { parseKeyword } from "../../tapd/git/context.js";
+import { branchPrefix, DEFAULT_GIT_WORKFLOW_POLICY } from "../../tapd/git/policy.js";
+import { fetchCommitKeyword } from "../../tapd/git/tapd-api.js";
+import { git, refExists } from "../../tapd/git/repository.js";
+import { readTapdSessionState } from "../../tapd/sessions/session-state.js";
 import {
 	applyGitWorktree,
 	createGitWorktree,

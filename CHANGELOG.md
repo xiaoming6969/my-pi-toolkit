@@ -1,5 +1,11 @@
 # 更新日志
 
+## [1.2.1] - 2026-08-26
+
+### 改进
+
+- 将 Worktree 实现移动到 `ming-core/worktree`，明确由 `ming-core` 内置加载，不再作为顶层模块展示。
+
 ## [1.2.0] - 2026-08-26
 
 ### 新增
@@ -49,6 +55,7 @@
 - 修复 Windows 下启动面板发现路径的分隔符显示问题。
 - 修复 TAPD 审阅工作流使用不受支持的通知级别问题。
 
+[1.2.1]: https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.0.0...v1.1.0

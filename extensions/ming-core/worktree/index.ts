@@ -2,7 +2,7 @@ import type {
 	ExtensionAPI,
 	ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
-import { WorkingCancel } from "../shared/tui/working-cancel.js";
+import { WorkingCancel } from "../../shared/tui/working-cancel.js";
 import {
 	applyWorktree,
 	createWorktree,

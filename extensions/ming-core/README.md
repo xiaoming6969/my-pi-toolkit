@@ -18,10 +18,11 @@
 10. `subagent-console` — `/subagents`、`Alt+A` 与 `subagent_followup`；显示 queued/运行/idle 时间并按精确 ID 复用相关 Agent
 11. `session-branch-guard` — 会话与 Git 分支绑定门禁（`/session-branch`），恢复会话时校验分支，dirty 时提供 stash/直接切换/rebind
 12. `task-duration` — 在最终回复下方持久显示首次 `agent_start` 到最终 `agent_settled` 的任务耗时，不进入 LLM 上下文
-13. `startup-dashboard` — 启动面板与 Footer
-14. `helps` — `/helps` 在浏览器打开 [my-pi-toolkit](https://github.com/xiaoming6969/my-pi-toolkit) 仓库页
+13. `worktree` — `/new-worktree`、`/apply-worktree`、`/delete-worktree`，实现位于本入口的 `worktree/` 子目录
+14. `startup-dashboard` — 启动面板与 Footer
+15. `helps` — `/helps` 在浏览器打开 [my-pi-toolkit](https://github.com/xiaoming6969/my-pi-toolkit) 仓库页
 
-实现仍在各自目录；本入口只做组合注册。新增或更新这些模块的终端 UI 时，必须遵循 [`docs/tui-development-guidelines.md`](../../docs/tui-development-guidelines.md)，并优先复用 `extensions/shared/tui/`。
+除内置的 `worktree/` 外，其余实现仍在各自目录；本入口负责组合注册。新增或更新这些模块的终端 UI 时，必须遵循 [`docs/tui-development-guidelines.md`](../../docs/tui-development-guidelines.md)，并优先复用 `extensions/shared/tui/`。
 
 `/debuglog` 进入 Debug 或重新打开实时日志面板（`/debug` 保留给 Pi 内置诊断日志）；Debug 保留完整工具，并由 `finish_debug_cleanup` 在移除临时插桩、验证修复后清日志、停 collector、返回 Build。`built-in-tool-style` 默认启用七个工具的 Grok 展示；使用 `/grok-tools native` 可关闭，`/grok-tools readonly` 可只保留只读工具。切换后会 reload 扩展。
 

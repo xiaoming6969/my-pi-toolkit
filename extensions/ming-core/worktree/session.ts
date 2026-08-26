@@ -10,7 +10,7 @@ import {
 	appendBindingCurrent,
 	appendBindingTarget,
 	createBinding,
-} from "../session-branch-guard/binding.js";
+} from "../../session-branch-guard/binding.js";
 import { rewriteSessionCwd } from "./session-file.js";
 import { WORKTREE_BINDING_TYPE, type WorktreeBinding } from "./types.js";
 

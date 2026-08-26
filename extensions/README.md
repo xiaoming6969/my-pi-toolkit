@@ -20,6 +20,7 @@
 | Repo Search Subagent | 面向当前本地仓库大规模文件检索的独立只读子 Agent；manual/RPC 模式支持上下文复用 | [`repo-search-subagent/README.md`](repo-search-subagent/README.md) |
 | Subagent Console | 用 `/subagents` / `Alt+A` 查看 queued/运行/idle 时间并管理过程；`subagent_followup` 按精确 ID 串行复用当前主会话内的 managed RPC Agent | [`subagent-console/README.md`](subagent-console/README.md) |
 | Session Branch Guard | 会话与 Git 分支绑定：恢复会话时校验分支，dirty 工作区提供 stash/直接切换/rebind，阻止跨分支误操作 | [`session-branch-guard/README.md`](session-branch-guard/README.md) |
+| Worktree | `ming-core` 内置的 worktree 创建、应用和删除命令 | [`ming-core/worktree/`](ming-core/worktree/) |
 | Agent Todos | Cursor TodoWrite 风格任务清单，editor 上方完整进度 | [`agent-todos/README.md`](agent-todos/README.md) |
 | Browser Review | localhost 浏览器 Plan / Markdown / 最近答复批注和 Git diff review，提交后自动反馈 Agent | [`browser-review/README.md`](browser-review/README.md) |
 | Chat Mode | 使用 `Shift+Tab` 循环 Build/Plan/Ask/Debug；Plan 提供默认浏览器、可用 `/browser off` 切回终端的 session `plan.md` 审批，Debug 提供完整工具、`/debuglog` 实时日志面板与 `finish_debug_cleanup` 清理闭环 | [`chat-mode/README.md`](chat-mode/README.md) |
