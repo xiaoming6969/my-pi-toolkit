@@ -1,5 +1,21 @@
 # 更新日志
 
+## [1.2.0] - 2026-08-26
+
+### 新增
+
+- 新增 Worktree 工作流，支持创建、管理并关联会话工作树。
+- 新增 Subagent 执行治理、RPC 会话队列、超时控制和持续跟进能力。
+- 新增 TAPD Review thinking level 配置。
+- 新增 Chat Mode 浏览器审阅开关。
+
+### 改进
+
+- 改进 Subagent Console 导航、运行标签、进度展示和跟进交互。
+- 改进 Multi-task 并发控制、执行进度和复用子代理流程。
+- 改进 TAPD 分支创建、故事状态及工作流反馈。
+- 简化 Model Manager，移除独立 effort 命令。
+
 ## [1.1.1] - 2026-08-24
 
 ### 新增
@@ -33,5 +49,6 @@
 - 修复 Windows 下启动面板发现路径的分隔符显示问题。
 - 修复 TAPD 审阅工作流使用不受支持的通知级别问题。
 
+[1.2.0]: https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.0.0...v1.1.0
