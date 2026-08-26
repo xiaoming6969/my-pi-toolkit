@@ -68,28 +68,40 @@ export function renderSubagentHeader(
 	now = Date.now(),
 ): string {
 	const operation = subagentOperationalText(run, now);
-	const status = visualStatus(run.status);
 	const prefix = `${theme.bold(theme.fg("text", "SUBAGENT"))} ${theme.fg("dim", position)} `;
-	const statusText = `${statusGlyph(theme, status)} ${theme.fg("muted", run.status.toUpperCase())}`;
+	const statusText = `${statusGlyph(theme, visualStatus(run.status))} ${theme.fg("muted", run.status.toUpperCase())}`;
 	const operationText = operation ? ` ${theme.fg("muted", `· ${operation}`)}` : "";
-	const titleWidth = Math.max(
-		8,
-		width - visibleWidth(prefix) - visibleWidth(statusText + operationText) - 2,
-	);
+	const rightCore = `${statusText}${operationText}`;
+	const gap = 2;
 	const title = theme.fg(
 		"accent",
-		truncateToWidth(run.title, titleWidth, "…", true),
+		truncateToWidth(
+			run.title,
+			Math.max(0, width - visibleWidth(prefix) - visibleWidth(rightCore) - gap),
+			"…",
+		),
 	);
-	let header = `${prefix}${title}  ${statusText}${operationText}`;
-	if (width >= 80) header += theme.fg("muted", ` · ${run.model}`);
+	const left = `${prefix}${title}`;
+	let right = rightCore;
+	let leftover = width - visibleWidth(left) - visibleWidth(right);
+	const extras: string[] = [];
+	if (width >= 80 && run.model)
+		extras.push(theme.fg("muted", ` · ${run.model}`));
 	if (width >= 100 && run.reusable && run.id)
-		header += theme.fg(
-			"muted",
-			` · #${run.id.slice(0, 8)} · turn ${run.turnCount ?? 0}`,
-		);
+		extras.push(theme.fg("muted", ` · #${run.id.slice(0, 8)} · turn ${run.turnCount ?? 0}`));
 	if (width >= 120 && run.thinkingLevel)
-		header += `${theme.fg("muted", " · ")}${thinkingLevelText(run.thinkingLevel, theme, true)}`;
-	return truncateToWidth(header, width, "…", true);
+		extras.push(`${theme.fg("muted", " · ")}${thinkingLevelText(run.thinkingLevel, theme, true)}`);
+	for (const extra of extras) {
+		const extraWidth = visibleWidth(extra);
+		if (leftover - extraWidth < gap) break;
+		right += extra;
+		leftover -= extraWidth;
+	}
+	return truncateToWidth(
+		`${left}${" ".repeat(Math.max(0, leftover))}${right}`,
+		width,
+		"…",
+	);
 }
 
 function configuredHint(

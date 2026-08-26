@@ -63,12 +63,42 @@ test("formats exact queued, runtime, and idle metadata responsively", () => {
 		),
 		"idle 1m 40s",
 	);
-	for (const width of [58, 78, 118, 158])
+	for (const width of [58, 78, 118, 158]) {
+		const header = renderSubagentHeader(run, "1/2", theme, width, now);
 		assert.ok(
-			visibleWidth(renderSubagentHeader(run, "1/2", theme, width, now)) <=
-				width,
+			visibleWidth(header) <= width,
 			`header exceeded ${width} columns`,
 		);
+		assert.match(header, /running 1m 30s/);
+	}
+});
+
+test("header uses leftover columns instead of truncating live status", () => {
+	const compact = renderSubagentHeader(
+		{
+			...run,
+			title: "Repo Search Subagent",
+			queuedCount: 0,
+			turnStartedAt: "2026-01-01T00:09:07.000Z",
+		},
+		"1/2",
+		theme,
+		80,
+		now,
+	);
+	assert.equal(visibleWidth(compact), 80);
+	assert.match(compact, /Repo Search Subagent/);
+	assert.match(compact, /running 53s/);
+	assert.match(compact, /provider\/model/);
+	assert.doesNotMatch(compact, /…/);
+
+	const wide = renderSubagentHeader(run, "1/2", theme, 160, now);
+	assert.equal(visibleWidth(wide), 160);
+	assert.match(wide, /running 1m 30s/);
+	assert.match(wide, /provider\/model/);
+	assert.match(wide, /#12345678/);
+	assert.match(wide, /turn 2/);
+	assert.match(wide, /high/);
 });
 
 test("overlay stays within 60/80/120/160 columns and clears its refresh timer", (context) => {

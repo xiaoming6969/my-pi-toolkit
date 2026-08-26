@@ -7,7 +7,7 @@
 - `/subagents`：打开任务列表。默认显示当前主会话创建的任务，`Tab` 切换全部会话；live 项按实际状态显示 queued 数、当前 turn 运行时长或 Multi worker 的 2 分钟 idle 剩余时间。
 - `Alt+A`：直接进入当前会话最近的活跃子 Agent；没有活跃任务时打开列表。
 - 列表：`↑/↓` 选择，`Enter` 执行默认动作，`C` 请求取消，`X` 终止活跃任务，`D` 清理已退出记录，`Esc` 关闭。
-- 详情：`←/→` 按列表排序循环切换上一个/下一个子 Agent，Header 显示当前位置、queued/运行时长/idle 剩余时间；宽屏再显示模型、可复用短 ID/turn 与 thinking，窄屏先隐藏这些低价值元数据。`↑/↓`、`PageUp/PageDown`、`Home/End` 滚动，regular 模式还支持鼠标滚轮；Pi 0.84 fullscreen 会先消费 wheel，因此详情 Footer 会隐藏无效的 wheel 提示并保留完整键盘操作。`app.thinking.toggle`（默认 `Ctrl+T`）折叠/恢复 thinking，`app.tools.expand`（默认 `Ctrl+O`）展开工具结果，`Esc` 返回列表。Footer 会显示当前配置的实际键位。详情切换范围沿用打开时的 `CURRENT`/`ALL` 列表范围；`Alt+A` 打开的详情只在当前会话的活跃子 Agent 间切换。
+- 详情：`←/→` 按列表排序循环切换上一个/下一个子 Agent。Header 左侧显示当前位置与标题，右侧显示状态与 queued/运行时长/idle 剩余时间；宽屏且该行仍有剩余列时再显示模型、可复用短 ID/turn 与 thinking，空间不足或窄屏时先隐藏这些元数据，不截断运行时长。`↑/↓`、`PageUp/PageDown`、`Home/End` 滚动，regular 模式还支持鼠标滚轮；Pi 0.84 fullscreen 会先消费 wheel，因此详情 Footer 会隐藏无效的 wheel 提示并保留完整键盘操作。`app.thinking.toggle`（默认 `Ctrl+T`）折叠/恢复 thinking，`app.tools.expand`（默认 `Ctrl+O`）展开工具结果，`Esc` 返回列表。Footer 会显示当前配置的实际键位。详情切换范围沿用打开时的 `CURRENT`/`ALL` 列表范围；`Alt+A` 打开的详情只在当前会话的活跃子 Agent 间切换。
 
 ## 复用相关 Agent
 
