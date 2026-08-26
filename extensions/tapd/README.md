@@ -71,7 +71,7 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 
 按 `Esc` 取消选择不会启动 Agent 或 Review 子代理。命令要求当前需求已有非空的 `understanding.md` 和 `design.md`，并使用只开放 `read`、`grep`、`find`、`ls` 的隔离子代理检查代码风格、文件拆分、需求满足度、设计满足度和隐藏 Bug；同时按 ponytail-review 标准检查死代码、重复实现标准库或平台能力、无必要依赖、投机性抽象/配置/扩展点、单调用层、单实现接口及可明显缩短的逻辑，报告给出最小替代方案与预计可减少行数。存在组件改动时，还会检查组件 Props/参数、默认值、事件、状态归属、数据流、组合方式、子结构和拆分边界是否合理及兼容。子代理保持瘦加载，只额外加载 OpenAI 兼容模型发现，因此可直接继承主 Agent 使用的对应自定义模型。
 
-命令会让主 Agent 调用原生 `tapd_review` 工具；执行进度、Review 子代理最近的工具调用和最终报告均显示在对话工具框中。工具卡 summary 与 Subagent Overlay Header 显示 Review 所用模型；该模型支持 reasoning 时再显示继承自主会话的思考等级（`provider/id · high`），不支持时省略。可用 `Ctrl+O` 在运行期间展开全部已记录调用，并在完成后展开完整 Markdown 报告。审核期间按 `Esc` 或 `Ctrl+C` 会通过工具的 AbortSignal 终止子代理。报告使用 `P0 Blocker`、`P1 High`、`P2 Medium`、`P3 Suggestion` 问题等级及 `LOW`、`MEDIUM`、`HIGH`、`BLOCKED` 总体风险等级。工具结果会直接进入主 Agent 上下文，主 Agent 只总结问题，不会自动修改代码。
+命令会让主 Agent 调用原生 `tapd_review` 工具；执行进度、Review 子代理最近的工具调用和最终报告均显示在对话工具框中。工具卡 summary 与 Subagent Overlay Header 显示 Review 所用模型；该模型支持 reasoning 时再显示思考等级（`provider/id · high`），不支持时省略。思考等级优先用 `tapd.json` 的 `review.thinkingLevel`，未配置时继承主会话。可用 `Ctrl+O` 在运行期间展开全部已记录调用，并在完成后展开完整 Markdown 报告。审核期间按 `Esc` 或 `Ctrl+C` 会通过工具的 AbortSignal 终止子代理。报告使用 `P0 Blocker`、`P1 High`、`P2 Medium`、`P3 Suggestion` 问题等级及 `LOW`、`MEDIUM`、`HIGH`、`BLOCKED` 总体风险等级。工具结果会直接进入主 Agent 上下文，主 Agent 只总结问题，不会自动修改代码。
 
 Review 默认使用持久 RPC 子 Agent，不会自动打开分屏。按 `Alt+A` 可在当前 TUI 上方打开居中的大尺寸只读 Overlay，以主 Agent 相同的消息、Markdown、思考块和工具组件查看最近子 Agent 的过程；Overlay 不提供输入框，支持鼠标滚轮以及 `↑`、`↓`、`PageUp`、`PageDown`、`Home`、`End` 滚动，并使用 `Ctrl+O` 展开或折叠工具输出。按 `Esc` 返回主 Agent且不终止审核。使用 `/subagents` 可以管理指定子 Agent：列表中按 `Enter` 进入实时过程或查看历史详情；completed/exited 历史会从子 Agent session 重建完整消息、思考块和工具时间线，并继续使用主界面组件样式；thinking 可用 `app.thinking.toggle`（默认 `Ctrl+T`）折叠，built-in 工具遵循当前 `/grok-tools` 配置。只有旧记录缺少或损坏 session 时，才回退到最终 Markdown 或 transcript 文本摘要。按 `C` 请求取消，按 `X` 强制终止活跃任务，按 `D` 清理已退出的任务记录。列表默认只显示当前主会话创建的子 Agent，按 `Tab` 可切换到所有会话记录；操作后会刷新列表。首轮审核完成后报告自动返回主 Agent；`keepOpen: true` 时结果同时给出 reusable `subagentId`，相关解释、追查或同一快照内的补充检查可交给 `subagent_followup`。需要独立审查时必须重新调用 `tapd_review` 启动新的 reviewer，不能让产出实现或原结论的同一 Agent 自我审查；代码或需求/设计内容已变化并需要重新采集完整 Git 快照时也必须新建 Review，不要续接旧快照。公共行为由 `~/.pi/agent/subagents.json` 配置；Review 固定使用 managed RPC/manual，`keepOpen: false` 时为一次性。Review 的 Git 上下文会复制进子 Agent 任务目录，避免主工具返回后丢失审核证据。
 
@@ -100,7 +100,8 @@ TAPD 会话关联保存在 Pi session 自身的 custom entry（`tapd-session-lin
   "token": "TAPD 个人令牌",
   "baseUrl": "可选的 TAPD API Base URL",
   "review": {
-    "model": "可选；例如 lumilegend/gpt-5.6-sol:max；默认继承主 Agent 当前模型",
+    "model": "可选；例如 lumilegend/gpt-5.6-sol；默认继承主 Agent 当前模型",
+    "thinkingLevel": "可选；off、minimal、low、medium、high、xhigh 或 max；默认继承主会话",
     "presentation": "兼容保留；Review 固定使用 manual RPC，以接入子 Agent 状态栏、Overlay 和 /subagents"
   },
   "gitlab": {

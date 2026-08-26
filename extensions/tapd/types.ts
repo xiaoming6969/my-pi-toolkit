@@ -10,6 +10,8 @@ export interface GitLabConfig {
 export interface TapdReviewConfig {
 	/** Review 子 Agent 模型，例如 anthropic/claude-sonnet-4-5。 */
 	model?: string;
+	/** Review 思考等级；off / minimal / low / medium / high / xhigh / max；默认继承主会话。 */
+	thinkingLevel?: string;
 	/** 子 Agent 展示方式；默认由 ~/.pi/agent/subagents.json 决定。 */
 	presentation?: SubagentPresentation;
 }
