@@ -15,12 +15,14 @@ export function abortError(message = "已取消：用户按 Esc 中止"): Error 
 }
 
 /**
- * Slash command 期间展示与对话区类似的 Working 行，并监听 Esc → AbortSignal。
+ * Slash command 期间展示与对话区类似的 Working 行。
+ * 默认监听 Esc → AbortSignal；`cancellable: false` 时只转圈、不写取消提示。
  * （Pi 的 setWorkingVisible 仅在 streaming 时生效，故用 widget 模拟。）
  */
 export class WorkingCancel {
 	readonly signal: AbortSignal;
 	private readonly controller = new AbortController();
+	private readonly cancellable: boolean;
 	private readonly unsub?: () => void;
 	private message = "Working...";
 	private suspended = false;
@@ -32,13 +34,18 @@ export class WorkingCancel {
 	constructor(
 		private readonly ctx: ExtensionContext,
 		private readonly key: string,
+		options?: { cancellable?: boolean; message?: string },
 	) {
+		this.cancellable = options?.cancellable !== false;
+		if (options?.message) this.message = options.message;
 		this.signal = this.controller.signal;
 		if (!ctx.hasUI) return;
-		this.unsub = ctx.ui.onTerminalInput((data) => {
-			if (this.disposed || this.suspended) return;
-			if (matchesKey(data, "escape")) this.controller.abort();
-		});
+		if (this.cancellable) {
+			this.unsub = ctx.ui.onTerminalInput((data) => {
+				if (this.disposed || this.suspended) return;
+				if (matchesKey(data, "escape")) this.controller.abort();
+			});
+		}
 		this.show();
 	}
 
@@ -67,9 +74,14 @@ export class WorkingCancel {
 	}
 
 	dispose(): void {
+		if (this.disposed) return;
 		this.disposed = true;
 		this.unsub?.();
 		this.hideWidget();
+	}
+
+	private label(): string {
+		return this.cancellable ? `${this.message} (Esc 取消)` : this.message;
 	}
 
 	private show(): void {
@@ -83,7 +95,7 @@ export class WorkingCancel {
 				}, 80);
 				return {
 					render: () => [
-						`${theme.fg("accent", SPINNER[this.frame])} ${theme.fg("muted", `${this.message} (Esc 取消)`)}`,
+						`${theme.fg("accent", SPINNER[this.frame])} ${theme.fg("muted", this.label())}`,
 					],
 					invalidate(): void {},
 					dispose: () => {

@@ -122,9 +122,9 @@ pi --no-session
 | `/annotate <path>` / `/annotate-last` | 批注项目 Markdown 或最近一条 Assistant 消息 |
 | `/debuglog` | 进入 Debug；已在 Debug 时重新打开实时日志面板（`/debug` 为 Pi 内置诊断日志命令） |
 | `/tapd` | 打开 TAPD 待办（需配置） |
-| `/new-worktree` | 从已提交状态创建干净的 worktree 并切入同一会话；当前未提交改动留在原目录；TAPD 会话从 `origin/dev` 建分支且 `--no-track`，普通会话生成 `worktree/<timestamp>` |
-| `/apply-worktree` | 应用：原项目切到 worktree 分支并迁回未提交改动，删除工作夹，会话切回原项目；原项目有未提交改动时拒绝 |
-| `/delete-worktree` | 放弃：删除工作夹，原项目分支不变；会话在工作夹时可直接放弃；dirty 时二次确认后强制删除 |
+| `/new-worktree` | 从已提交状态创建干净的 worktree。已有会话文件时切入同一会话；新开对话尚无会话文件时丢掉空对话、在工作夹开新会话。执行中显示 `new worktree...`。当前未提交改动留在原目录；TAPD 会话从 `origin/dev` 建分支且 `--no-track`，普通会话生成 `worktree/<timestamp>` |
+| `/apply-worktree` | 应用：原项目切到 worktree 分支并迁回未提交改动，删除工作夹，会话切回原项目；原项目有未提交改动时拒绝。执行中显示 `apply worktree...` |
+| `/delete-worktree` | 放弃：删除工作夹，原项目分支不变；会话在工作夹时可直接放弃；dirty 时二次确认后强制删除。执行中显示 `delete working...` |
 | `/context7 <query>` | 查询第三方库文档 |
 | `/subagents` | 查看、取消或终止子 Agent；列表与详情显示 queued、运行时长、idle 剩余时间及可复用 ID/turn |
 | `/settings` | 切换主题等设置 |
@@ -151,7 +151,7 @@ pi --no-session
 | --- | --- | --- |
 | ming-core | 通用能力编排：模型、浏览器审阅、Plan / Debug、自动格式化、可复用子 Agent、Dashboard、Session Branch Guard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
 | TAPD | 待办、需求分析、选项确认式技术设计、协作评审、三文档预览、Bug 定位与子需求同步 | [`extensions/tapd/README.md`](extensions/tapd/README.md) |
-| Worktree | 同一 Pi 会话切入干净的独立 Git worktree，并可将 worktree 改动 apply 回原目录 | 本页 Quick Start |
+| Worktree | 切入干净的独立 Git worktree；已有会话改 cwd，新开对话则在工作夹开新会话；可将改动 apply 回原目录 | 本页 Quick Start |
 | Context7 | 第三方库最新文档查询 | [`extensions/context7/README.md`](extensions/context7/README.md) |
 
 完整模块列表见 [`extensions/README.md`](extensions/README.md)。
