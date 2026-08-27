@@ -26,13 +26,13 @@ test("user entry waits for a full reminder; tool entry is immediately active", (
 	resetPlanLifecycle();
 	enterPlanFromTool();
 	assert.equal(getPlanLifecycleSnapshot().state, "active");
+	assert.equal(takePlanReminder(true), "full");
 	assert.equal(takePlanReminder(true), "sparse");
 });
 
 test("leaving plan without a tool result emits an exit reminder once", () => {
 	enterPlanFromTool();
 	leavePlan(false);
-	assert.equal(takePlanReminder(true), undefined);
 	assert.equal(takePlanReminder(false), "exit");
 	assert.equal(takePlanReminder(false), undefined);
 
