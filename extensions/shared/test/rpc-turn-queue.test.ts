@@ -5,7 +5,7 @@ import {
 	RpcTurnQueue,
 } from "../subagent/rpc-turn-queue.ts";
 
-test("RpcTurnQueue covers activate, cancel, timeout, and complete paths", async (t) => {
+test("RpcTurnQueue covers activate, cancel, and complete paths", async (t) => {
 	t.mock.timers.enable({ apis: ["setTimeout"] });
 	const queue = new RpcTurnQueue();
 	assert.equal(queue.activateNext(), undefined);
@@ -69,42 +69,12 @@ test("RpcTurnQueue covers activate, cancel, timeout, and complete paths", async 
 	assert.equal(queue.completeActive(third.request, undefined, new Error("done")), true);
 
 	const fourth = queue.enqueue({ task: "four", initial: true });
-	const fifth = queue.enqueue({ task: "five", initial: true });
-	const fourthActive = queue.activateNext();
-	assert.equal(fourthActive, fourth.request);
-	assert.equal(queue.timeoutActive(fifth.request, new Error("wrong"), {
-		delayMs: 5,
-		onTimeout: () => {},
-	}), false);
-	assert.equal(
-		queue.timeoutActive(fourth.request, new Error("slow"), {
-			delayMs: 5,
-			onTimeout: () => {},
-		}),
-		true,
-	);
-	await assert.rejects(fifth.result, /slow/);
-	assert.equal(
-		queue.completeActive(fourth.request, {
-			output: "ok",
-			toolCalls: [],
-			runDir: "/tmp",
-			subagentId: "a",
-			reusable: false,
-			turn: 1,
-		}),
-		true,
-	);
-	assert.equal(await fourth.result.then((value) => value.output), "ok");
-
-	const sixth = queue.enqueue({ task: "six", initial: true });
 	queue.activateNext();
-	queue.armTurnTimeout(sixth.request, 5, () => {});
 	queue.rejectAll(new Error("shutdown"));
-	await assert.rejects(sixth.result, /shutdown/);
+	await assert.rejects(fourth.result, /shutdown/);
 
-	const seventh = queue.enqueue({ task: "seven", initial: true });
+	const fifth = queue.enqueue({ task: "five", initial: true });
 	queue.activateNext();
-	assert.equal(queue.completeActive(seventh.request), true);
-	await assert.rejects(seventh.result, /未返回结果/);
+	assert.equal(queue.completeActive(fifth.request), true);
+	await assert.rejects(fifth.result, /未返回结果/);
 });

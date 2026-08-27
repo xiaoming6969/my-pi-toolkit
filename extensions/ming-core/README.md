@@ -35,7 +35,7 @@
 - `extensions/repo-search-subagent/gitignore-guard.ts` — Repo Search 子进程 `.gitignore` 门禁
 - `extensions/multi-task/path-guard.ts` — Multi Task worker 写入路径门禁
 
-`extensions/shared/subagent/` 仍为 repo search / console / tapd 共享库，并负责 managed RPC 的多 turn FIFO、固定 30 分钟 turn timeout 与当前主会话生命周期。
+`extensions/shared/subagent/` 仍为 repo search / console / tapd 共享库，并负责 managed RPC 的多 turn FIFO 与当前主会话生命周期。
 
 ## 独立扩展
 

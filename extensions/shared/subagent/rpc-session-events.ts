@@ -36,7 +36,7 @@ export class RpcSessionEvents {
 		}
 		if (event.type === "agent_start") {
 			this.state.transcript.resetAssistant();
-			if (!request?.timedOut) this.state.setStatus("running");
+			this.state.setStatus("running");
 			this.state.transcript.append("Agent started");
 		} else if (event.type === "agent_settled") this.handleSettled();
 		else if (event.type === "extension_error")
@@ -49,8 +49,7 @@ export class RpcSessionEvents {
 		const request = this.state.turns.current;
 		if (!request || event.id !== request.commandId || event.success !== false)
 			return;
-		const error =
-			request.timeoutError ?? new Error(event.error ?? "子 Agent 拒绝了任务");
+		const error = new Error(event.error ?? "子 Agent 拒绝了任务");
 		this.state.setStatus("failed");
 		this.state.transcript.append(`ERROR: ${error.message}`);
 		this.state.finishTurn(request, undefined, error);
@@ -60,11 +59,6 @@ export class RpcSessionEvents {
 		this.state.transcript.append("Agent settled");
 		const request = this.state.turns.current;
 		if (!request) return;
-		if (request.timeoutError) {
-			this.state.setStatus("failed");
-			this.state.finishTurn(request, undefined, request.timeoutError);
-			return;
-		}
 		if (request.cancelled) {
 			this.state.setStatus("completed");
 			this.state.finishTurn(request);

@@ -70,7 +70,7 @@
 
 implementation follow-up 发出 prompt 前会重新占用原 `paths`，与运行中 Batch、其他 implementation follow-up 以及主 Agent 的 `edit` / `write` 互斥；结束、失败、取消或子进程退出后释放。子进程内原有 `path-guard.ts` 继续阻止 `edit` / `write` 扩大范围，follow-up 参数也不能提供新 paths。`bash` 和其他扩展工具的副作用仍不受这个门禁可靠覆盖，安全限制与首轮 worker 相同。research follow-up 不取得写锁并保持只读；它只登记允许 research/research 重叠的读占用，用于阻止新的重叠 implementation Batch。
 
-`keepOpen: false` 会恢复一次性 worker，不返回 reusable handle。每个 managed RPC turn 从 prompt 实际写入子进程后开始计算固定 30 分钟硬超时；超时会发送 abort、拒绝同 Agent 尚未发出的 queued turn，并最多再等待 5 秒 settled，之后终止子进程。排队等待全局 worker 槽或 follow-up 路径 guard 的时间不计入 turn 超时。复用仅限当前主会话进程和上述空闲期；超时后子进程若正常 settled 可继续复用，未 settled 而被终止、reload、切换会话、退出或手动终止后必须启动新 worker。
+`keepOpen: false` 会恢复一次性 worker，不返回 reusable handle。managed RPC turn 不设固定运行时限，会持续到正常 settled、用户取消、主会话 shutdown/reload、子进程退出或强制 dispose；用户取消后最多等待 5 秒 settled，之后终止子进程。复用仅限当前主会话进程和上述空闲期；worker 被终止、reload、切换会话、退出或手动终止后必须启动新 worker。
 
 ## 调度边界
 
