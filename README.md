@@ -201,6 +201,7 @@ pi install git:github.com/xiaoming6969/my-pi-toolkit@main
 ```bash
 npm test
 npm run test:coverage
+npm run coverage:report
 ```
 
 每个模块的测试放在 `extensions/<module>/test/`，仓库级检查放在 `test/`。约定见 [`docs/testing.md`](docs/testing.md) 与 [`CONTRIBUTING.md`](CONTRIBUTING.md)。

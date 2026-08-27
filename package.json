@@ -24,7 +24,8 @@
   "scripts": {
     "test": "node scripts/run-tests.mjs",
     "test:watch": "node scripts/run-tests.mjs --watch",
-    "test:coverage": "node scripts/run-tests.mjs --coverage"
+    "test:coverage": "node scripts/run-tests.mjs --coverage",
+    "coverage:report": "node scripts/coverage-report.mjs"
   },
   "files": [
     "extensions/",

@@ -12,6 +12,7 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   test:
@@ -40,6 +41,29 @@ jobs:
       - name: 运行测试并收集覆盖率
         if: matrix.node == '22'
         run: npm run test:coverage
+
+      - name: 生成测试报告并检查门禁
+        if: matrix.node == '22' && always()
+        run: |
+          set -o pipefail
+          node scripts/coverage-report.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: 上传测试报告
+        if: matrix.node == '22' && always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-report
+          path: |
+            coverage/lcov.info
+            coverage/report.md
+          if-no-files-found: warn
+
+      - name: 发布测试报告到 Pull Request
+        if: matrix.node == '22' && github.event_name == 'pull_request' && always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+        run: node scripts/post-pr-coverage-comment.mjs
 
       - name: 校验发包文件列表
         run: npm pack --dry-run

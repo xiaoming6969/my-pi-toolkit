@@ -29,9 +29,12 @@ npm test -- extensions/tapd/test/parser.test.ts
 npm test -- --test-name-pattern="Ask rejects"
 npm run test:watch
 npm run test:coverage
+npm run coverage:report
 ```
 
 需要 Node `>= 22.19`。CI 在 Node 22 与 24 上跑同一套命令。
+
+`npm run coverage:report` 读取 `coverage/lcov.info`，写出 `coverage/report.md`。行 / 分支 / 函数任一低于 95% 时退出码为 1。
 
 ## 分层
 
@@ -72,7 +75,11 @@ npm run test:coverage
 
 - `npm ci && npm test`（Node 24）
 - `npm run test:coverage`（Node 22，打印覆盖率并写 `coverage/lcov.info`，**行 / 分支 / 函数均需 ≥ 95%**）
+- `node scripts/coverage-report.mjs` 生成 Markdown 测试报告；低于 95% 时该步骤失败，PR 检查为红，不能按门禁合入
+- 报告写入 Job Summary，上传 `coverage/report.md` 与 `lcov.info`，并在 PR 上发布（或更新）同一条覆盖率评论
 - `npm pack --dry-run`
+
+请把 `测试 (Node 22)` 和 `测试 (Node 24)` 设为 `main` 的 required status checks，否则 GitHub 仍允许在红灯时点合入。仓库规则集需要管理员权限，CI 工作流无法代为打开。
 
 发布工作流在 `npm publish` 前同样跑 `npm test`。
 
