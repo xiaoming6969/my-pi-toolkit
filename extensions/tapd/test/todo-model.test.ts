@@ -3,9 +3,15 @@ import test from "node:test";
 import {
 	buildTree,
 	bugUrl,
+	collectTypes,
+	flatFilter,
+	fmtDate,
 	getTypeLabel,
 	oneLine,
+	padR,
 	prioritySymbol,
+	searchFlat,
+	sortTree,
 	storyUrl,
 	tapdUrl,
 } from "../todo/model.ts";
@@ -47,4 +53,29 @@ test("tapdUrl and labels follow item kind and type name", () => {
 	assert.equal(prioritySymbol("High"), "高");
 	assert.equal(prioritySymbol("unknown"), "unknown");
 	assert.equal(oneLine(" a\n b\t c  "), "a b c");
+	assert.equal(fmtDate("2026-01-02T10:00:00Z"), "2026-01-02");
+	assert.equal(fmtDate(), "");
+	assert.equal(padR("ab", 4).length, 4);
+});
+
+test("sortTree, searchFlat, and type collection walk nested items", () => {
+	const forest = buildTree([
+		item({ id: "p", priority: "低", workitemTypeName: "开发任务", due: "2026-02-01" }),
+		item({
+			id: "c",
+			parentId: "p",
+			name: "登录接口",
+			priority: "紧急",
+			workitemTypeName: "开发任务",
+			due: "2026-01-01",
+		}),
+		item({ id: "d", name: "文档", priority: "高", workitemTypeName: "文档任务" }),
+	]);
+	sortTree(forest);
+	assert.equal(forest[0]?.id, "d");
+	assert.equal(forest[1]?.children[0]?.id, "c");
+	assert.deepEqual(collectTypes(forest), ["开发任务", "文档任务"]);
+	assert.equal(flatFilter(forest, "开发任务").length, 2);
+	assert.equal(searchFlat(forest, "登录")[0]?.id, "c");
+	assert.deepEqual(searchFlat(forest, "   "), []);
 });

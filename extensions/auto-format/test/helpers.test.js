@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import test from "node:test";
-import { isEslintFile, isInside, shouldFormat } from "../helpers.js";
+import { isEslintFile, isInside, resolvePackageBin, shouldFormat } from "../helpers.js";
 
 test("isInside rejects paths that escape the project root", () => {
 	assert.equal(isInside("/repo", "/repo"), true);
@@ -25,4 +25,9 @@ test("isEslintFile matches JS and TS extensions only", () => {
 	assert.equal(isEslintFile(join("src", "a.tsx")), true);
 	assert.equal(isEslintFile("readme.md"), false);
 	assert.equal(isEslintFile("a.css"), false);
+});
+
+test("resolvePackageBin finds local bins and ignores missing packages", () => {
+	assert.equal(resolvePackageBin("/does-not-exist", "no-such-package"), undefined);
+	assert.match(resolvePackageBin(process.cwd(), "tsx") ?? "", /tsx/);
 });
