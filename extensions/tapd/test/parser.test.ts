@@ -124,18 +124,19 @@ test("parseDevelopmentTasks enforces title uniqueness, limits, and dependencies"
 		wrap(
 			JSON.stringify({
 				developmentTasks: [
+					validTask,
 					{
-						id: "auth",
-						title: "登录",
-						scope: ["src/auth"],
-						acceptanceCriteria: ["可登录", 2, "  "],
-						dependencies: ["auth", 3, ""],
-						suggestedEffort: 2,
+						id: "ui",
+						title: "界面",
+						scope: ["src/ui"],
+						acceptanceCriteria: ["可测", 2, "  "],
+						dependencies: ["登录", 3, ""],
+						suggestedEffort: 1,
 					},
 				],
 			}),
 		),
 	);
-	assert.deepEqual(filtered[0]?.acceptanceCriteria, ["可登录"]);
-	assert.deepEqual(filtered[0]?.dependencies, ["auth"]);
+	assert.deepEqual(filtered[1]?.acceptanceCriteria, ["可测"]);
+	assert.deepEqual(filtered[1]?.dependencies, ["登录"]);
 });
