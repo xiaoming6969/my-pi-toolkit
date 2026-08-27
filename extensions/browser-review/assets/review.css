@@ -121,6 +121,17 @@ h1 { margin: 0; overflow: hidden; color: var(--text-bright); font-size: 12px; fo
 .line-select[aria-pressed="true"] { background: var(--accent); color: #fff; }
 .line code { padding: 1px 12px 1px 5px; white-space: pre; }
 
+.hljs-comment, .hljs-quote { color: #6a9955; }
+.hljs-keyword, .hljs-literal, .hljs-selector-tag { color: #569cd6; }
+.hljs-string, .hljs-attr, .hljs-symbol, .hljs-bullet { color: #ce9178; }
+.hljs-number { color: #b5cea8; }
+.hljs-title, .hljs-title.class_, .hljs-built_in, .hljs-type { color: #4ec9b0; }
+.hljs-title.function_, .hljs-section { color: #dcdcaa; }
+.hljs-variable, .hljs-template-variable, .hljs-property { color: #9cdcfe; }
+.hljs-meta, .hljs-regexp, .hljs-selector-class, .hljs-selector-id { color: #c586c0; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }
+
 .sidebar { display: flex; min-width: 0; min-height: 0; flex-direction: column; border-left: 1px solid var(--border); background: var(--sidebar); }
 .sidebar-title { display: flex; align-items: center; height: 36px; padding: 0 16px; border-bottom: 1px solid var(--border); }
 .sidebar h2 { margin: 0; color: var(--text-bright); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }

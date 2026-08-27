@@ -92,12 +92,12 @@ function renderLines() {
     select.addEventListener("click", () => chooseLine(index));
     row.append(select);
     const code = document.createElement("code");
-    code.textContent = line.text || " ";
+    if (line.html) appendSafeMarkdown(code, line.html);
+    else code.textContent = line.text || " ";
     row.append(code);
     root.append(row);
   });
 }
-
 const MARKDOWN_TAGS = new Set([
   "a", "blockquote", "br", "code", "del", "em", "figcaption", "figure",
   "h1", "h2", "h3", "h4", "h5", "h6", "hr", "img", "input", "li", "ol", "p", "pre", "span",
