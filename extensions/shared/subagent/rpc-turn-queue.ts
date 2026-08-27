@@ -18,10 +18,7 @@ export interface RpcTurnRequest {
 	responded: boolean;
 	commandId: string;
 	abortListener?: () => void;
-	turnTimer?: ReturnType<typeof setTimeout>;
 	settleTimer?: ReturnType<typeof setTimeout>;
-	timedOut?: boolean;
-	timeoutError?: Error;
 	release?: () => void;
 	resolveResult: (result: SubagentTurnResult) => void;
 	rejectResult: (error: Error) => void;
@@ -128,37 +125,6 @@ export class RpcTurnQueue {
 		return "active";
 	}
 
-	armTurnTimeout(
-		request: RpcTurnRequest,
-		delayMs: number,
-		onTimeout: () => void,
-	): void {
-		if (this.active !== request) return;
-		request.turnTimer = setTimeout(() => {
-			request.turnTimer = undefined;
-			if (this.active === request) onTimeout();
-		}, delayMs);
-		request.turnTimer.unref?.();
-	}
-
-	timeoutActive(
-		request: RpcTurnRequest,
-		error: Error,
-		settleTimeout: { delayMs: number; onTimeout: () => void },
-	): boolean {
-		if (this.active !== request) return false;
-		request.timedOut = true;
-		request.timeoutError = error;
-		request.onUpdate = undefined;
-		this.rejectQueued(error);
-		this.armSettleTimeout(
-			request,
-			settleTimeout.delayMs,
-			settleTimeout.onTimeout,
-		);
-		return true;
-	}
-
 	armSettleTimeout(
 		request: RpcTurnRequest,
 		delayMs: number,
@@ -203,20 +169,10 @@ export class RpcTurnQueue {
 		}
 	}
 
-	private rejectQueued(error: Error): void {
-		const queued = this.queued.splice(0);
-		for (const request of queued) {
-			this.rejectResponse(request, error);
-			this.cleanup(request);
-		}
-	}
-
 	private cleanup(request: RpcTurnRequest): void {
 		if (request.abortListener)
 			request.signal?.removeEventListener("abort", request.abortListener);
 		request.abortListener = undefined;
-		if (request.turnTimer) clearTimeout(request.turnTimer);
-		request.turnTimer = undefined;
 		if (request.settleTimer) clearTimeout(request.settleTimer);
 		request.settleTimer = undefined;
 		try {

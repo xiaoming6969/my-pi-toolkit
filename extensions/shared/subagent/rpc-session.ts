@@ -23,8 +23,6 @@ import type {
 	TerminalSubagentResult,
 } from "./terminal-runner.js";
 
-export const RPC_TURN_TIMEOUT_MS = 30 * 60_000;
-
 export class RpcSubagentSession {
 	private readonly turns = new RpcTurnQueue();
 	private readonly transcript: RpcSubagentTranscript;
@@ -163,9 +161,6 @@ export class RpcSubagentSession {
 			request.promptSent = true;
 			request.startedAt = new Date().toISOString();
 			this.syncTurnState();
-			this.turns.armTurnTimeout(request, RPC_TURN_TIMEOUT_MS, () =>
-				this.timeoutRequest(request),
-			);
 			emitRpcTurnUpdate(request, "running", this.id, this.run.reusable);
 		} catch (error) {
 			if (this.disposed || this.turns.current !== request) return;
@@ -174,22 +169,6 @@ export class RpcSubagentSession {
 			this.transcript.append(`ERROR: ${failure.message}`);
 			this.finishTurn(request, undefined, failure);
 		}
-	}
-
-	private timeoutRequest(request: RpcTurnRequest): void {
-		const error = new Error("子 Agent turn 运行超过 30 分钟");
-		if (
-			!this.turns.timeoutActive(request, error, {
-				delayMs: this.options.abortSettleTimeoutMs ?? 5_000,
-				onTimeout: () =>
-					this.dispose(new Error(`${error.message}，abort 后 5 秒未结束`)),
-			})
-		)
-			return;
-		this.syncTurnState();
-		this.setStatus("failed");
-		this.transcript.append(`ERROR: ${error.message}`);
-		sendRpc(this.child, { type: "abort" });
 	}
 
 	private abortRequest(request: RpcTurnRequest): void {
@@ -202,10 +181,10 @@ export class RpcSubagentSession {
 		if (state === "queued" && request.initial) this.dispose(error);
 		if (state !== "active") return;
 		if (request.initial) this.dispose(error);
-		else if (!request.promptSent) {
+		else if (request.promptSent) sendRpc(this.child, { type: "abort" }); else {
 			this.setStatus("completed");
 			this.finishTurn(request);
-		} else sendRpc(this.child, { type: "abort" });
+		}
 	}
 
 	private abortCurrent(): void {

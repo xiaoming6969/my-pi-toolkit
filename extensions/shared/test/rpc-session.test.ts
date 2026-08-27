@@ -40,6 +40,22 @@ test("reuses one RPC child with FIFO, per-turn results", async () => {
 	}
 });
 
+test("managed RPC turns keep running beyond the former timeout", async (context) => {
+	context.mock.timers.enable({ apis: ["setTimeout"] });
+	const app = await harness("long-running-agent");
+	try {
+		const turn = app.start("long task");
+		await tick();
+		context.mock.timers.tick(30 * 60_000 + 1);
+		assert.equal(app.abortCount, 0);
+		assert.equal(getLiveSubagent("long-running-agent")?.status, "running");
+		app.settle("done");
+		assert.equal((await turn).output, "done");
+	} finally {
+		await app.cleanup();
+	}
+});
+
 test("idle retention resets around each follow-up", async () => {
 	const app = await harness("idle-agent");
 	try {
