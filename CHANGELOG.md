@@ -1,5 +1,11 @@
 # 更新日志
 
+## [Unreleased]
+
+### 新增
+
+- 建立仓库测试流程：每个模块使用 `extensions/<module>/test/`，根目录 `npm test` / `npm run test:coverage`，以及 GitHub Actions CI。
+
 ## [1.2.1] - 2026-08-26
 
 ### 改进

@@ -21,11 +21,14 @@
   "engines": {
     "node": ">=22.19"
   },
+  "scripts": {
+    "test": "node scripts/run-tests.mjs",
+    "test:watch": "node scripts/run-tests.mjs --watch",
+    "test:coverage": "node scripts/run-tests.mjs --coverage"
+  },
   "files": [
     "extensions/",
-    "!extensions/**/*.test.js",
-    "!extensions/**/*.test.mjs",
-    "!extensions/**/*.test.ts",
+    "!extensions/**/test/**",
     "skills/",
     "themes/",
     "CHANGELOG.md",
@@ -60,5 +63,8 @@
     "themes": [
       "./themes"
     ]
+  },
+  "devDependencies": {
+    "tsx": "^4.23.12"
   }
 }

@@ -213,8 +213,8 @@ renderResult(result, { expanded }, theme) {
 
 ### 自动检查
 
-- [ ] 运行 `git diff --check`。
-- [ ] 仓库没有根测试脚本时，不得声称 `npm test` 已通过；记录实际执行的验证。
+- [ ] 运行 `npm test` 与 `git diff --check`。
+- [ ] 新的纯逻辑断言放在对应模块的 `extensions/<module>/test/`，不要与源码并排。
 
 ## 10. 评审红线
 
