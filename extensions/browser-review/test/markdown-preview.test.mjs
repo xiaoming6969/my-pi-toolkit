@@ -33,6 +33,18 @@ test("renders GFM blocks with source line ranges", () => {
 	assert.match(blocks[2].html, /<ul>/);
 	assert.match(blocks[3].html, /<table>/);
 	assert.match(blocks[5].html, /language-ts/);
+	assert.match(blocks[5].html, /<span class="hljs-keyword">const<\/span>/);
+	assert.match(blocks[5].html, /<span class="hljs-literal">true<\/span>/);
+});
+
+test("unknown fenced languages remain escaped plain text", () => {
+	const [block] = renderMarkdownBlocks([
+		"```unknown",
+		"<script>alert('xss')</script>",
+		"```",
+	].join("\n"));
+	assert.match(block.html, /&lt;script&gt;alert\(&#39;xss&#39;\)&lt;\/script&gt;/);
+	assert.doesNotMatch(block.html, /<script|hljs-/i);
 });
 
 test("renders Mermaid fences as responsive SVG diagrams", () => {

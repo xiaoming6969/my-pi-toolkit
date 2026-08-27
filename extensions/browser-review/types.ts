@@ -11,6 +11,7 @@ export type ReviewLineStyle =
 
 export interface ReviewLine {
 	text: string;
+	html?: string;
 	style?: ReviewLineStyle;
 	file?: string;
 	oldLine?: number;

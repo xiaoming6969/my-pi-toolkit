@@ -6,21 +6,10 @@ import {
 	type Tokens,
 	type TokensList,
 } from "marked";
+import { escapeHtml, highlightHtml } from "./syntax-highlight.js";
 import type { MarkdownReviewBlock } from "./types.js";
 
 const MARKED_OPTIONS = { gfm: true, breaks: false } as const;
-
-function escapeHtml(value: string): string {
-	return value.replace(/[&<>"']/g, (character) => {
-		switch (character) {
-			case "&": return "&amp;";
-			case "<": return "&lt;";
-			case ">": return "&gt;";
-			case '"': return "&quot;";
-			default: return "&#39;";
-		}
-	});
-}
 
 function safeHref(value: string): string | undefined {
 	if (value.startsWith("#")) return value;
@@ -35,9 +24,9 @@ function safeHref(value: string): string | undefined {
 }
 
 function codeBlock(text: string, language?: string): string {
-	const name = language?.trim().split(/\s+/, 1)[0];
+	const name = language?.trim().split(/\s+/, 1)[0]?.toLowerCase();
 	const className = name ? ` class="language-${escapeHtml(name)}"` : "";
-	return `<pre><code${className}>${escapeHtml(text)}\n</code></pre>`;
+	return `<pre><code${className}>${highlightHtml(text, name)}\n</code></pre>`;
 }
 
 function localSvg(svg: string): string {

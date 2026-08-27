@@ -1,3 +1,4 @@
+import { highlightDiffLine } from "./syntax-highlight.js";
 import type { ReviewLine } from "./types.js";
 
 function parseFile(line: string): string | undefined {
@@ -24,17 +25,36 @@ export function parseUnifiedDiff(patch: string): ReviewLine[] {
 			return { text, style: "hunk", file };
 		}
 		if (text.startsWith("+") && !text.startsWith("+++")) {
-			const line = { text, style: "addition" as const, file, newLine };
+			const line = {
+				text,
+				html: highlightDiffLine(text, file),
+				style: "addition" as const,
+				file,
+				newLine,
+			};
 			if (newLine !== undefined) newLine++;
 			return line;
 		}
 		if (text.startsWith("-") && !text.startsWith("---")) {
-			const line = { text, style: "deletion" as const, file, oldLine };
+			const line = {
+				text,
+				html: highlightDiffLine(text, file),
+				style: "deletion" as const,
+				file,
+				oldLine,
+			};
 			if (oldLine !== undefined) oldLine++;
 			return line;
 		}
 		if (text.startsWith(" ")) {
-			const line = { text, style: "context" as const, file, oldLine, newLine };
+			const line = {
+				text,
+				html: highlightDiffLine(text, file),
+				style: "context" as const,
+				file,
+				oldLine,
+				newLine,
+			};
 			if (oldLine !== undefined) oldLine++;
 			if (newLine !== undefined) newLine++;
 			return line;

@@ -34,6 +34,6 @@ Chat Mode 的 `exit_plan_mode` 默认在浏览器恢复终端原有四个选项�
 
 ## UI
 
-页面采用 VS Code Dark Modern 风格的紧凑工作台：中性灰黑编辑区、顶部文档栏、右侧批注侧栏、细分隔线和语义化 diff 色。Plan、TAPD 文档、`/annotate` 与 `/annotate-last` 默认使用带标题、列表、表格、引用、代码块和 Mermaid 图的 Markdown 预览，并可切回源码；`/review` 仍是 diff 视图。宽屏保持编辑器与侧栏布局，`<=760px` 降为上下单栏并固定主要操作区。预览块、源码行、评论框、删除、提交和取消均可键盘访问。浏览器启动失败或关闭自动 Plan 浏览器审批时，Chat Plan 回退现有终端 Markdown overlay；TAPD 文档仍只在启动失败时回退。
+页面采用 VS Code Dark Modern 风格的紧凑工作台：中性灰黑编辑区、顶部文档栏、右侧批注侧栏、细分隔线和语义化 diff 色。`/review` 根据文件扩展名高亮 diff 中的代码，同时保留增删背景色；Plan、TAPD 文档、`/annotate` 与 `/annotate-last` 默认使用带标题、列表、表格、引用、语法高亮代码块和 Mermaid 图的 Markdown 预览，并可切回源码。未知语言安全回退为纯文本，不做自动语言猜测。宽屏保持编辑器与侧栏布局，`<=760px` 降为上下单栏并固定主要操作区。预览块、源码行、评论框、删除、提交和取消均可键盘访问。浏览器启动失败或关闭自动 Plan 浏览器审批时，Chat Plan 回退现有终端 Markdown overlay；TAPD 文档仍只在启动失败时回退。
 
 刻意未实现多人协作、远程分享、图片上传、富文本、云同步或第三方笔记软件集成；有真实需求时再扩展。
