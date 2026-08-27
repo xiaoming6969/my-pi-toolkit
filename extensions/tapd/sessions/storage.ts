@@ -7,13 +7,17 @@ import { getAgentDir } from "@earendil-works/pi-coding-agent";
  * TAPD 会话关联已迁移到 session custom entry（见 session-state.ts），
  * 不再维护 tapd-links.json。
  */
-const PATHS_HISTORY_PATH = join(getAgentDir(), "tapd-project-paths.json");
 const MAX_PATH_HISTORY = 30;
+
+function pathsHistoryPath(): string {
+	return join(getAgentDir(), "tapd-project-paths.json");
+}
 
 export function loadPathHistory(): string[] {
 	try {
-		if (!existsSync(PATHS_HISTORY_PATH)) return [];
-		const raw = JSON.parse(readFileSync(PATHS_HISTORY_PATH, "utf-8"));
+		const path = pathsHistoryPath();
+		if (!existsSync(path)) return [];
+		const raw = JSON.parse(readFileSync(path, "utf-8"));
 		if (!Array.isArray(raw)) return [];
 		return raw.filter(
 			(path): path is string =>
@@ -32,7 +36,7 @@ export function rememberProjectPaths(paths: string[]): void {
 	const history = loadPathHistory().filter((path) => !cleaned.includes(path));
 	try {
 		writeFileSync(
-			PATHS_HISTORY_PATH,
+			pathsHistoryPath(),
 			JSON.stringify(
 				[...cleaned, ...history].slice(0, MAX_PATH_HISTORY),
 				null,
@@ -47,7 +51,7 @@ export function removeProjectPathFromHistory(path: string): void {
 	const history = loadPathHistory().filter((item) => item !== path);
 	try {
 		writeFileSync(
-			PATHS_HISTORY_PATH,
+			pathsHistoryPath(),
 			JSON.stringify(history, null, 2),
 			"utf-8",
 		);
