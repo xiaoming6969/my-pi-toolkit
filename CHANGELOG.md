@@ -6,6 +6,7 @@
 
 - 建立仓库测试流程：每个模块使用 `extensions/<module>/test/`，根目录 `npm test` / `npm run test:coverage`，以及 GitHub Actions CI。
 - 为原先缺少测试的模块补齐公共 API 覆盖（agent-todos、helps、model-manager、task-duration、built-in-tool-style），并扩展 TAPD、Chat Mode、Dashboard、Multi Task、Context7、OpenAI 兼容模型等纯逻辑用例。
+- 补齐其余值得测的公共 API：Plan 生命周期、TAPD HTTP/合入版本、文档快照、会话选择输入、Git 运行时、浏览器 diff 收集、Context7 环境配置等。未覆盖完整 Overlay、真实外部 API 与 `index.ts` 注册样板。
 
 ## [1.2.1] - 2026-08-26
 
