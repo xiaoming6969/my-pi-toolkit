@@ -29,7 +29,7 @@ npm run test:coverage
 npm run coverage:report
 ```
 
-写测试的约定、分层和 CI 说明见 [`docs/testing.md`](docs/testing.md)。提交 PR 前 `npm test` 应通过；新增纯逻辑 / 策略 / 解析请补测试。PR 会自动跑测试并评论覆盖率报告；行 / 分支 / 函数任一低于 95% 时 Node 22 检查失败。请在仓库规则中将 `测试 (Node 22)`、`测试 (Node 24)` 设为合入 `main` 的必填检查。
+写测试的约定、分层和 CI 说明见 [`docs/testing.md`](docs/testing.md)。提交 PR 前 `npm test` 应通过；新增纯逻辑 / 策略 / 解析请补测试。PR 会自动跑测试并评论覆盖率报告；行 / 分支 / 函数任一低于 95% 时 `测试` 检查失败。请在仓库规则中将 `测试` 设为合入 `main` 的必填检查。
 
 ## Pull Request
 
