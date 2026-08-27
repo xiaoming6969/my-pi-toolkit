@@ -5,6 +5,7 @@
 面向 [Pi](https://pi.dev/) coding-agent 的扩展包：会话模式、TAPD 工作流、Context7、主题与 Skills。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/xiaoming6969/my-pi-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/xiaoming6969/my-pi-toolkit/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/Node-%3E%3D22.19-brightgreen.svg)](https://nodejs.org/)
 [![Pi](https://img.shields.io/badge/Pi-coding--agent-purple.svg)](https://pi.dev/)
 
@@ -153,7 +154,7 @@ pi --no-session
 | TAPD | 待办、需求分析、选项确认式技术设计、协作评审、三文档预览、Bug 定位与子需求同步 | [`extensions/tapd/README.md`](extensions/tapd/README.md) |
 | Context7 | 第三方库最新文档查询 | [`extensions/context7/README.md`](extensions/context7/README.md) |
 
-完整模块列表见 [`extensions/README.md`](extensions/README.md)。
+完整模块列表见 [`extensions/README.md`](extensions/README.md)。各模块测试位于 `extensions/<module>/test/`。
 
 ### Themes
 
@@ -197,11 +198,20 @@ pi install git:github.com/xiaoming6969/my-pi-toolkit@main
 
 修改扩展后，在 Pi 中执行 `/reload`。依赖变更后于仓库根目录执行 `npm install`。
 
+```bash
+npm test
+npm run test:coverage
+npm run coverage:report
+```
+
+每个模块的测试放在 `extensions/<module>/test/`，仓库级检查放在 `test/`。约定见 [`docs/testing.md`](docs/testing.md) 与 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
+
 扩展入口与依赖版本统一维护在 [`package.json`](package.json)。
 
 - [`AGENTS.md`](AGENTS.md)：仓库内 Agent / 扩展开发规范
 - [`docs/tui-development-guidelines.md`](docs/tui-development-guidelines.md)：TUI、工具展示、Widget、Overlay、Footer 与 Theme 规范
 - [`docs/tapd-api.md`](docs/tapd-api.md)：TAPD Open API 资料索引
+- [`docs/testing.md`](docs/testing.md)：测试布局、分层、CI 与覆盖率
 
 ---
 

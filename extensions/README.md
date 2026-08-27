@@ -1,6 +1,6 @@
 # Extensions
 
-本目录包含 `my-pi-toolkit` 加载的 Pi 扩展。
+本目录包含 `my-pi-toolkit` 加载的 Pi 扩展。各模块的测试放在该模块下的 `test/` 目录，不要与源码并排；约定见 [`docs/testing.md`](../docs/testing.md)。
 
 `package.json` 的 `pi.extensions` 现为 **3 个入口**：
 
