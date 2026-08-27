@@ -80,4 +80,62 @@ test("parseDevelopmentTasks enforces title uniqueness, limits, and dependencies"
 			),
 		/缺少标题、范围或验收标准/,
 	);
+	assert.throws(
+		() =>
+			parseDevelopmentTasks(
+				wrap(JSON.stringify({ developmentTasks: [null] })),
+			),
+		/格式无效/,
+	);
+	assert.throws(
+		() =>
+			parseDevelopmentTasks(
+				wrap(
+					JSON.stringify({
+						developmentTasks: [
+							{ ...validTask, id: "dup" },
+							{ ...validTask, id: "dup", title: "另一项" },
+						],
+					}),
+				),
+			),
+		/id 不能重复/,
+	);
+	const optional = parseDevelopmentTasks(
+		wrap(
+			JSON.stringify({
+				developmentTasks: [
+					{
+						title: "无 id",
+						scope: ["src", "  ", 1],
+						acceptanceCriteria: ["可测", ""],
+						dependencies: "nope",
+						suggestedEffort: "bad",
+					},
+				],
+			}),
+		),
+	);
+	assert.equal(optional[0]?.id, undefined);
+	assert.deepEqual(optional[0]?.scope, ["src"]);
+	assert.equal(optional[0]?.suggestedEffort, undefined);
+
+	const filtered = parseDevelopmentTasks(
+		wrap(
+			JSON.stringify({
+				developmentTasks: [
+					{
+						id: "auth",
+						title: "登录",
+						scope: ["src/auth"],
+						acceptanceCriteria: ["可登录", 2, "  "],
+						dependencies: ["auth", 3, ""],
+						suggestedEffort: 2,
+					},
+				],
+			}),
+		),
+	);
+	assert.deepEqual(filtered[0]?.acceptanceCriteria, ["可登录"]);
+	assert.deepEqual(filtered[0]?.dependencies, ["auth"]);
 });

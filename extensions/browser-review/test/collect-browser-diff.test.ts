@@ -42,6 +42,12 @@ test("collectBrowserDiff includes committed and untracked edits", async (t) => {
 	const uncommitted = await collectBrowserDiff(root, "uncommitted");
 	assert.match(uncommitted.subtitle ?? "", /uncommitted/);
 	assert.ok(uncommitted.lines.some((line) => line.file === "widget.ts"));
+
+	await writeFile(path.join(root, "binary.bin"), Buffer.from([0, 1, 2, 3]));
+	await writeFile(path.join(root, "huge.txt"), "x".repeat(256 * 1024 + 1));
+	const withExtras = await collectBrowserDiff(root, "uncommitted");
+	assert.ok(withExtras.lines.some((line) => line.file === "binary.bin"));
+	assert.ok(withExtras.lines.some((line) => line.text.includes("omitted")));
 });
 
 test("collectBrowserDiff rejects repos without HEAD or without a diff", async (t) => {

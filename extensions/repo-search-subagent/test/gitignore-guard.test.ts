@@ -52,4 +52,19 @@ test("gitignore guard blocks ignored paths and ignores unrelated tools", async (
 		).block,
 		true,
 	);
+	assert.equal(
+		await handler({ toolName: "read", input: { path: "@ok.ts" } }, ctx),
+		undefined,
+	);
+	assert.equal(
+		await handler({ toolName: "read", input: { path: join(root, "..", "outside.ts") } }, ctx),
+		undefined,
+	);
+
+	const outside = await mkdtemp(join(tmpdir(), "repo-search-nongit-"));
+	t.after(() => rm(outside, { recursive: true, force: true }));
+	assert.equal(
+		await handler({ toolName: "read", input: { path: "ok.ts" } }, { cwd: outside } as ExtensionContext),
+		undefined,
+	);
 });

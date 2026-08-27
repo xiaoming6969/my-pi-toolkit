@@ -37,6 +37,44 @@ test("implementation paths cannot overlap; research paths may", () => {
 			]),
 		/路径冲突/,
 	);
+	assert.throws(
+		() => validateTasks(cwd, [{ id: " ", task: "work", paths: ["extensions"] }]),
+		/非空 id/,
+	);
+	assert.throws(
+		() =>
+			validateTasks(cwd, [
+				{ id: "a", task: "work", paths: ["extensions"], kind: "other" as never },
+			]),
+		/kind 无效/,
+	);
+	assert.throws(
+		() => validateTasks(cwd, [{ id: "a", task: "work", paths: [] }]),
+		/授权写入路径/,
+	);
+	assert.throws(
+		() =>
+			validateTasks(cwd, [
+				{ id: "a", task: "work", paths: [], kind: "research" },
+			]),
+		/检索范围/,
+	);
+	assert.throws(
+		() => validateTasks(cwd, [{ id: "a", task: "work", paths: ["  "] }]),
+		/路径不能为空/,
+	);
+	assert.throws(
+		() =>
+			validateTasks(cwd, [
+				{ id: "a", task: "work", paths: ["/definitely-outside-this-workspace"] },
+			]),
+		/必须位于当前项目内/,
+	);
+	assert.ok(
+		validateTasks(cwd, [
+			{ id: "a", task: "one", paths: ["@extensions/multi-task"] },
+		]).length === 1,
+	);
 	const research = validateTasks(cwd, [
 		{ id: "a", task: "one", paths: ["extensions/multi-task"], kind: "research" },
 		{ id: "b", task: "two", paths: ["extensions/multi-task"], kind: "research" },

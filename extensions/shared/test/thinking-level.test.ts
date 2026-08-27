@@ -22,4 +22,7 @@ test("hides inherited thinking for non-reasoning subagent models", () => {
 		"high",
 	);
 	assert.equal(thinkingLevelForModel("unknown/model", "low", registry), "low");
+	assert.equal(thinkingLevelForModel("cursor/composer-2.5", undefined, registry), undefined);
+	assert.equal(thinkingLevelForModel("plain-model", "high", registry), "high");
+	assert.equal(thinkingLevelForModel("/leading-slash", "high", registry), "high");
 });

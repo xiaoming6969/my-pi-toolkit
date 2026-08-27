@@ -47,4 +47,7 @@ test("renderDashboard degrades by width", () => {
 	const wide = renderDashboard(120, data, theme).join("\n");
 	assert.match(wide, /Ready/);
 	assert.match(wide, /EXTENSIONS/);
+	const medium = renderDashboard(90, data, theme).join("\n");
+	assert.match(medium, /SKILLS/);
+	assert.match(medium, /Ready/);
 });

@@ -5,6 +5,7 @@ import {
 	extractRepoSearchExtensionPaths,
 	requestedPaths,
 	REPO_SEARCH_TOOLS,
+	resolveRepoSearchExtensionPaths,
 } from "../pi-lens.ts";
 
 const EXPECTED_TOOLS = [
@@ -78,5 +79,12 @@ test("loads the cursor provider only for cursor models", () => {
 	assert.deepEqual(
 		extractRepoSearchExtensionPaths(RESOURCES, "openai/gpt-5"),
 		["/lens/index.ts", "/lens/versioned.ts"],
+	);
+});
+
+test("resolveRepoSearchExtensionPaths degrades when package resolution fails", async () => {
+	assert.deepEqual(
+		await resolveRepoSearchExtensionPaths("/no-such-project", false, "openai/gpt"),
+		[],
 	);
 });

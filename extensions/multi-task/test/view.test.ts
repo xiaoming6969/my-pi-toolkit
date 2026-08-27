@@ -44,7 +44,12 @@ function batch(): MultiTaskBatch {
 				progress: "editing",
 				toolCalls: [
 					{ name: "read", arguments: { path: "src/a.ts" } },
+					{ name: "write", arguments: { path: "src/b.ts" } },
+					{ name: "grep", arguments: { pattern: "TODO", path: "src" } },
+					{ name: "find", arguments: { pattern: "*.ts" } },
+					{ name: "ls", arguments: {} },
 					{ name: "edit", arguments: { path: "src/a.ts" } },
+					{ name: "other", arguments: {} },
 				],
 				controller: new AbortController(),
 				output: "done",
@@ -76,7 +81,7 @@ test("snapshot and summaries describe worker progress without leaking output by 
 	assert.equal(view.workers[0]?.output, undefined);
 	assert.equal(snapshot(batch(), true).workers[0]?.output, "done");
 	assert.match(summarize(view), /Batch b1: running \(running=1, queued=1\)/);
-	assert.match(progressText(view), /w1 \[implementation\]: running → edit src\/a\.ts/);
+	assert.match(progressText(view), /w1 \[implementation\]: running → other/);
 	assert.equal(batchVisualStatus("running"), "active");
 	assert.equal(batchVisualStatus("completed"), "success");
 	assert.equal(batchVisualStatus("failed"), "error");
@@ -84,7 +89,32 @@ test("snapshot and summaries describe worker progress without leaking output by 
 	assert.equal(workerSummary(1, "b1"), "1 worker");
 	assert.equal(workerSummary(2, "b1"), "2 workers");
 	assert.match(progressDetails(view, theme, true).join("\n"), /#abcdefgh/);
+	assert.match(progressDetails(view, theme, false).join("\n"), /w1 · implementation/);
 	const collected = collectText(snapshot(batch(), true));
 	assert.match(collected, /Reusable subagentId: abcdefghijkl/);
 	assert.match(collected, /## w1 · implementation · running/);
+	assert.match(collected, /No result yet/);
+
+	const failed = batch();
+	failed.workers[0] = {
+		...failed.workers[0]!,
+		status: "failed",
+		error: "boom",
+		reusable: false,
+		subagentId: undefined,
+		toolCalls: [],
+		output: undefined,
+		paths: ["src"],
+	};
+	failed.workers[1] = {
+		...failed.workers[1]!,
+		status: "completed",
+		progress: "done",
+		toolCalls: [{ name: "read", arguments: {} }],
+	};
+	const failedView = snapshot(failed, true);
+	assert.equal(batchVisualStatus("cancelled" as never), "error");
+	assert.match(progressText(failedView), /read \.\.\./);
+	assert.match(collectText(failedView), /boom/);
+	assert.match(progressDetails(failedView, theme, true).join("\n"), /1 scope/);
 });

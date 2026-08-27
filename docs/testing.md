@@ -64,16 +64,26 @@ npm run test:coverage
 - 纯格式化 / 映射（Context7 搜索结果、OpenAI 兼容模型、TUI 文本宽度）
 - 会改 Git 工作区或会话文件的操作（用临时仓库）
 
-不必强求：Pi 扩展 `index.ts` 注册样板、完整 TUI 交互、真实 LLM 回合。
+不必测、并从覆盖率统计中排除：Pi 扩展 `index.ts` 注册样板、完整 TUI Overlay / Footer / 工具卡片渲染、Dashboard 安装发现、Working 动画、Markdown/Mermaid 预览、Pi `SessionManager` 拉起与会话目录扫描、RPC 子进程会话、fs.watch 清理、Debug HTTP 采集运行时、真实 LLM / 子 Agent 进程、系统浏览器、写 `~/.pi` 的 Windows Git 回退、以及只剩 Git CLI 错误码 / 体积上限等边沿的进程封装。排除清单在 `scripts/run-tests.mjs` 的 `coverageExcludes`。
 
 ## CI 与覆盖率
 
 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) 在 PR 和 `main` 上：
 
 - `npm ci && npm test`（Node 24）
-- `npm run test:coverage`（Node 22，打印覆盖率并写 `coverage/lcov.info`）
+- `npm run test:coverage`（Node 22，打印覆盖率并写 `coverage/lcov.info`，**行 / 分支 / 函数均需 ≥ 95%**）
 - `npm pack --dry-run`
 
 发布工作流在 `npm publish` 前同样跑 `npm test`。
 
-覆盖率用于观察缺口，当前不设全局百分比门禁。合并门禁是 **测试必须通过**；新逻辑应带测试。覆盖率地板以后再按稳定基线加上。
+覆盖率只统计有必要单测的源码。`scripts/run-tests.mjs` 会排除：
+
+- `index.ts` 扩展注册入口、`types.ts` / `*.d.ts`、demo `hello.ts`、`self-check.ts`
+- 浏览器静态资源 `assets/`
+- TUI Overlay / Footer / 工具卡片 / Working 动画 / Markdown 预览 / 问卷 Dialog 等交互层
+- Dashboard 安装发现、会话 `fs.watch` 清理、Debug HTTP 采集运行时
+- 拉起浏览器、Pi RPC 子进程、Windows Terminal、Review 子 Agent、会话目录扫描、写用户主目录的进程封装
+- 主路径已有集成测试、剩余只是 Git CLI 错误码或体积上限的封装（如 `git-diff.ts`、`gitignore-guard.ts`）
+- 靠 `import()` 查询串强制重载的模块单例（如 `batch-store.ts`），避免覆盖率把同一文件计两次
+
+计入统计的公共逻辑（解析、策略、配置、HTTP mock、临时 Git 仓库、纯字符串渲染）应尽量保持在 95% 以上。新逻辑若属于应测范围，请在对应模块的 `test/` 里补断言；若确定不必单测，把文件加入 `coverageExcludes`，不要用空 import 灌覆盖率。

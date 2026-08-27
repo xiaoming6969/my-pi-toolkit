@@ -50,6 +50,25 @@ test("formats exact queued, runtime, and idle metadata responsively", () => {
 		}),
 		/queued 3 · running/,
 	);
+	assert.match(
+		formatRunLabel({
+			title: "done",
+			state: "completed",
+			startedAt: "not-a-date",
+		}),
+		/not-a-date/,
+	);
+	assert.match(
+		formatRunLabel({
+			title: "boot",
+			state: "starting",
+			startedAt: undefined,
+			live: { ...run, queuedCount: 0, turnStartedAt: undefined, idleDeadlineAt: "nope" } as LiveSubagentRun,
+		}),
+		/未就绪/,
+	);
+	assert.match(formatRunLabel({ title: "x", state: "failed" }), /failed/);
+	assert.match(formatRunLabel({ title: "x", state: "exited" }), /exited/);
 	assert.equal(
 		subagentOperationalText(
 			{

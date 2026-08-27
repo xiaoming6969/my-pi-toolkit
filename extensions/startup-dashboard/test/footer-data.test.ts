@@ -86,4 +86,26 @@ test("identity and runtime segments follow snapshot fields", () => {
 		),
 		["model", "thinking", "subagent"],
 	);
+	assert.deepEqual(
+		identitySegments(
+			{ ...snapshot, project: undefined, branch: undefined, title: undefined, branchMismatch: false, modeStatus: undefined },
+			theme,
+		),
+		[],
+	);
+	assert.equal(
+		runtimeSegments(
+			{ ...snapshot, provider: undefined, model: "gpt", thinking: undefined, subagentStatus: undefined },
+			theme,
+		)[0]?.id,
+		"model",
+	);
+	assert.equal(
+		runtimeSegments(
+			{ ...snapshot, provider: "openai", model: undefined },
+			theme,
+			true,
+		)[0]?.id,
+		"model",
+	);
 });

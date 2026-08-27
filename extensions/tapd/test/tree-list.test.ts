@@ -71,3 +71,38 @@ test("TreeList expands children and moves the selection", () => {
 	assert.equal(list.getSelectedItem()?.id, "p");
 	assert.equal(list.handleInput("x"), false);
 });
+
+test("TreeList renders empty, overflow, and designed story markers", () => {
+	const theme = {
+		fg: (_color: string, text: string) => text,
+		bold: (text: string) => text,
+	};
+	const empty = new TreeList();
+	assert.match(empty.render(80, theme as never).join("\n"), /\(无\)/);
+
+	const child = item({ id: "c", depth: 1, parentId: "p", kind: "bug", severity: "严重" });
+	const parent = item({
+		id: "p",
+		hasChildren: true,
+		children: [child],
+		begin: "2026-01-01",
+		due: "2026-02-01",
+	});
+	const designed = new Set(["story_ws_p"]);
+	const list = new TreeList(designed);
+	list.setRoots([parent]);
+	list.setMaxVisible(1);
+	list.handleInput(" ");
+	list.handleInput("\r");
+	list.handleInput("\x1b");
+	const lines = list.render(160, theme as never);
+	assert.ok(lines.length >= 1);
+	assert.match(lines.join("\n"), /\[ITEM\]/);
+	assert.match(lines.join("\n"), /\[BUG\]/);
+	list.onSelect = () => {};
+	list.onCancel = () => {};
+	assert.equal(list.handleInput("\r"), true);
+	assert.equal(list.handleInput("\x1b"), true);
+	assert.equal(list.handleInput("\x1b[C"), true);
+	assert.equal(list.handleInput("\x1b[D"), true);
+});

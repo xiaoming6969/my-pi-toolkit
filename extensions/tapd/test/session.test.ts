@@ -103,4 +103,9 @@ test("readSessionTitle scans JSONL backwards and delete reports missing files", 
 		ok: true,
 		method: "missing",
 	});
+	const live = join(root, "live.jsonl");
+	await writeFile(live, "x\n");
+	const deleted = deleteSessionFile(live);
+	assert.equal(deleted.ok, true);
+	assert.ok(deleted.method === "trash" || deleted.method === "unlink");
 });

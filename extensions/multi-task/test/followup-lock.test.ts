@@ -98,6 +98,28 @@ test("research follow-ups may overlap each other but still reserve reads", () =>
 	}
 });
 
+test("follow-up lock release is idempotent and ignores other cwd", () => {
+	const cwd = process.cwd();
+	const path = normalizeTaskPath(cwd, "extensions/chat-mode");
+	const release = reserveFollowupPaths({
+		subagentId: "lock-once",
+		kind: "implementation",
+		batchId: "batch-x",
+		workerId: "worker-x",
+		cwd,
+		paths: [path],
+	});
+	try {
+		assert.equal(findFollowupPathOwner("/tmp", path), undefined);
+		release();
+		release();
+		assert.equal(findFollowupPathOwner(cwd, path), undefined);
+	} finally {
+		release();
+	}
+});
+
+
 test("session cleanup disposes completed reusable workers", () => {
 	const id = "completed-worker-agent";
 	const parentSessionId = "cleanup-parent";

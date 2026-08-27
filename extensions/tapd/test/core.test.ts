@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { apiUrl, tapdGet } from "../core/http.ts";
+import { apiUrl, tapdGet, tapdPost, tapdPut } from "../core/http.ts";
 import { longTapdObjectId } from "../core/object-id.ts";
 import { DEFAULT_TAPD_API_BASE } from "../core/config.ts";
 
@@ -57,4 +57,22 @@ test("tapdGet returns null on AbortError", async (t) => {
 		throw error;
 	});
 	assert.equal(await tapdGet("https://tapd.example/x", config), null);
+});
+
+test("tapdPost sends JSON and treats missing status as success", async (t) => {
+	t.mock.method(globalThis, "fetch", async (_input, init?: RequestInit) => {
+		assert.equal(init?.method, "POST");
+		assert.equal(init?.body, JSON.stringify({ id: "1" }));
+		return new Response(JSON.stringify({ data: true }), { status: 200 });
+	});
+	assert.deepEqual(await tapdPost("https://tapd.example/x", config, { id: "1" }), {
+		data: true,
+	});
+});
+
+test("tapdPut returns null on network errors other than abort", async (t) => {
+	t.mock.method(globalThis, "fetch", async () => {
+		throw new Error("offline");
+	});
+	assert.equal(await tapdPut("https://tapd.example/x", config, { id: "1" }), null);
 });

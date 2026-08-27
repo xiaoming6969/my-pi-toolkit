@@ -40,4 +40,31 @@ test("rewriteSessionCwd rejects invalid headers without modifying the file", () 
 
 	assert.throws(() => rewriteSessionCwd(file, dir), /会话文件头无效/);
 	assert.equal(readFileSync(file, "utf8"), "not-json\n");
+
+	writeFileSync(
+		file,
+		JSON.stringify({ type: "message", id: "x", cwd: dir }),
+	);
+	assert.throws(() => rewriteSessionCwd(file, dir), /会话文件头无效/);
+	writeFileSync(file, JSON.stringify({ type: "session", cwd: dir }));
+	assert.throws(() => rewriteSessionCwd(file, dir), /会话文件头无效/);
+	writeFileSync(file, JSON.stringify({ type: "session", id: "x" }));
+	assert.throws(() => rewriteSessionCwd(file, dir), /会话文件头无效/);
+});
+
+test("rewriteSessionCwd rewrites a header-only session file", () => {
+	const dir = mkdtempSync(join(tmpdir(), "pi-session-cwd-header-"));
+	const file = join(dir, "session.jsonl");
+	const header = {
+		type: "session",
+		version: 3,
+		id: "solo",
+		timestamp: new Date().toISOString(),
+		cwd: dir,
+	};
+	writeFileSync(file, JSON.stringify(header));
+	assert.equal(rewriteSessionCwd(file, join(dir, "worktree")), dir);
+	const rewritten = JSON.parse(readFileSync(file, "utf8"));
+	assert.equal(rewritten.id, "solo");
+	assert.equal(rewritten.cwd, resolve(join(dir, "worktree")));
 });

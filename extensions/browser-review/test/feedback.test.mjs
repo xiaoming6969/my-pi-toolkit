@@ -60,4 +60,21 @@ test("submission maps cancel, feedback and plan approval", () => {
 		processReviewSubmission(plan, { action: "feedback", annotations: [] }),
 	);
 	assert.throws(() => processReviewSubmission(source, { action: "approve", annotations: [] }));
+	const code = {
+		kind: "code",
+		title: "diff",
+		lines: [
+			{ text: "-old", oldLine: 3 },
+			{ text: "view only" },
+			{ text: "+new", file: "app.ts", newLine: 4 },
+		],
+	};
+	const labeled = validateAnnotations(code, [
+		{ startLine: 0, endLine: 0, comment: "old" },
+		{ startLine: 1, endLine: 1, comment: "view" },
+		{ startLine: 2, endLine: 2, comment: "new" },
+	]);
+	assert.match(formatReviewFeedback(code, labeled), /old L3/);
+	assert.match(formatReviewFeedback(code, labeled), /view L2/);
+	assert.match(formatReviewFeedback(code, labeled), /app.ts:L4/);
 });

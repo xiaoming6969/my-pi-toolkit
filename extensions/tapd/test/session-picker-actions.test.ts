@@ -3,13 +3,22 @@ import assert from "node:assert/strict";
 import type { Input } from "@earendil-works/pi-tui";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
+	addProjectPath,
 	applyListAction,
+	beginCreate,
 	beginCwdChoice,
+	buildSessionOptions,
+	confirmPendingDeletion,
 	createPickerAction,
+	removeHistoryPath,
 	submitCreate,
 	toggleProjectPath,
 } from "../todo/session-picker-actions.ts";
 import type { SessionPickerViewState } from "../todo/session-picker-view.ts";
+import {
+	createFakeContext,
+	withTempAgentDir,
+} from "../../shared/test/fake-extension.ts";
 
 function fakeInput(value = ""): Input {
 	let current = value;
@@ -129,4 +138,100 @@ test("applyListAction navigates, cancels, and switches sessions", () => {
 		type: "none",
 	});
 	assert.match(notifies.at(-1) ?? "", /不能删除当前会话/);
+});
+
+test("create flow remembers paths and confirm-delete updates the list", async (t) => {
+	await withTempAgentDir(t, async () => {
+		const current = state({
+			itemName: "需求",
+			pathHistory: ["/old"],
+			selectedPaths: [],
+		});
+		beginCreate(current, "/cwd");
+		assert.equal(current.isCreating, true);
+		assert.deepEqual(current.selectedPaths, ["/cwd"]);
+		addProjectPath(current, "  ");
+		addProjectPath(current, "/cwd");
+		addProjectPath(current, "/extra");
+		assert.ok(current.selectedPaths.includes("/extra"));
+		toggleProjectPath(current, 99);
+
+		const options = buildSessionOptions([
+			{
+				sessionFile: "/tmp/s.jsonl",
+				createdAt: "2026-01-01T00:00:00.000Z",
+				title: "saved",
+				projectPaths: ["/a"],
+				workspaceId: "ws",
+				itemId: "1",
+				kind: "story",
+				itemName: "需求",
+			},
+		]);
+		assert.equal(options.at(-1)?.isCreate, true);
+		assert.match(options[0]?.label ?? "", /saved/);
+
+		const ctx = createFakeContext({ cwd: "/tmp" });
+		(ctx.sessionManager as { getSessionFile: () => string }).getSessionFile = () =>
+			"/tmp/current.jsonl";
+		current.options = [
+			{
+				isCreate: false,
+				label: "other",
+				link: {
+					sessionFile: "/tmp/missing.jsonl",
+					createdAt: "1",
+					workspaceId: "ws",
+					itemId: "1",
+					kind: "story",
+					itemName: "需求",
+				},
+			},
+			{ isCreate: true, label: "create" },
+		];
+		assert.deepEqual(
+			applyListAction(current, { type: "delete" }, ctx),
+			{ type: "redraw" },
+		);
+		assert.ok(current.pendingDelete);
+		confirmPendingDeletion(current, ctx);
+		assert.match(ctx.notifies.at(-1)?.message ?? "", /已不存在|已删除/);
+
+		current.pendingDeletePath = "/cwd";
+		confirmPendingDeletion(current, ctx);
+		assert.match(ctx.notifies.at(-1)?.message ?? "", /已删除历史路径/);
+
+		current.options = [
+			{ isCreate: true, label: "create" },
+			{ isCreate: false, label: "broken" },
+		];
+		current.selectedIdx = 0;
+		assert.deepEqual(
+			applyListAction(current, { type: "select" }, ctx),
+			{ type: "redraw" },
+		);
+		assert.equal(current.isCreating, true);
+
+		current.options = [{ isCreate: false, label: "broken" }];
+		current.selectedIdx = 0;
+		assert.deepEqual(
+			applyListAction(current, { type: "select" }, ctx),
+			{ type: "none" },
+		);
+		assert.match(ctx.notifies.at(-1)?.message ?? "", /无可恢复文件/);
+
+		assert.deepEqual(
+			submitCreate(state({ selectedPaths: [], pathInput: fakeInput("") })),
+			{
+				type: "create",
+				draft: {
+					title: "需求",
+					projectPaths: [],
+					workingDirectory: undefined,
+				},
+			},
+		);
+		removeHistoryPath(current, "/extra");
+		assert.ok(!current.selectedPaths.includes("/extra"));
+	});
 });

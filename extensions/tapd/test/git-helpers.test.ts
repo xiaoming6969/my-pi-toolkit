@@ -41,6 +41,27 @@ test("functional story stays in progress while another owner's child is unfinish
 		functionalStoryStatus([child("me", "test", "测试中")], "me", "dev", "test"),
 		"开发完成",
 	);
+	assert.equal(
+		functionalStoryStatus([child("other", "test", "测试中")], "me", "dev", "test"),
+		"实现中",
+	);
+	assert.equal(
+		functionalStoryStatus([child("other", "test", "已通过")], "me", "dev", "test"),
+		"开发完成",
+	);
+	assert.equal(
+		functionalStoryStatus([child("other", "other", "实现中")], "me", "dev"),
+		"开发完成",
+	);
+	assert.equal(
+		functionalStoryStatus(
+			[{ id: "x", name: "c", owner: "other", workitem_type_id: "dev", status: "实现中" }],
+			"me",
+			"dev",
+			"test",
+		),
+		"实现中",
+	);
 });
 
 test("parseGitLabProject reads ssh and https remotes", () => {

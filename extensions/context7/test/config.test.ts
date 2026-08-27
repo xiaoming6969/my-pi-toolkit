@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { configPath, loadConfig } from "../config.ts";
@@ -34,7 +34,13 @@ test("loadConfig returns empty when env and file are missing", async (t) => {
   delete process.env.CONTEXT7_API_KEY;
   process.env.PI_CODING_AGENT_DIR = dir;
   try {
-    assert.deepEqual(loadConfig(), {});
+	assert.deepEqual(loadConfig(), {});
+	await writeFile(join(dir, "context7.json"), JSON.stringify({ apiKey: "  file-key  " }));
+	assert.deepEqual(loadConfig(), { apiKey: "file-key" });
+	await writeFile(join(dir, "context7.json"), JSON.stringify({ apiKey: "   " }));
+	assert.deepEqual(loadConfig(), {});
+	await writeFile(join(dir, "context7.json"), "{");
+	assert.deepEqual(loadConfig(), {});
   } finally {
     restoreEnv("CONTEXT7_API_KEY", previousKey);
     restoreEnv("PI_CODING_AGENT_DIR", previousDir);
