@@ -43,7 +43,7 @@ test("createFooterSnapshot drops untitled text and sums usage", () => {
 		"main",
 		"untitled",
 		new Map([
-			["session-branch", "mismatch"],
+			["session-branch", "blocked"],
 			["subagent", "sub*1"],
 		]),
 	);
@@ -53,7 +53,7 @@ test("createFooterSnapshot drops untitled text and sums usage", () => {
 	assert.equal(snapshot.provider, "openai");
 	assert.equal(snapshot.model, "gpt");
 	assert.equal(snapshot.thinking, "high");
-	assert.equal(snapshot.branchMismatch, true);
+	assert.equal(snapshot.branchMismatch, "blocked");
 	assert.equal(snapshot.subagentStatus, "sub*1");
 	assert.equal(snapshot.usage.input, 3);
 	assert.equal(snapshot.usage.output, 3);
@@ -74,7 +74,7 @@ test("identity and runtime segments follow snapshot fields", () => {
 		} as unknown as ExtensionContext,
 		"main",
 		"task",
-		new Map([["session-branch", "x"]]),
+		new Map([["session-branch", "blocked"]]),
 	);
 	assert.deepEqual(
 		identitySegments(snapshot, theme).map((segment) => segment.id),
@@ -88,7 +88,7 @@ test("identity and runtime segments follow snapshot fields", () => {
 	);
 	assert.deepEqual(
 		identitySegments(
-			{ ...snapshot, project: undefined, branch: undefined, title: undefined, branchMismatch: false, modeStatus: undefined },
+			{ ...snapshot, project: undefined, branch: undefined, title: undefined, branchMismatch: undefined, modeStatus: undefined },
 			theme,
 		),
 		[],
@@ -107,5 +107,29 @@ test("identity and runtime segments follow snapshot fields", () => {
 			true,
 		)[0]?.id,
 		"model",
+	);
+
+	const advisory = createFooterSnapshot(
+		{
+			cwd: "/tmp/repo",
+			model: { provider: "openai", id: "gpt" },
+			thinkingLevel: "low",
+			getContextUsage: () => undefined,
+			sessionManager: { getEntries: () => [] },
+		} as unknown as ExtensionContext,
+		"dev",
+		"task",
+		new Map([["session-branch", "advisory"]]),
+	);
+	assert.equal(advisory.branchMismatch, "advisory");
+	assert.equal(
+		identitySegments(advisory, theme).find((segment) => segment.id === "branch-status")
+			?.content,
+		"branch mismatch",
+	);
+	assert.equal(
+		identitySegments(snapshot, theme).find((segment) => segment.id === "branch-status")
+			?.content,
+		"✗ branch mismatch",
 	);
 });

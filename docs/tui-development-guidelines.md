@@ -153,7 +153,7 @@ renderResult(result, { expanded }, theme) {
 
 ### Footer
 
-- 第一层：项目/分支/会话、模型/思考、子 Agent；`session-branch` 的阻塞状态紧跟 Git 分支 segment（模式由 chat-mode 画在输入框顶边线，例如 `─ BUILD ───────`，不再占用 Footer `chat-mode` status）。
+- 第一层：项目/分支/会话、模型/思考、子 Agent；`session-branch` 紧跟 Git 分支 segment：硬阻塞为 error glyph + `branch mismatch`，Ask/Plan 提示态为 warning 色 `branch mismatch`（无 error glyph）。模式由 chat-mode 画在输入框顶边线，例如 `─ BUILD ───────`，不再占用 Footer `chat-mode` status。
 - 第二层：context、token、cache、cost。
 - Context `<70%` 使用 muted，`70–89%` warning，`>=90%` error。
 - 缺失字段必须连同图标和分隔符一起隐藏。

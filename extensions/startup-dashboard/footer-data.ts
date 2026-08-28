@@ -26,7 +26,7 @@ export interface FooterSnapshot {
 	model?: string;
 	thinking?: string;
 	modeStatus?: string;
-	branchMismatch?: boolean;
+	branchMismatch?: "blocked" | "advisory";
 	subagentStatus?: string;
 	extensionStatuses: ReturnType<typeof extensionStatusTexts>;
 	usage: UsageTotals;
@@ -45,6 +45,14 @@ function validText(value: unknown): string | undefined {
 	if (typeof value !== "string") return undefined;
 	const text = value.trim();
 	return text && text.toLowerCase() !== "untitled" ? text : undefined;
+}
+
+function sessionBranchMismatch(
+	value: string | undefined,
+): "blocked" | "advisory" | undefined {
+	if (value === "advisory") return "advisory";
+	if (value === undefined || value === "") return undefined;
+	return "blocked";
 }
 
 function addMetric(
@@ -96,7 +104,7 @@ export function createFooterSnapshot(
 		provider,
 		model: validText(ctx.model?.id),
 		thinking: validText(ctx.thinkingLevel),
-		branchMismatch: extensionStatuses?.has("session-branch"),
+		branchMismatch: sessionBranchMismatch(extensionStatuses?.get("session-branch")),
 		subagentStatus: extensionStatuses?.get("subagent"),
 		extensionStatuses: extensionStatusTexts(extensionStatuses),
 		usage: collectUsage(ctx),

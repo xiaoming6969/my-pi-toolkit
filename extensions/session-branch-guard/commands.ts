@@ -7,13 +7,14 @@ import { readDirtySummary, readGitContext } from "./git.js";
 import { compareBinding } from "./guard.js";
 import type { RebindWriter } from "./resolution.js";
 import { confirmRebind } from "./ui.js";
+import { guardStateLabel, type GuardState } from "./drift.js";
 import type {
 	GitContext,
 	MismatchKind,
 	SessionBranchBinding,
 } from "./types.js";
 
-/** 分支不匹配处理器（由工厂内部闭包提供，携带 blocked 状态）。 */
+/** 分支不匹配处理器（由工厂内部闭包提供，携带 guard 状态）。 */
 export type MismatchHandler = (
 	ctx: ExtensionCommandContext,
 	binding: SessionBranchBinding,
@@ -31,7 +32,7 @@ function currentRebindWriter(pi: ExtensionAPI): RebindWriter {
 export function registerSessionBranchCommand(
 	pi: ExtensionAPI,
 	options: {
-		getBlocked: () => boolean;
+		getState: () => GuardState;
 		handleMismatch: MismatchHandler;
 	},
 ): void {
@@ -40,7 +41,7 @@ export function registerSessionBranchCommand(
 		handler: async (args: string, ctx: ExtensionCommandContext) => {
 			const sub = (args ?? "").trim().split(/\s+/)[0] ?? "";
 			if (sub === "status" || sub === "") {
-				await showStatus(pi, ctx, options.getBlocked());
+				await showStatus(pi, ctx, options.getState());
 				return;
 			}
 			if (sub === "resolve") {
@@ -59,7 +60,7 @@ export function registerSessionBranchCommand(
 async function showStatus(
 	pi: ExtensionAPI,
 	ctx: ExtensionCommandContext,
-	blocked: boolean,
+	state: GuardState,
 ): Promise<void> {
 	const gitContext = await readGitContext(pi, ctx.cwd);
 	const binding = readBinding(ctx.sessionManager.getEntries());
@@ -80,9 +81,9 @@ async function showStatus(
 		`绑定分支: ${binding?.gitBranch ?? "(未绑定)"}`,
 		`当前分支: ${currentBranch}`,
 		`工作区: ${workspace}`,
-		`状态: ${blocked ? "已阻塞（分支不匹配）" : "正常"}`,
+		`状态: ${guardStateLabel(state)}`,
 	];
-	ctx.ui.notify(lines.join("\n"), blocked ? "warning" : "info");
+	ctx.ui.notify(lines.join("\n"), state === "clear" ? "info" : "warning");
 }
 
 async function runResolve(

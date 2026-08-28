@@ -3,6 +3,7 @@ import type {
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 import { BrowserReviewManager } from "../browser-review/server.js";
+import { notifySessionBranchModeChange } from "../session-branch-guard/mode-hook.js";
 import { registerAskUserChoiceTool } from "../shared/ask-user-choice-tool.js";
 import { registerDebugCommand, type DebugPanelActions } from "./debug-command.js";
 import { createDebugPanelController } from "./debug-dialog.js";
@@ -47,10 +48,11 @@ export default function chatModeExtension(pi: ExtensionAPI): void {
 		pi,
 		() => planFile?.absolutePath,
 		persistMode,
-		(mode, previous) => {
+		(mode, previous, ctx) => {
 			if (!isRestrictedMode(mode) && isRestrictedMode(previous)) {
 				pendingImplementationKickoff = true;
 			}
+			notifySessionBranchModeChange(mode, previous, ctx);
 		},
 	);
 	debugPanel = createDebugPanelController(pi, () => debugCollector);

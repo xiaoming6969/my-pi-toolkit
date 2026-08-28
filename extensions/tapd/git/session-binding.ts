@@ -2,12 +2,8 @@ import type {
 	ExtensionAPI,
 	ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
-import {
-	appendBindingCurrent,
-	createBinding,
-	readBinding,
-} from "../../session-branch-guard/binding.js";
-import { compareBinding } from "../../session-branch-guard/guard.js";
+import { readBinding } from "../../session-branch-guard/binding.js";
+import { followBindingIfBranchDiffers } from "../../session-branch-guard/drift.js";
 
 /** 绑定同步所需的当前分支上下文。 */
 export interface SessionBindingTarget {
@@ -26,10 +22,9 @@ export async function syncSessionBinding(
 	ctx: ExtensionCommandContext,
 	target: SessionBindingTarget,
 ): Promise<boolean> {
-	const binding = readBinding(ctx.sessionManager.getEntries());
-	if (!binding) return false;
-	const gitContext = { isRepo: true, ...target };
-	if (compareBinding(binding, gitContext) !== "branch-differs") return false;
-	appendBindingCurrent(pi, createBinding(gitContext, "rebound"));
-	return true;
+	return followBindingIfBranchDiffers(
+		pi,
+		readBinding(ctx.sessionManager.getEntries()),
+		{ isRepo: true, ...target },
+	);
 }

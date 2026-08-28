@@ -42,7 +42,7 @@ test("renderFooter emits identity and usage on a wide terminal", () => {
 		"main",
 		"task",
 		new Map([
-			["session-branch", "x"],
+			["session-branch", "blocked"],
 			["tokenSpeed", "⚡ TPS: 25 tok/s"],
 		]),
 	);
@@ -68,7 +68,7 @@ test("renderFooter covers provider-only, usage-only, and extension status lines"
 			provider: "openai",
 			model: undefined,
 			thinking: undefined,
-			branchMismatch: false,
+			branchMismatch: undefined,
 			subagentStatus: undefined,
 			modeStatus: "ASK",
 			contextTokens: 500,
@@ -91,7 +91,7 @@ test("renderFooter covers provider-only, usage-only, and extension status lines"
 			provider: undefined,
 			model: "gpt",
 			thinking: "high",
-			branchMismatch: false,
+			branchMismatch: undefined,
 			subagentStatus: undefined,
 			contextTokens: undefined,
 			contextWindow: 8_000,

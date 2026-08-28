@@ -18,6 +18,14 @@ function modelText(snapshot: FooterSnapshot, theme: Theme): string | undefined {
 	return provider ?? model;
 }
 
+function branchMismatchSegment(
+	kind: "blocked" | "advisory",
+	theme: Theme,
+): string {
+	if (kind === "advisory") return theme.fg("warning", "branch mismatch");
+	return `${statusGlyph(theme, "error")} ${theme.fg("error", "branch mismatch")}`;
+}
+
 export function identitySegments(
 	snapshot: FooterSnapshot,
 	theme: Theme,
@@ -41,7 +49,7 @@ export function identitySegments(
 		snapshot.branchMismatch
 			? {
 					id: "branch-status",
-					content: `${statusGlyph(theme, "error")} ${theme.fg("error", "branch mismatch")}`,
+					content: branchMismatchSegment(snapshot.branchMismatch, theme),
 				}
 			: undefined,
 		snapshot.title

@@ -2,7 +2,7 @@
 
 export const BINDING_ENTRY_TYPE = "session-branch-binding";
 
-/** 绑定来源：created=新会话首次绑定，adopted=历史会话首次升级，rebound=用户主动改绑。 */
+/** 绑定来源：created=新会话首次绑定，adopted=历史会话首次升级，rebound=改绑（用户 resolve 或本会话跟随）。 */
 export type BindingSource = "created" | "adopted" | "rebound";
 
 /** 持久化在 Pi session custom entry 中的分支绑定。 */
