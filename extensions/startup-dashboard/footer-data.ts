@@ -26,7 +26,6 @@ export interface FooterSnapshot {
 	model?: string;
 	thinking?: string;
 	modeStatus?: string;
-	branchMismatch?: boolean;
 	subagentStatus?: string;
 	extensionStatuses: ReturnType<typeof extensionStatusTexts>;
 	usage: UsageTotals;
@@ -96,7 +95,6 @@ export function createFooterSnapshot(
 		provider,
 		model: validText(ctx.model?.id),
 		thinking: validText(ctx.thinkingLevel),
-		branchMismatch: extensionStatuses?.has("session-branch"),
 		subagentStatus: extensionStatuses?.get("subagent"),
 		extensionStatuses: extensionStatusTexts(extensionStatuses),
 		usage: collectUsage(ctx),

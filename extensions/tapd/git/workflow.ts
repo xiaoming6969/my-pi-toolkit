@@ -1,7 +1,4 @@
-import type {
-	ExtensionAPI,
-	ExtensionCommandContext,
-} from "@earendil-works/pi-coding-agent";
+import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import type { TapdConfig } from "../types.js";
 import { currentTapdObject, parseKeyword } from "./context.js";
 import { branchPrefix, DEFAULT_GIT_WORKFLOW_POLICY } from "./policy.js";
@@ -12,7 +9,6 @@ import {
 	refExists,
 } from "./repository.js";
 import { fetchCommitKeyword } from "./tapd-api.js";
-import { syncSessionBinding } from "./session-binding.js";
 import {
 	migrateFromCurrentHead,
 	migrateViaStash,
@@ -42,14 +38,13 @@ export async function describeGitStatus(
 }
 
 export async function runCreateBranch(
-	pi: ExtensionAPI,
 	ctx: ExtensionCommandContext,
 	config: TapdConfig,
 	baseRef = DEFAULT_GIT_WORKFLOW_POLICY.baseRef,
 	reportProgress?: GitCommandProgressReporter,
 	cancel?: GitWorkingCancel,
 ): Promise<string> {
-	const total = 8;
+	const total = 7;
 	const signal = cancel?.signal;
 	reportProgress?.({ step: 1, total, message: "正在读取关联 TAPD 事项" });
 	cancel?.throwIfAborted();
@@ -146,15 +141,5 @@ export async function runCreateBranch(
 	}
 
 	cancel?.throwIfAborted();
-	reportProgress?.({ step: 8, total, message: "正在同步会话绑定分支..." });
-	const head = await git(root, ["rev-parse", "--short", "HEAD"], signal);
-	if (await syncSessionBinding(pi, ctx, { repoRoot: root, branch, head })) {
-		reportProgress?.({
-			step: 8,
-			total,
-			message: `会话绑定已切换为 ${branch}`,
-		});
-		return `${result}；会话绑定已切换为 ${branch}`;
-	}
 	return result;
 }

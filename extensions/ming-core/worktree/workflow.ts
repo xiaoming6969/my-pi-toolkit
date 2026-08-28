@@ -23,7 +23,6 @@ import {
 	assertCanBindWorktree,
 	enterWorktreeSession,
 	readWorktreeBinding,
-	rebindSessionBranch,
 	switchCurrentSessionCwd,
 } from "./session.js";
 import type { NewWorktreeTarget, WorktreeBinding } from "./types.js";
@@ -82,13 +81,10 @@ export async function createWorktree(
 		baseRef: target.baseRef,
 		path,
 	});
-	const head = await git(path, ["rev-parse", "--short", "HEAD"]);
 	const message = `已创建 ${target.source === "tapd" ? "TAPD " : ""}worktree\n分支: ${target.branch}\n目录: ${path}`;
 	working?.dispose();
 	await enterWorktreeSession(pi, ctx, {
 		worktreePath: resolve(path),
-		worktreeBranch: target.branch,
-		head,
 		binding: {
 			originalCwd: resolve(root),
 			originalBranch,
@@ -110,15 +106,11 @@ function requireBinding(ctx: ExtensionCommandContext): WorktreeBinding {
 }
 
 async function returnToOriginal(
-	pi: ExtensionAPI,
 	ctx: ExtensionCommandContext,
 	binding: WorktreeBinding,
-	branch: string,
 	message: string,
 	working?: WorkingCancel,
 ): Promise<string> {
-	const head = await git(binding.originalCwd, ["rev-parse", "--short", "HEAD"]);
-	rebindSessionBranch(pi, binding.originalCwd, branch, head);
 	working?.dispose();
 	await switchCurrentSessionCwd(ctx, binding.originalCwd, message);
 	return message;
@@ -148,14 +140,7 @@ export async function applyWorktree(
 	let message = `已应用 ${binding.worktreeBranch}；会话已回 ${binding.originalCwd}`;
 	if (moved) message = `已应用 ${binding.worktreeBranch} 及未提交改动；会话已回 ${binding.originalCwd}`;
 	if (applyWarning) message += `\n警告: ${applyWarning}`;
-	return returnToOriginal(
-		pi,
-		ctx,
-		binding,
-		binding.worktreeBranch,
-		message,
-		working,
-	);
+	return returnToOriginal(ctx, binding, message, working);
 }
 
 export async function deleteWorktree(
@@ -170,14 +155,7 @@ export async function deleteWorktree(
 		appendWorktreeBinding(pi, { ...binding, phase: "deleted" });
 		const message = "worktree 目录已不存在，记录已清理";
 		if (inWorktree)
-			return returnToOriginal(
-				pi,
-				ctx,
-				binding,
-				binding.originalBranch,
-				message,
-				working,
-			);
+			return returnToOriginal(ctx, binding, message, working);
 		return message;
 	}
 	const dirty = Boolean(await gitStatus(runGit, binding.worktreePath));
@@ -200,13 +178,6 @@ export async function deleteWorktree(
 	appendWorktreeBinding(pi, { ...binding, phase: "deleted" });
 	const message = `已放弃 worktree: ${binding.worktreePath}`;
 	if (inWorktree)
-		return returnToOriginal(
-			pi,
-			ctx,
-			binding,
-			binding.originalBranch,
-			message,
-			working,
-		);
+		return returnToOriginal(ctx, binding, message, working);
 	return message;
 }

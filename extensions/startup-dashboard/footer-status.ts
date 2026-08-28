@@ -1,10 +1,6 @@
 import { stripVTControlCharacters } from "node:util";
 
-const INTEGRATED_STATUS_KEYS = new Set([
-	"agent-todos",
-	"session-branch",
-	"subagent",
-]);
+const INTEGRATED_STATUS_KEYS = new Set(["agent-todos", "subagent"]);
 const STATUS_PRIORITY = ["tokenSpeed", "ponytail", "pi-lens-lsp"];
 
 type StatusTone = "accent" | "dim" | "error" | "muted" | "success" | "warning";

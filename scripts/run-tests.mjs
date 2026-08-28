@@ -115,7 +115,6 @@ const coverageExcludes = [
 	"**/agent-todos/render.ts",
 	"**/repository.ts",
 	"**/session-files.ts",
-	"**/session-branch-guard/git.ts",
 	"**/debug-endpoint.ts",
 	"**/worker-semaphore.ts",
 	"**/table-view-render.ts",

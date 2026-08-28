@@ -42,10 +42,7 @@ test("createFooterSnapshot drops untitled text and sums usage", () => {
 		} as unknown as ExtensionContext,
 		"main",
 		"untitled",
-		new Map([
-			["session-branch", "mismatch"],
-			["subagent", "sub*1"],
-		]),
+		new Map([["subagent", "sub*1"]]),
 	);
 	assert.equal(snapshot.project, "my-repo");
 	assert.equal(snapshot.branch, "main");
@@ -53,7 +50,6 @@ test("createFooterSnapshot drops untitled text and sums usage", () => {
 	assert.equal(snapshot.provider, "openai");
 	assert.equal(snapshot.model, "gpt");
 	assert.equal(snapshot.thinking, "high");
-	assert.equal(snapshot.branchMismatch, true);
 	assert.equal(snapshot.subagentStatus, "sub*1");
 	assert.equal(snapshot.usage.input, 3);
 	assert.equal(snapshot.usage.output, 3);
@@ -74,11 +70,11 @@ test("identity and runtime segments follow snapshot fields", () => {
 		} as unknown as ExtensionContext,
 		"main",
 		"task",
-		new Map([["session-branch", "x"]]),
+		new Map(),
 	);
 	assert.deepEqual(
 		identitySegments(snapshot, theme).map((segment) => segment.id),
-		["project", "branch", "branch-status", "title"],
+		["project", "branch", "title"],
 	);
 	assert.deepEqual(
 		runtimeSegments({ ...snapshot, subagentStatus: "s*1" }, theme).map(
@@ -88,7 +84,7 @@ test("identity and runtime segments follow snapshot fields", () => {
 	);
 	assert.deepEqual(
 		identitySegments(
-			{ ...snapshot, project: undefined, branch: undefined, title: undefined, branchMismatch: false, modeStatus: undefined },
+			{ ...snapshot, project: undefined, branch: undefined, title: undefined, modeStatus: undefined },
 			theme,
 		),
 		[],

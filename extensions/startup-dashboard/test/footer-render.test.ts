@@ -41,10 +41,7 @@ test("renderFooter emits identity and usage on a wide terminal", () => {
 		} as never,
 		"main",
 		"task",
-		new Map([
-			["session-branch", "x"],
-			["tokenSpeed", "⚡ TPS: 25 tok/s"],
-		]),
+		new Map([["tokenSpeed", "⚡ TPS: 25 tok/s"]]),
 	);
 	const wide = renderFooter(120, snapshot, theme).join("\n");
 	assert.match(wide, /demo-repo/);
@@ -68,7 +65,6 @@ test("renderFooter covers provider-only, usage-only, and extension status lines"
 			provider: "openai",
 			model: undefined,
 			thinking: undefined,
-			branchMismatch: false,
 			subagentStatus: undefined,
 			modeStatus: "ASK",
 			contextTokens: 500,
@@ -91,7 +87,6 @@ test("renderFooter covers provider-only, usage-only, and extension status lines"
 			provider: undefined,
 			model: "gpt",
 			thinking: "high",
-			branchMismatch: false,
 			subagentStatus: undefined,
 			contextTokens: undefined,
 			contextWindow: 8_000,
