@@ -39,7 +39,6 @@
 | Context7 | 为 Agent 提供第三方库最新文档，减少对训练数据的依赖 |
 | 会话与分支门禁 | 恢复会话时校验 Git 分支，降低跨分支误操作 |
 | 自动格式化 | 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 格式化本轮修改文件 |
-| 可复用子 Agent | `/subagents` 与 `Alt+A` 查看 queued/运行/idle 时间并管理过程；相关任务可凭 `subagentId` 在同一上下文中继续执行 |
 | 启动面板与主题 | M-PI Dashboard；Footer 兼容第三方扩展状态；推荐主题 `grok-build-dark` |
 
 能力由三个扩展入口编排：`ming-core`、`tapd`、`context7`；Worktree 会话由 `ming-core` 加载。通用模块细节见 [`extensions/README.md`](extensions/README.md)。
@@ -60,10 +59,6 @@
 
 <img src="assets/chat.png" alt="Chat session with BUILD mode" width="900" />
 
-**Subagents** — `/subagents`：Repo Search / TAPD Review 等任务列表与可复用 turn
-
-<img src="assets/subagents.png" alt="Subagents overlay" width="900" />
-
 </div>
 
 ## Prerequisites
@@ -78,6 +73,7 @@
 
 ```bash
 pi install npm:@xiaoming6969/my-pi-toolkit
+pi install npm:pi-subagents
 ```
 
 ### 从源码
@@ -107,6 +103,8 @@ pi install git:github.com/xiaoming6969/my-pi-toolkit@main
 }
 ```
 
+仓库探索、`/tapd review` 和 Ready `/tapd mr` 的 Bug 根因预填依赖 [`pi-subagents`](https://github.com/nicobailon/pi-subagents)。从源码或 git 安装 toolkit 后，仍需执行 `pi install npm:pi-subagents`。子代理模型在 Pi 的 `subagents.agentOverrides`（如 `scout`、`reviewer`）中配置，不在 `tapd.json`。当前会话激活 `subagent` 时，toolkit 会向系统提示注入角色使用约定。
+
 ## Quick Start
 
 ```bash
@@ -127,7 +125,6 @@ pi --no-session
 | `/apply-worktree` | 应用：原项目切到 worktree 分支并迁回未提交改动，删除工作夹，会话切回原项目；原项目有未提交改动时拒绝。执行中显示 `apply worktree...` |
 | `/delete-worktree` | 放弃：删除工作夹，原项目分支不变；会话在工作夹时可直接放弃；dirty 时二次确认后强制删除。执行中显示 `delete working...` |
 | `/context7 <query>` | 查询第三方库文档 |
-| `/subagents` | 查看、取消或终止子 Agent；列表与详情显示 queued、运行时长、idle 剩余时间及可复用 ID/turn |
 | `/settings` | 切换主题等设置 |
 | `/helps` | 打开 [my-pi-toolkit](https://github.com/xiaoming6969/my-pi-toolkit) 文档仓库 |
 | `/reload` | 修改扩展后重新加载运行时 |
@@ -139,6 +136,7 @@ pi --no-session
 | 能力 | 配置 |
 | --- | --- |
 | TAPD | `~/.pi/agent/tapd.json`（详见 [`extensions/tapd/README.md`](extensions/tapd/README.md)） |
+| 子代理（scout / reviewer） | 安装 `npm:pi-subagents` 后在 Pi settings 的 `subagents.agentOverrides` 中按角色配置模型 |
 | Context7 | `~/.pi/agent/context7.json` 或环境变量 `CONTEXT7_API_KEY` |
 | GitLab（TAPD MR 等） | `tapd.json` 的 `gitlab.token` 或 `GITLAB_PERSONAL_ACCESS_TOKEN` |
 | OpenAI 兼容模型自动发现 | `~/.pi/agent/models.json` 中省略 `models`（或 `[]`）；打开 `/model` 时刷新；详见 [`extensions/openai-compat-models/README.md`](extensions/openai-compat-models/README.md) |
@@ -150,7 +148,7 @@ pi --no-session
 
 | 扩展 | 简介 | 文档 |
 | --- | --- | --- |
-| ming-core | 通用能力编排：模型、浏览器审阅、Plan / Debug、自动格式化、可复用子 Agent、Worktree、Dashboard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
+| ming-core | 通用能力编排：模型、浏览器审阅、Plan / Debug、自动格式化、Worktree、Dashboard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
 | TAPD | 待办、需求分析、选项确认式技术设计、协作评审、三文档预览、Bug 定位与子需求同步 | [`extensions/tapd/README.md`](extensions/tapd/README.md) |
 | Context7 | 第三方库最新文档查询 | [`extensions/context7/README.md`](extensions/context7/README.md) |
 

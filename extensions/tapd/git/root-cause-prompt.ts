@@ -33,3 +33,17 @@ export function buildRootCauseTask(options: {
 		"【根因大类】从证据文件候选中原样抄一整行「大类 / 子项」。",
 	].join("\n");
 }
+
+export function buildRootCauseDelegationMessage(task: string): string {
+	return [
+		"请立即调用 subagent 工具，使用 agent 为 reviewer、context 为 fresh，根据证据文件撰写 TAPD Bug 根因备注。",
+		"不要自己搜索仓库。若没有 subagent 工具，你必须自己只读取证据文件一次，然后立刻输出。",
+		"不要创建或更新 MR，不要修改代码。",
+		"",
+		ROOT_CAUSE_SYSTEM_PROMPT,
+		"",
+		task,
+		"",
+		"reviewer 返回后，把三段原文作为你的整段回复（不要总结、不要加标题）。",
+	].join("\n");
+}

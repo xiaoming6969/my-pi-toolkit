@@ -161,11 +161,10 @@ renderResult(result, { expanded }, theme) {
 - 自定义 Footer 必须透传 `getExtensionStatuses()` 中未被专门消费的状态，按显示价值稳定排序、清理多行控制字符并按终端宽度截断；`tokenSpeed` 等实时关键指标应优先于低价值诊断状态。已提升到固定布局的 key（当前为 `subagent`）以及已有等价 Widget 的 key（当前为 `agent-todos`）必须从通用状态行排除，避免重复。
 - 外部 status 不得把自带 ANSI/VT 样式直接带入 M-PI Footer。已知 key 应通过消费端 adapter 映射为共享 glyph、Theme 语义色和紧凑 segment；实时数值状态可按明确档位映射语义色（TPS 当前为 `<15` error、`15–29` warning、`30–44` success、`>=45` accent）。未知 key 必须移除终端控制序列后以 muted 原文降级显示，不得因未适配而丢失。
 
-### Todo、Plan、Subagent
+### Todo、Plan
 
 - Todo 同时最多一个 active；完成项降噪，不依赖删除线。
 - Plan review 必须保留完整 Markdown、滚动位置、关闭提示和底边框。
-- Subagent overlay 必须区分 live/historical、running/completed/error，并在关闭时取消订阅和 mouse tracking。
 
 ## 7. 架构与兼容性
 
@@ -174,7 +173,6 @@ renderResult(result, { expanded }, theme) {
 - 屏幕缓冲区、alternate-screen 进入/退出、清屏和 scrollback 由 Pi 宿主管理；Header、Footer、Widget、Overlay 的 factory 不得自行清屏。
 - 公共视觉 helper 放在 `extensions/shared/tui/`；业务数据和执行逻辑留在模块目录。
 - 不得让 `shared/tui` 依赖具体业务模块，避免循环依赖。
-- Repo Search、TAPD Review 等受限子 Agent 仍走瘦加载路径，不得加载整个 `ming-core`。Multi Task implementation worker 为继承主 Agent 能力可加载正常资源，但必须排除 `repo_search`、保留 `edit/write` 路径守卫，并在模块 README 明确 shell 与其他副作用工具不受该守卫约束。
 - 保持现有命令、快捷键、tool name、status key 和 session custom entry 兼容；破坏性变化必须提供迁移说明。
 - 不得为视觉改造改变工具权限、Plan 生命周期、worker 隔离或安全门禁。
 - 内置 tool override 必须默认可关闭，并验证包装前后除 `renderShell`、`renderCall`、`renderResult` 外的 definition 字段保持一致。

@@ -11,7 +11,7 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 | `/tapd design [补充要求]` | 调研后通过选项式提问确认关键决策，再生成 `design.md` 和结构化开发子需求拆分 |
 | `/tapd collaboration [补充要求]` | 生成供产品、后端和前端 Leader 评审的 `collaboration.md` |
 | `/tapd preview [understanding\|design\|collaboration]` | 在浏览器批阅当前需求的本地 Markdown 文档并把意见交给 Agent；不带参数时先选择文档，且不需要 TAPD Token |
-| `/tapd review [--base origin/dev] [补充要求]` | 选择“仅未提交”或“当前分支全部修改”后，启动只读子代理审核实现与过度设计，并将分级报告返回主 Agent |
+| `/tapd review [--base origin/dev] [补充要求]` | 选择审核范围后，注入需求/设计路径，让主 Agent 调用 pi-subagents 的 `reviewer` |
 | `/tapd sub-task` | 根据 `design.md` 创建或同步设计、开发子需求 |
 | `/tapd bug` | 获取当前 Bug 完整信息并让 Agent 定位代码原因；定位提示对用户隐藏；结果只输出原因、带具体代码的因果链与置信度，不写长篇分析报告 |
 | `/tapd bug-reject` | 单页 Overlay 拒绝当前 Bug：评价原因多行预览，Enter 进 Overlay 用 Pi Editor 编辑（Enter 确认 / Ctrl+Enter 换行）；解决方法/开发人员同样 Enter 打开 Overlay；FAQ 默认否 |
@@ -34,7 +34,7 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 
 - `Ctrl+Shift+T`：打开 TAPD 待办。
 
-`/tapd` 的待办、类型筛选、关联会话、select 和 confirm 页面统一显示在当前 TUI 上方的居中 Overlay 中，与 Subagent 共用单层 Header/viewport/Footer shell（宽度 `92%`、最大高度 `88%`）。`/tapd preview` 和三个文档生成后的自动预览优先打开 localhost 浏览器：默认显示渲染后的 Markdown（含 Mermaid 图），点击内容块可批注对应源行，也可切换源码精确批注；提交后自动发送 follow-up，仅要求 Agent 修改目标文档，取消/关闭不操作。浏览器启动失败时回退原只读 Markdown Overlay（宽度 `90%`、最大高度 `84%`），保留 Mermaid、LaTeX、键盘滚动和 regular wheel。主表在 `<80`、`80–119`、`>=120` 列下依次显示紧凑、普通、完整字段；长待办、会话和路径历史使用围绕当前选择的 viewport，并显示 `start-end/total`。`↑/↓`、`PageUp/PageDown`、`Home/End` 导航；主表的操作提示（导航 · Enter 关联 · `/` 搜索 · Tab 切换 · `i` 迭代 · `t` 类型 · `o` 打开 · Esc/Ctrl+C 退出，窄屏自动缩减）统一显示在 Overlay 最底部 Footer 一行，不重复出现在面板内；会话 picker、select/confirm 对话框的操作提示同样显示在底部 Footer；`i` 键在“当前迭代/所有迭代”待办范围间切换。需求/Bug 和工作项类型使用 `[REQ]`、`[BUG]`、`[DEV]` 等稳定文本标签；主表「设计」列仅出现在需求视图（Bug 视图不显示）；`●` 表示当前项目或关联会话目录中已存在对应的 `design.md`，`○` 表示尚未设计。打开待办时会先扫描会话目录再计算该状态，之后每次重新打开主表时也会重新计算。新建关联会话时，“会话名称”默认使用 TAPD 标题，也可以在创建前编辑；创建后该名称会显示在 `/resume` 会话列表中。选中一个项目路径时，新会话直接在该目录中创建；多选路径时会追加一步工作目录选择；未选路径或所选路径等于当前目录时，行为与原先一致。切到未信任目录时 Pi 会弹出项目信任确认。跨目录创建的会话会写入 `model-manager-new-conversation` 标记 entry，让 model-manager 按新对话规则应用默认模型（普通 `/resume` 不受影响）。
+`/tapd` 的待办、类型筛选、关联会话、select 和 confirm 页面统一显示在当前 TUI 上方的居中 Overlay 中，使用共享单层 Header/viewport/Footer shell（宽度 `92%`、最大高度 `88%`）。`/tapd preview` 和三个文档生成后的自动预览优先打开 localhost 浏览器：默认显示渲染后的 Markdown（含 Mermaid 图），点击内容块可批注对应源行，也可切换源码精确批注；提交后自动发送 follow-up，仅要求 Agent 修改目标文档，取消/关闭不操作。浏览器启动失败时回退原只读 Markdown Overlay（宽度 `90%`、最大高度 `84%`），保留 Mermaid、LaTeX、键盘滚动和 regular wheel。主表在 `<80`、`80–119`、`>=120` 列下依次显示紧凑、普通、完整字段；长待办、会话和路径历史使用围绕当前选择的 viewport，并显示 `start-end/total`。`↑/↓`、`PageUp/PageDown`、`Home/End` 导航；主表的操作提示（导航 · Enter 关联 · `/` 搜索 · Tab 切换 · `i` 迭代 · `t` 类型 · `o` 打开 · Esc/Ctrl+C 退出，窄屏自动缩减）统一显示在 Overlay 最底部 Footer 一行，不重复出现在面板内；会话 picker、select/confirm 对话框的操作提示同样显示在底部 Footer；`i` 键在“当前迭代/所有迭代”待办范围间切换。需求/Bug 和工作项类型使用 `[REQ]`、`[BUG]`、`[DEV]` 等稳定文本标签；主表「设计」列仅出现在需求视图（Bug 视图不显示）；`●` 表示当前项目或关联会话目录中已存在对应的 `design.md`，`○` 表示尚未设计。打开待办时会先扫描会话目录再计算该状态，之后每次重新打开主表时也会重新计算。新建关联会话时，“会话名称”默认使用 TAPD 标题，也可以在创建前编辑；创建后该名称会显示在 `/resume` 会话列表中。选中一个项目路径时，新会话直接在该目录中创建；多选路径时会追加一步工作目录选择；未选路径或所选路径等于当前目录时，行为与原先一致。切到未信任目录时 Pi 会弹出项目信任确认。跨目录创建的会话会写入 `model-manager-new-conversation` 标记 entry，让 model-manager 按新对话规则应用默认模型（普通 `/resume` 不受影响）。
 
 ## Story workflow
 
@@ -48,6 +48,7 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 - 三个文档命令在 Agent 完成且目标文件确实新增或更新后自动打开对应浏览器批阅；提交逐行批注后自动交给 Agent 修订该文件，取消/关闭不触发下一轮。生成失败或文件未变化时不会误开旧内容。之后可随时执行 `/tapd preview` 选择文档，或通过参数直接打开。
 - `/tapd design` 会先读取需求理解、检查相关代码，再识别影响范围、架构、兼容性、接口契约或验收标准的关键待确认决策。存在待确认项时，Agent 使用通用的 `ask_user_choice` 一次提交全部当前已知问题；用户用 Tab / Shift+Tab 切换并集中提交答案。每题提供 2～5 个候选方案，可标记一个推荐项，最后固定提供“其他（自定义输入）”；用户取消时停止流程且不创建或覆盖 `design.md`。没有关键待确认项时直接生成设计。
 - `/tapd analyze`、`/tapd design`、`/tapd collaboration` 启动时会写入 `chat-mode-ensure-ask-for-docs` 标记，由 chat-mode 在本轮 Agent 启动前切到 Ask（可写项目 `.pi/**`，避免 Plan 只能写 session `plan.md` 导致 `design.md` 落错位置）。prompt 同时禁止调用 `enter_plan_mode`。
+- `analyze`、`design`、`collaboration` 和 `bug` 的提示词都要求：探索本会话尚未读过的模块时先用 `subagent` 委派 `scout`，再自己核对关键代码，不要直接全仓 grep。任务侧提示比系统提示更贴近当前任务，因此除 `subagent-policy` 的全局约定外，这四个提示词内也各自重申一遍。
 - 开发任务拆分来源：`design.md`。
 - 设计子需求描述来源：`collaboration.md`。
 - 协作文档会包含 Design 方案 Mermaid 图，核对实际代码并列出关键函数或组件签名、出入参及相关接口信息；不再生成独立的“前后端协作点”和“评审与验收”章节。
@@ -59,21 +60,17 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 
 两种 review 分工明确：
 
-- `/tapd review`：AI 子 Agent 检查需求/设计符合度、隐藏 Bug 和过度设计，返回分级报告并等待确认。
+- `/tapd review`：把当前 TAPD 需求文档路径和审核范围交给主 Agent，由其调用 [pi-subagents](https://github.com/nicobailon/pi-subagents) 的 `reviewer`，对照需求与设计审核实现，返回后只总结、不自动改代码。
 - `/review [uncommitted|branch] [--base origin/dev]`：人在浏览器逐行查看 Git diff；提交批注后自动交给主 Agent 修改，关闭不操作。
 
-两者不会自动串行启动，避免一个命令阻塞两个长流程。
+两者不会自动串行启动，避免一个命令阻塞两个长流程。需要先安装 `npm:pi-subagents`。`reviewer` 模型在 Pi settings 的 `subagents.agentOverrides.reviewer` 中配置。
 
 `/tapd review` 会先显示审核范围选择器：
 
 - **仅审核未提交修改**：以 `HEAD` 为比较起点，只审核暂存、未暂存和未跟踪文件，不包含只存在于既有 commit 中的修改。
 - **审核当前分支全部修改**：审核指定基础分支的 merge-base 到工作区的全部修改，包括已提交、暂存、未暂存和未跟踪文件；`--base`（默认 `origin/dev`）仅影响此选项。
 
-按 `Esc` 取消选择不会启动 Agent 或 Review 子代理。命令要求当前需求已有非空的 `understanding.md` 和 `design.md`，并使用只开放 `read`、`grep`、`find`、`ls` 的隔离子代理检查代码风格、文件拆分、需求满足度、设计满足度和隐藏 Bug；同时按 ponytail-review 标准检查死代码、重复实现标准库或平台能力、无必要依赖、投机性抽象/配置/扩展点、单调用层、单实现接口及可明显缩短的逻辑，报告给出最小替代方案与预计可减少行数。存在组件改动时，还会检查组件 Props/参数、默认值、事件、状态归属、数据流、组合方式、子结构和拆分边界是否合理及兼容。子代理保持瘦加载，只额外加载 OpenAI 兼容模型发现，因此可直接继承主 Agent 使用的对应自定义模型。
-
-命令会让主 Agent 调用原生 `tapd_review` 工具；执行进度、Review 子代理最近的工具调用和最终报告均显示在对话工具框中。工具卡 summary 与 Subagent Overlay Header 显示 Review 所用模型；该模型支持 reasoning 时再显示思考等级（`provider/id · high`），不支持时省略。思考等级优先用 `tapd.json` 的 `review.thinkingLevel`，未配置时继承主会话。可用 `Ctrl+O` 在运行期间展开全部已记录调用，并在完成后展开完整 Markdown 报告。审核期间按 `Esc` 或 `Ctrl+C` 会通过工具的 AbortSignal 终止子代理。报告使用 `P0 Blocker`、`P1 High`、`P2 Medium`、`P3 Suggestion` 问题等级及 `LOW`、`MEDIUM`、`HIGH`、`BLOCKED` 总体风险等级。工具结果会直接进入主 Agent 上下文，主 Agent 只总结问题，不会自动修改代码。
-
-Review 默认使用持久 RPC 子 Agent，不会自动打开分屏。按 `Alt+A` 可在当前 TUI 上方打开居中的大尺寸只读 Overlay，以主 Agent 相同的消息、Markdown、思考块和工具组件查看最近子 Agent 的过程；Overlay 不提供输入框，支持鼠标滚轮以及 `↑`、`↓`、`PageUp`、`PageDown`、`Home`、`End` 滚动，并使用 `Ctrl+O` 展开或折叠工具输出。按 `Esc` 返回主 Agent且不终止审核。使用 `/subagents` 可以管理指定子 Agent：列表中按 `Enter` 进入实时过程或查看历史详情；completed/exited 历史会从子 Agent session 重建完整消息、思考块和工具时间线，并继续使用主界面组件样式；thinking 可用 `app.thinking.toggle`（默认 `Ctrl+T`）折叠，built-in 工具遵循当前 `/grok-tools` 配置。只有旧记录缺少或损坏 session 时，才回退到最终 Markdown 或 transcript 文本摘要。按 `C` 请求取消，按 `X` 强制终止活跃任务，按 `D` 清理已退出的任务记录。列表默认只显示当前主会话创建的子 Agent，按 `Tab` 可切换到所有会话记录；操作后会刷新列表。首轮审核完成后报告自动返回主 Agent；`keepOpen: true` 时结果同时给出 reusable `subagentId`，相关解释、追查或同一快照内的补充检查可交给 `subagent_followup`。需要独立审查时必须重新调用 `tapd_review` 启动新的 reviewer，不能让产出实现或原结论的同一 Agent 自我审查；代码或需求/设计内容已变化并需要重新采集完整 Git 快照时也必须新建 Review，不要续接旧快照。公共行为由 `~/.pi/agent/subagents.json` 配置；Review 固定使用 managed RPC/manual，`keepOpen: false` 时为一次性。Review 的 Git 上下文会复制进子 Agent 任务目录，避免主工具返回后丢失审核证据。
+按 `Esc` 取消选择不会启动 Agent。命令要求当前会话已关联需求，且已有非空的 `understanding.md` 和 `design.md`；缺失时直接提示，不会开一轮空对话。`reviewer` 没有 bash，主 Agent 需先用 git 列出变更再写入 `subagent` 的 `task`。审核过程与进度由 pi-subagents 的 FleetView / `/subagents-fleet` 展示，不再使用本仓库的 Overlay 或 `tapd_review` 工具。
 
 ## Session links
 
@@ -99,17 +96,14 @@ TAPD 会话关联保存在 Pi session 自身的 custom entry（`tapd-session-lin
 {
   "token": "TAPD 个人令牌",
   "baseUrl": "可选的 TAPD API Base URL",
-  "review": {
-    "model": "可选；例如 lumilegend/gpt-5.6-sol；默认继承主 Agent 当前模型",
-    "thinkingLevel": "可选；off、minimal、low、medium、high、xhigh 或 max；默认继承主会话",
-    "presentation": "兼容保留；Review 固定使用 manual RPC，以接入子 Agent 状态栏、Overlay 和 /subagents"
-  },
   "gitlab": {
     "token": "可选；也可使用 GITLAB_PERSONAL_ACCESS_TOKEN",
     "baseUrl": "可选；默认从 origin 推导 https://host/api/v4"
   }
 }
 ```
+
+`/tapd review` 与 Ready `/tapd mr` 的 Bug 根因预填都使用已安装的 [pi-subagents](https://github.com/nicobailon/pi-subagents) `reviewer`。按角色的模型写在 Pi settings 的 `subagents.agentOverrides.reviewer`（探索用 `scout`）。若 reviewer 使用自定义 OpenAI 兼容模型，需把对应 extension 写入 pi-subagents 的 `defaultExtensions` 或该 agent 的 `extensions`。
 
 TAPD Open API 索引见 [`../../docs/tapd-api.md`](../../docs/tapd-api.md)。
 
@@ -133,7 +127,7 @@ TAPD Open API 索引见 [`../../docs/tapd-api.md`](../../docs/tapd-api.md)。
 - Bug 默认标签为 `二组`、`迭代bug(每日发布)`，状态更新为 `已解决`，负责人为 `沈瑞昀`。
 - 需求/任务默认标签为 `二组`、`迭代任务(随迭代发布)`。Ready MR 中，关联项是开发子需求或 TAPD 任务时更新为 `开发完成`；关联项是测试需求时，仅在处理人为当前 Token 用户时更新为 `已通过`；关联项是顶层功能需求时，仅更新当前用户负责的功能需求本身及其直属开发、测试需求。功能需求只更新状态：存在其他处理人的未完成直属开发或测试需求时更新为 `实现中`，否则更新为 `开发完成`；开发子需求更新为 `开发完成`，测试需求更新为 `已通过`。每个实际流转的 TAPD 任务、开发子需求和测试需求都会将完成工时同步为自身的有效预估工时；首次批量更新后会回读完成工时，仅在 TAPD 状态流转覆盖工时值时单独补写并再次校验。预估工时缺失、为零或无效时只更新状态，不写完成工时，也不阻断 MR。其他处理人的需求不会被修改，所有更新均不修改负责人。
 - 纯需求/任务的 `/tapd mr` 保持一次执行完成，不触发根因填写。
-- 含 Bug 的 Ready `/tapd mr` 在同一次执行中完成：先分析修复 diff 和 `git blame` 候选并选择/手动输入引入 commit，再用只读子 Agent **只根据已收集证据**预填【产生原因】与【修复】（不重复搜仓库，无超时）。总结开始后自动打开与 `/subagents` 相同的只读过程 Overlay；该内部根因 Agent 固定 `keepOpen: false`，完成后 Overlay 自动关闭且不暴露 reusable handle。按 `Esc` 取消本次总结并回退为空模板，不取消整次 MR。此期间 slash 命令不可用，进度看 Overlay。子 Agent 会从 TAPD「根因大类」级联候选中选一行「大类 / 子项」；选不出或对不上候选时，再弹出大类、子类选择器。打开编辑器确认或修改（可留空）后直接创建或更新 MR 并回写 TAPD。流转时写入根因大类（`大类/子项`），以及当前 Token 用户为「开发人员」。子 Agent 失败、被取消或当前会话没有模型时回退为空模板，不阻断 MR，也不要求二次执行 `/tapd mr`。再次执行 Ready `/tapd mr` 会再次 POST 更新这两项。
+- 含 Bug 的 Ready `/tapd mr` 在同一次执行中完成：先分析修复 diff 和 `git blame` 候选并选择/手动输入引入 commit，再收集证据并让主 Agent（优先调用 pi-subagents 的 `reviewer`）预填【产生原因】与【修复】。Agent 失败或未返回可用内容时编辑器为空模板，不阻断 MR。打开编辑器确认或修改后直接创建或更新 MR 并回写 TAPD。流转时写入根因大类（`大类/子项`），以及当前 Token 用户为「开发人员」。取消填写会中止本次 MR。再次执行 Ready `/tapd mr` 会再次 POST 更新这两项。
 - 若仓库 `.pi/tapd-root-cause/{bugId}.json` 已有与当前 `HEAD` 匹配的草稿，会直接复用并跳过填写；TAPD 流转成功后自动删除该草稿。选择“未能定位”时使用 TAPD 真实候选值 `其他(历史缺陷)`。
 - 引入 commit 经验证后，会拉取远端 tags，优先取直接指向 commit 的第一个 tag，否则取第一个包含该 commit 的 tag。
 - 合入版本从 TAPD `/bugs/get_fields_info` 的“合入版本”候选值中选择。普通版本精确匹配；`.0` 等存在多个迭代候选时，根据引入 commit 中 TAPD keyword 关联事项的迭代唯一匹配；关联事项没有迭代时会列出候选值让用户手动选择。
@@ -150,6 +144,6 @@ TAPD Open API 索引见 [`../../docs/tapd-api.md`](../../docs/tapd-api.md)。
 | `documents/` | analyze、design、collaboration、Bug 定位与 `/tapd bug-reject` 拒绝流转，以及 Design 关键决策提问工具 |
 | `subtasks/` | 子需求解析、确认计划、TAPD 同步（`api-sync.ts`）与 append-only 状态更新（`state.ts`） |
 | `todo/` | 待办编排与 Overlay；`tree-list.ts`、`table-view.ts`、`session-picker*.ts` 分别负责树表、响应式主表和会话/路径 viewport |
-| `review/` | 需求实现审核上下文、只读子代理、进度和报告渲染 |
+| `review/` | `/tapd review`：解析需求文档路径并注入 pi-subagents `reviewer` |
 | `working.ts` | TAPD 侧 `withTapdWorking`；底层实现见 `extensions/shared/tui/working-cancel.ts` |
-| `git/` | Git 仓库、TAPD keyword、GitLab MR、状态回写和根因备注；`commands.ts` 单卡、`commit-workflow.ts` 提交推送、`root-cause-*.ts` 根因证据与总结子 Agent、`bug-fields.ts` 缺陷字段信息 |
+| `git/` | Git 仓库、TAPD keyword、GitLab MR、状态回写和根因备注；`commands.ts` 单卡、`commit-workflow.ts` 提交推送、`root-cause-*.ts` 证据采集与 Agent 预填、`bug-fields.ts` 缺陷字段信息 |

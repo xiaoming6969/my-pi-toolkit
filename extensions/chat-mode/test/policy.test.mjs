@@ -95,6 +95,9 @@ test("restrictedModeToolNames keeps read, path-gated, and plan tools", () => {
 	assert.ok(names.includes("edit"));
 	assert.ok(names.includes(ENTER_PLAN_TOOL));
 	assert.ok(names.includes(EXIT_PLAN_TOOL));
+	assert.ok(
+		restrictedModeToolNames(["subagent", "read"], "ask").includes("subagent"),
+	);
 	assert.deepEqual(
 		restrictedModeToolNames(["bash", "read"], "plan").includes("bash"),
 		false,

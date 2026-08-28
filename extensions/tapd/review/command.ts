@@ -3,6 +3,8 @@ import type {
 	ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
 import { DEFAULT_GIT_WORKFLOW_POLICY } from "../git/policy.js";
+import { buildReviewDelegationMessage } from "./prompt.js";
+import { resolveTapdReviewTarget } from "./resolve.js";
 import type { TapdReviewScope } from "./types.js";
 
 const REVIEW_SCOPE_OPTIONS: Record<string, TapdReviewScope> = {
@@ -57,19 +59,23 @@ export async function requestTapdReview(
 		if (!choice) return;
 		scope = REVIEW_SCOPE_OPTIONS[choice as keyof typeof REVIEW_SCOPE_OPTIONS];
 	}
+	let target: Awaited<ReturnType<typeof resolveTapdReviewTarget>>;
+	try {
+		target = await resolveTapdReviewTarget(ctx);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		ctx.ui.notify(message, "error");
+		return;
+	}
 	pi.sendMessage(
 		{
 			customType: "tapd-review-tool-request",
-			content: [
-				"请立即调用 tapd_review 工具审核当前 TAPD 需求的代码修改。",
-				"不要自行替代工具完成审核，也不要在审核后自动修改代码。",
-				"工具返回后，请总结最高等级问题并等待我确认。",
-				"",
-				"工具参数：",
-				"```json",
-				JSON.stringify({ ...params, scope }, null, 2),
-				"```",
-			].join("\n"),
+			content: buildReviewDelegationMessage({
+				target,
+				scope,
+				baseRef: params.baseRef,
+				instructions: params.instructions,
+			}),
 			display: false,
 		},
 		{ triggerTurn: true },

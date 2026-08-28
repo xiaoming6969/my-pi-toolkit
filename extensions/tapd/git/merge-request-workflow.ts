@@ -22,7 +22,7 @@ import {
 	loadBugRootCauseDraft,
 	type BugRootCauseDraft,
 } from "./root-cause-draft.js";
-import { generateBugRootCauseSummary } from "./root-cause-subagent.js";
+import { generateBugRootCauseSummary } from "./root-cause-analyze.js";
 import {
 	updateStoryForDraftMergeRequest,
 	updateStoryForMergeRequest,
@@ -40,7 +40,7 @@ interface MergeRequestOptions {
 }
 
 export async function runMergeRequest(
-	_pi: ExtensionAPI,
+	pi: ExtensionAPI,
 	ctx: ExtensionCommandContext,
 	config: TapdConfig,
 	options: MergeRequestOptions = {},
@@ -120,12 +120,13 @@ export async function runMergeRequest(
 			reportProgress?.({
 				step: 2,
 				total: 5,
-				message: `Bug ${bug.shortId}: 正在总结产生原因和修复方式...`,
+				message: `Bug ${bug.shortId}: 正在收集证据并由 Agent 总结产生原因和修复方式...`,
 			});
 			cancel?.suspend();
 			let generated: Awaited<ReturnType<typeof generateBugRootCauseSummary>>;
 			try {
 				generated = await generateBugRootCauseSummary({
+					pi,
 					ctx,
 					config,
 					bug,

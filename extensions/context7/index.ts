@@ -98,7 +98,7 @@ export default function context7Extension(pi: ExtensionAPI) {
 		promptSnippet:
 			"Resolve a library name to a Context7 library ID before fetching docs",
 		promptGuidelines: [
-			"第三方库、SDK、外部 API、官方文档、配置步骤或版本能力调研应优先使用 resolve-library-id 和 query-docs；不要调用 repo_search，除非用户还要求检查当前仓库如何使用或集成该库。",
+			"第三方库、SDK、外部 API、官方文档、配置步骤或版本能力调研应优先使用 resolve-library-id 和 query-docs；不要用 scout 子代理查外部文档，除非用户还要求检查当前仓库如何使用或集成该库。",
 			"当用户询问第三方库/API 文档、配置步骤或版本相关用法时，先用 resolve-library-id 解析库 ID，再用 query-docs 获取文档。",
 			"若用户已给出库 ID（如 /vercel/next.js），可跳过 resolve-library-id，直接调用 query-docs。",
 		],
@@ -155,7 +155,7 @@ export default function context7Extension(pi: ExtensionAPI) {
 		promptSnippet:
 			"Fetch up-to-date library documentation snippets from Context7",
 		promptGuidelines: [
-			"第三方库、SDK、外部 API 和官方文档调研优先使用 query-docs，而不是 repo_search；只有同时检查当前仓库集成情况时才需要 repo_search。",
+			"第三方库、SDK、外部 API 和官方文档调研优先使用 query-docs，不要用 scout 查外部文档；只有同时检查当前仓库集成情况时才用 scout。",
 			"query-docs 需要精确的 Context7 库 ID；不确定时先调用 resolve-library-id。",
 			"涉及库版本时，可在 libraryId 中指定版本，例如 /vercel/next.js/v15.1.8。",
 		],

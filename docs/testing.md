@@ -55,19 +55,19 @@ npm run coverage:report
 - 相对导入指向模块源码，例如 `../policy.ts`、`../git/story-status.ts`。
 - 只测已导出的公共 API；不要为了测试再导出实现细节。
 - 外部服务用夹具或 `fetch` mock，不要在 CI 里打真实 TAPD / Context7 / GitLab。
-- 异步测试必须 `await`；依赖 `setTimeout` 且生产代码 `unref()` 的路径，用 `t.mock.timers`（见 `extensions/shared/test/rpc-session.test.ts`）。
+- 异步测试必须 `await`；依赖 `setTimeout` 且生产代码 `unref()` 的路径，用 `t.mock.timers`。
 - 测试辅助放到该模块的 `test/`，不要命名成 `*.test.*`。
 
 ## 什么必须测
 
 新增或修改以下内容时，在对应模块的 `test/` 里补断言：
 
-- 模式 / 工具权限（Ask、Plan、Multi Task 路径）
+- 模式 / 工具权限（Ask、Plan）
 - 解析与状态机（TAPD 子需求、Git 关键字、会话 binding）
 - 纯格式化 / 映射（Context7 搜索结果、OpenAI 兼容模型、TUI 文本宽度）
 - 会改 Git 工作区或会话文件的操作（用临时仓库）
 
-不必测、并从覆盖率统计中排除：Pi 扩展 `index.ts` 注册样板、完整 TUI Overlay / Footer / 工具卡片渲染、Dashboard 安装发现、Working 动画、Markdown/Mermaid 预览、Pi `SessionManager` 拉起与会话目录扫描、RPC 子进程会话、fs.watch 清理、Debug HTTP 采集运行时、真实 LLM / 子 Agent 进程、系统浏览器、写 `~/.pi` 的 Windows Git 回退、以及只剩 Git CLI 错误码 / 体积上限等边沿的进程封装。排除清单在 `scripts/run-tests.mjs` 的 `coverageExcludes`。
+不必测、并从覆盖率统计中排除：Pi 扩展 `index.ts` 注册样板、完整 TUI Overlay / Footer / 工具卡片渲染、Dashboard 安装发现、Working 动画、Markdown/Mermaid 预览、Pi `SessionManager` 拉起与会话目录扫描、fs.watch 清理、Debug HTTP 采集运行时、真实 LLM、系统浏览器、写 `~/.pi` 的 Windows Git 回退、以及只剩 Git CLI 错误码 / 体积上限等边沿的进程封装。排除清单在 `scripts/run-tests.mjs` 的 `coverageExcludes`。
 
 ## CI 与覆盖率
 
@@ -89,8 +89,8 @@ npm run coverage:report
 - 浏览器静态资源 `assets/`
 - TUI Overlay / Footer / 工具卡片 / Working 动画 / Markdown 预览 / 问卷 Dialog 等交互层
 - Dashboard 安装发现、会话 `fs.watch` 清理、Debug HTTP 采集运行时
-- 拉起浏览器、Pi RPC 子进程、Windows Terminal、Review 子 Agent、会话目录扫描、写用户主目录的进程封装
-- 主路径已有集成测试、剩余只是 Git CLI 错误码或体积上限的封装（如 `git-diff.ts`、`gitignore-guard.ts`）
-- 靠 `import()` 查询串强制重载的模块单例（如 `batch-store.ts`），避免覆盖率把同一文件计两次
+- 拉起浏览器、写用户主目录的进程封装
+- 主路径已有集成测试、剩余只是 Git CLI 错误码或体积上限的封装（如 `git-diff.ts`）
+- 靠 `import()` 查询串强制重载的模块单例，避免覆盖率把同一文件计两次
 
 计入统计的公共逻辑（解析、策略、配置、HTTP mock、临时 Git 仓库、纯字符串渲染）应尽量保持在 95% 以上。新逻辑若属于应测范围，请在对应模块的 `test/` 里补断言；若确定不必单测，把文件加入 `coverageExcludes`，不要用空 import 灌覆盖率。

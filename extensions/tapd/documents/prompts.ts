@@ -1,3 +1,10 @@
+/**
+ * 仓库探索委派要求。任务侧提示比系统提示更贴近当前任务，
+ * 不重申一遍会让主 Agent 直接全仓 grep，绕过 subagent-policy 的 scout 约定。
+ */
+const SCOUT_FIRST_RULE =
+	"探索相关项目代码前，若本会话尚未读过对应模块，必须先用 subagent 委派 scout 摸清入口、关键文件与数据流，再据其结论自己核对关键代码；不要一上来就全仓 grep。仅当 scout 不可用时才自行搜索。";
+
 function buildPathBlock(projectPaths: string[]): string {
 	return projectPaths.length > 0
 		? projectPaths.map((path) => `- ${path}`).join("\n")
@@ -84,7 +91,7 @@ export function buildBugLocatePrompt(opts: {
 		"```",
 		"",
 		"## 定位要求",
-		"1. 先理解缺陷现象、复现条件、期望与实际表现；在相关项目路径中搜索入口、组件、状态、接口与数据流，并沿调用链分析。区分已确认事实与推测。",
+		`1. 先理解缺陷现象、复现条件、期望与实际表现。${SCOUT_FIRST_RULE}再沿调用链分析，区分已确认事实与推测。`,
 		"2. 对用户的最终回复必须短（约半屏到一屏），只允许以下结构，不要写多级长报告：",
 		"   ## 原因",
 		"   用几句话概括该现象如何由代码导致。",
@@ -102,6 +109,8 @@ export function buildBugLocatePrompt(opts: {
 export const ANALYZE_TRIGGER_PROMPT = [
 	"请基于上文 TAPD 需求信息，结合相关项目代码完成需求理解，并输出文档。",
 	"",
+	SCOUT_FIRST_RULE,
+	"",
 	"要求：",
 	"1. 撰写需求理解文档，包含：目标、范围（做/不做）、与现有代码的关系、验收标准、风险/待确认项。",
 	"2. 不要复述整篇 PRD，不要输出技术方案，不要修改代码。",
@@ -112,6 +121,8 @@ export const ANALYZE_TRIGGER_PROMPT = [
 
 export const DESIGN_TRIGGER_PROMPT = [
 	"我已确认需求理解文档。请基于该文档和相关项目代码输出可执行的技术设计方案。",
+	"",
+	SCOUT_FIRST_RULE,
 	"",
 	"要求：",
 	"1. 先读取上文「理解文档输出路径」对应的 understanding.md；如果文件不存在，停止并提示我先执行 /tapd analyze。",
@@ -133,6 +144,8 @@ export const DESIGN_TRIGGER_PROMPT = [
 
 export const COLLABORATION_TRIGGER_PROMPT = [
 	"请以前端视角编写一份供产品、后端和前端 Leader 阅读的精简设计协作文档。文档不能省略支撑方案落地的关键代码和接口信息。",
+	"",
+	SCOUT_FIRST_RULE,
 	"",
 	"要求：",
 	"1. 先读取上文「理解文档输出路径」对应的 understanding.md；如果文件不存在，停止并提示我先执行 /tapd analyze。",

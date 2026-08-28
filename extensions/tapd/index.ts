@@ -30,7 +30,6 @@ import {
 	runTapdGitCommand,
 } from "./git/commands.js";
 import { requestTapdReview } from "./review/command.js";
-import { registerTapdReviewTool } from "./review/tool.js";
 import { withTapdWorking } from "./working.js";
 
 async function openTapdTodoList(
@@ -70,7 +69,6 @@ export default function tapdExtension(pi: ExtensionAPI) {
 	const STATE_KEY = "tapd-view-state";
 	let pendingPreview: TapdDocumentSnapshot | undefined;
 	const documentReviews = new BrowserReviewManager();
-	registerTapdReviewTool(pi);
 	registerTapdGitMessageRenderer(pi);
 
 	pi.on(

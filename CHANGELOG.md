@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 变更
+
+- 移除自研子代理运行时（RPC、`repo_search`、`multi_task`、`/subagents` Overlay）。仓库探索改用 `pi-subagents` 的 `scout`；`/tapd review` 注入需求/设计路径后由主 Agent 调用 `reviewer`。
+- TAPD Ready MR 的 Bug 根因由主 Agent（优先 `reviewer`）根据收集的证据预填，失败时再手填确认。
+- Ask/Plan 允许 `subagent` 工具；Context7 提示改为不要用 scout 查外部文档。
+- 当前会话激活 `subagent` 时，向系统提示注入 pi-subagents 角色使用约定（scout / reviewer / worker / researcher / oracle）。
+
 ### 新增
 
 - 建立仓库测试流程：每个模块使用 `extensions/<module>/test/`，根目录 `npm test` / `npm run test:coverage`，以及 GitHub Actions CI。

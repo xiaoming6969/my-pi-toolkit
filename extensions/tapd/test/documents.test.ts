@@ -167,6 +167,25 @@ test("document prompts include ids, urls, and empty-description fallbacks", () =
 	assert.match(COLLABORATION_TRIGGER_PROMPT, /collaboration\.md/);
 });
 
+test("code-exploring prompts require delegating scout before self search", () => {
+	const locate = buildBugLocatePrompt({
+		title: "崩溃",
+		bugId: "8",
+		url: "https://tapd.example/8",
+		projectPaths: ["src"],
+		detail: {},
+	});
+	for (const prompt of [
+		locate,
+		ANALYZE_TRIGGER_PROMPT,
+		DESIGN_TRIGGER_PROMPT,
+		COLLABORATION_TRIGGER_PROMPT,
+	]) {
+		assert.match(prompt, /必须先用 subagent 委派 scout/);
+	}
+	assert.doesNotMatch(locate, /在相关项目路径中搜索入口/);
+});
+
 test("previewTapdDocument routes missing docs, feedback, and unchanged snapshots", async (t) => {
 	const cwd = await mkdtemp(join(tmpdir(), "tapd-preview-"));
 	t.after(() => rm(cwd, { recursive: true, force: true }));
