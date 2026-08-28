@@ -6,7 +6,6 @@ test("adapts installed statuses to M-PI segments", () => {
 	const statuses = new Map([
 		["tokenSpeed", "\u001b[32m⚡ TPS:\t25.0 tok/s (TTFT: 450 ms)\u001b[0m\u200b"],
 		["subagent", "subagent*2"],
-		["session-branch", "分支不匹配"],
 		["ponytail", "\u001b[36m●\u001b[0m 🐴 ponytail: ⚡ FULL"],
 		["agent-todos", "📋 1/3"],
 	]);

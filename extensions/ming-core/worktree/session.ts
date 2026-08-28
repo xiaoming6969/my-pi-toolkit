@@ -6,11 +6,6 @@ import type {
 	SessionManager as SessionManagerType,
 } from "@earendil-works/pi-coding-agent";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
-import {
-	appendBindingCurrent,
-	appendBindingTarget,
-	createBinding,
-} from "../../session-branch-guard/binding.js";
 import { rewriteSessionCwd } from "./session-file.js";
 import { WORKTREE_BINDING_TYPE, type WorktreeBinding } from "./types.js";
 
@@ -66,40 +61,17 @@ export function assertCanBindWorktree(ctx: ExtensionCommandContext): void {
 	if (!ctx.sessionManager.getSessionDir()) throw new Error(NO_SESSION_DIR);
 }
 
-export function rebindSessionBranch(
-	pi: ExtensionAPI,
-	repoRoot: string,
-	branch: string,
-	head?: string,
-): void {
-	appendBindingCurrent(
-		pi,
-		createBinding({ isRepo: true, repoRoot, branch, head }, "rebound"),
-	);
-}
-
 function appendWorktreeSetup(
 	session: SessionManagerType,
 	binding: Omit<WorktreeBinding, "version" | "updatedAt">,
-	branch: string,
-	head?: string,
 ): void {
 	session.appendCustomEntry(WORKTREE_BINDING_TYPE, makeBinding(binding));
-	appendBindingTarget(
-		session,
-		createBinding(
-			{ isRepo: true, repoRoot: binding.worktreePath, branch, head },
-			"created",
-		),
-	);
 }
 
 /** 在工作夹目录写出带绑定的新会话文件（新 session id，不拷贝当前对话）。 */
 function createWorktreeSessionFile(
 	worktreePath: string,
 	binding: Omit<WorktreeBinding, "version" | "updatedAt">,
-	branch: string,
-	head?: string,
 ): string {
 	const draft = SessionManager.create(worktreePath);
 	const sessionFile = draft.getSessionFile();
@@ -110,8 +82,6 @@ function createWorktreeSessionFile(
 	appendWorktreeSetup(
 		SessionManager.open(sessionFile, draft.getSessionDir()),
 		binding,
-		branch,
-		head,
 	);
 	return sessionFile;
 }
@@ -154,8 +124,6 @@ export async function enterWorktreeSession(
 	ctx: ExtensionCommandContext,
 	options: {
 		worktreePath: string;
-		worktreeBranch: string;
-		head?: string;
 		binding: Omit<WorktreeBinding, "version" | "updatedAt">;
 		message: string;
 	},
@@ -164,20 +132,12 @@ export async function enterWorktreeSession(
 	const currentFile = ctx.sessionManager.getSessionFile();
 	if (currentFile && existsSync(currentFile)) {
 		appendWorktreeBinding(pi, options.binding);
-		rebindSessionBranch(
-			pi,
-			options.worktreePath,
-			options.worktreeBranch,
-			options.head,
-		);
 		await switchCurrentSessionCwd(ctx, options.worktreePath, options.message);
 		return;
 	}
 	const sessionFile = createWorktreeSessionFile(
 		options.worktreePath,
 		options.binding,
-		options.worktreeBranch,
-		options.head,
 	);
 	try {
 		await switchWithResult(ctx, sessionFile, options.message);

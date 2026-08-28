@@ -153,12 +153,12 @@ renderResult(result, { expanded }, theme) {
 
 ### Footer
 
-- 第一层：项目/分支/会话、模型/思考、子 Agent；`session-branch` 的阻塞状态紧跟 Git 分支 segment（模式由 chat-mode 画在输入框顶边线，例如 `─ BUILD ───────`，不再占用 Footer `chat-mode` status）。
+- 第一层：项目/分支/会话、模型/思考、子 Agent（模式由 chat-mode 画在输入框顶边线，例如 `─ BUILD ───────`，不再占用 Footer `chat-mode` status）。
 - 第二层：context、token、cache、cost。
 - Context `<70%` 使用 muted，`70–89%` warning，`>=90%` error。
 - 缺失字段必须连同图标和分隔符一起隐藏。
 - 跨模块 status key 是契约；修改 `chat-mode`、`subagent` 等 key 时必须同步所有消费者。`chat-mode` 当前主动清空该 status，消费者不得再依赖 Footer 模式徽章。
-- 自定义 Footer 必须透传 `getExtensionStatuses()` 中未被专门消费的状态，按显示价值稳定排序、清理多行控制字符并按终端宽度截断；`tokenSpeed` 等实时关键指标应优先于低价值诊断状态。已提升到固定布局的 key（当前为 `session-branch`、`subagent`）以及已有等价 Widget 的 key（当前为 `agent-todos`）必须从通用状态行排除，避免重复。
+- 自定义 Footer 必须透传 `getExtensionStatuses()` 中未被专门消费的状态，按显示价值稳定排序、清理多行控制字符并按终端宽度截断；`tokenSpeed` 等实时关键指标应优先于低价值诊断状态。已提升到固定布局的 key（当前为 `subagent`）以及已有等价 Widget 的 key（当前为 `agent-todos`）必须从通用状态行排除，避免重复。
 - 外部 status 不得把自带 ANSI/VT 样式直接带入 M-PI Footer。已知 key 应通过消费端 adapter 映射为共享 glyph、Theme 语义色和紧凑 segment；实时数值状态可按明确档位映射语义色（TPS 当前为 `<15` error、`15–29` warning、`30–44` success、`>=45` accent）。未知 key 必须移除终端控制序列后以 muted 原文降级显示，不得因未适配而丢失。
 
 ### Todo、Plan、Subagent

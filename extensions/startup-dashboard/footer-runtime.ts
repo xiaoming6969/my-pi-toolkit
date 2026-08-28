@@ -1,5 +1,5 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { statusGlyph, thinkingLevelText } from "../shared/tui/visual-language.js";
+import { thinkingLevelText } from "../shared/tui/visual-language.js";
 import type { FooterSnapshot } from "./footer-data.js";
 
 export interface FooterSegment {
@@ -36,12 +36,6 @@ export function identitySegments(
 			? {
 					id: "branch",
 					content: `${theme.fg("muted", "")} ${theme.fg("muted", snapshot.branch)}`,
-				}
-			: undefined,
-		snapshot.branchMismatch
-			? {
-					id: "branch-status",
-					content: `${statusGlyph(theme, "error")} ${theme.fg("error", "branch mismatch")}`,
 				}
 			: undefined,
 		snapshot.title
