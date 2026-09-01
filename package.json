@@ -59,7 +59,8 @@
       "./extensions/context7/index.ts"
     ],
     "skills": [
-      "./skills/context7"
+      "./skills/context7",
+      "./skills/herdr"
     ],
     "prompts": [],
     "themes": [

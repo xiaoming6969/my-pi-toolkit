@@ -4,6 +4,7 @@
 
 ### 新增
 
+- Herdr 薄调度技能：用户要操作 Herdr 时先执行 `herdr --skill`，以当前安装二进制输出的指令为准。
 - 会话分支提醒：第一条用户消息后记录当前 Git 分支；从其他对话 resume 或新终端打开旧会话时，若分支不一致可选切回或改绑。同一会话内的 `git switch` 不再拦截。
 - 建立仓库测试流程：每个模块使用 `extensions/<module>/test/`，根目录 `npm test` / `npm run test:coverage`，以及 GitHub Actions CI。
 - 为原先缺少测试的模块补齐公共 API 覆盖（agent-todos、helps、model-manager、task-duration、built-in-tool-style），并扩展 TAPD、Chat Mode、Dashboard、Multi Task、Context7、OpenAI 兼容模型等纯逻辑用例。
