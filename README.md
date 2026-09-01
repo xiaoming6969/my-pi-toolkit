@@ -166,6 +166,7 @@ pi --no-session
 <summary><strong>Skills</strong></summary>
 
 - [`skills/context7`](skills/context7/)：指导 Agent 查询第三方库最新文档
+- [`skills/herdr`](skills/herdr/)：操作 Herdr 时先跑 `herdr --skill`，以当前安装版本的指令为准
 - [`.pi/skills/pi-package-bundler`](.pi/skills/pi-package-bundler/)：仅在本 toolkit 仓库内可用，将指定 Pi package 集成并随分发
 
 给出 npm 包名、pi.dev 页面、npm 页面或 GitHub 链接即可触发 package bundler，也可执行 `/skill:pi-package-bundler`。
