@@ -14,6 +14,7 @@ import modelManager from "../model-manager/index.js";
 import multiTask from "../multi-task/index.js";
 import openaiCompatModels from "../openai-compat-models/index.js";
 import repoSearchSubagent from "../repo-search-subagent/index.js";
+import { sessionBranchGuard } from "../session-branch-guard/index.js";
 import startupDashboard from "../startup-dashboard/index.js";
 import { registerSubagentFollowupTool } from "../subagent-console/followup-tool.js";
 import subagentConsole from "../subagent-console/index.js";
@@ -32,6 +33,7 @@ export default function mingCore(pi: ExtensionAPI): void {
 	repoSearchSubagent(pi);
 	registerSubagentFollowupTool(pi);
 	subagentConsole(pi);
+	sessionBranchGuard(pi);
 	taskDuration(pi);
 	worktree(pi);
 	startupDashboard(pi);

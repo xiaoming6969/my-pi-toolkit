@@ -4,6 +4,7 @@
 
 ### 新增
 
+- 会话分支提醒：第一条用户消息后记录当前 Git 分支；从其他对话 resume 或新终端打开旧会话时，若分支不一致可选切回或改绑。同一会话内的 `git switch` 不再拦截。
 - 建立仓库测试流程：每个模块使用 `extensions/<module>/test/`，根目录 `npm test` / `npm run test:coverage`，以及 GitHub Actions CI。
 - 为原先缺少测试的模块补齐公共 API 覆盖（agent-todos、helps、model-manager、task-duration、built-in-tool-style），并扩展 TAPD、Chat Mode、Dashboard、Multi Task、Context7、OpenAI 兼容模型等纯逻辑用例。
 - 补齐其余值得测的公共 API：Plan 生命周期、TAPD HTTP/合入版本、文档快照、会话选择输入、Git 运行时、浏览器 diff 收集、Context7 环境配置等。
