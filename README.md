@@ -37,7 +37,7 @@
 | TAPD 工作流 | 待办 Overlay、需求分析 / 技术设计 / 协作评审及浏览器批阅、Bug 定位、子需求同步，以及关联分支 / 提交 / GitLab MR |
 | Worktree 会话 | 创建独立 Git worktree，并让同一个 Pi 会话随代码切入、apply 回原目录和显式删除 |
 | Context7 | 为 Agent 提供第三方库最新文档，减少对训练数据的依赖 |
-| 会话与分支门禁 | 恢复会话时校验 Git 分支，降低跨分支误操作 |
+| 会话分支提醒 | 第一条用户消息后记录 Git 分支；恢复会话时若不一致，可选切回绑定分支或改绑到当前分支 |
 | 自动格式化 | 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 格式化本轮修改文件 |
 | 可复用子 Agent | `/subagents` 与 `Alt+A` 查看 queued/运行/idle 时间并管理过程；相关任务可凭 `subagentId` 在同一上下文中继续执行 |
 | 启动面板与主题 | M-PI Dashboard；Footer 兼容第三方扩展状态；推荐主题 `grok-build-dark` |
@@ -150,7 +150,7 @@ pi --no-session
 
 | 扩展 | 简介 | 文档 |
 | --- | --- | --- |
-| ming-core | 通用能力编排：模型、浏览器审阅、Plan / Debug、自动格式化、可复用子 Agent、Worktree、Dashboard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
+| ming-core | 通用能力编排：模型、浏览器审阅、Plan / Debug、自动格式化、会话分支提醒、可复用子 Agent、Worktree、Dashboard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
 | TAPD | 待办、需求分析、选项确认式技术设计、协作评审、三文档预览、Bug 定位与子需求同步 | [`extensions/tapd/README.md`](extensions/tapd/README.md) |
 | Context7 | 第三方库最新文档查询 | [`extensions/context7/README.md`](extensions/context7/README.md) |
 

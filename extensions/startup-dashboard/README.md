@@ -11,7 +11,7 @@
 - Context、Skills、Extensions 和 Themes 始终完整展示，不使用折叠或展开快捷键。
 - 中屏自动变为两行双栏，窄屏变为紧凑单栏，避免内容超出终端宽度。
 - 四类资源均动态发现；Extensions 继承 Pi PackageManager 当前启用的全局与项目 package（包括 npm、git 和本地路径），Skills 同时覆盖 toolkit、`~/.pi/agent/skills`、`~/.agents/skills` 及当前项目的 `.pi/.agents` 技能目录，Context 使用 `./`、`../` 相对路径区分同名文件。
-- Footer 使用响应式双行主布局；第一行显示 Build/Plan/Ask、项目、Git 分支、分支不匹配状态、会话标题、`provider/model`、思考强度和活跃子 Agent。`branch mismatch` 紧跟 Git 分支名并使用 error glyph/颜色；模式配色全部来自当前 Theme，窄屏按 segment 自动换行和紧凑化。
+- Footer 使用响应式双行主布局；第一行显示 Build/Plan/Ask、项目、Git 分支、会话标题、`provider/model`、思考强度和活跃子 Agent。模式配色全部来自当前 Theme，窄屏按 segment 自动换行和紧凑化。
 - 第二行优先显示上下文用量和进度条，再显示输入/输出 Token、缓存读写与会话花费；Context 在 70% 起使用 warning、90% 起使用 error。所有缺失字段都会连同分隔符一起隐藏。
 - 扩展通过 `ctx.ui.setStatus()` 发布的状态会按价值排序显示在按需出现的末行，并复用 M-PI 的语义色、共享状态字符、` · ` 分隔与宽度截断。`tokenSpeed` 固定优先显示，并按默认速度档位 `<15` / `15–29` / `30–44` / `>=45 tok/s` 映射到 Theme 的 error / warning / success / accent；`pi-lens-lsp` 压缩为 `lsp:on` / `lsp:off` / `lsp:error`；`agent-todos` 已有 editor 上方任务面板，不再占用 Footer；`subagent` 已集成到第一行；未知 key 使用 muted 单行 fallback。
 

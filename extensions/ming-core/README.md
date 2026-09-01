@@ -16,10 +16,11 @@
 8. `multi-task` — 独立文件任务的后台并行 worker 编排；所有 Batch 共享进程级固定 6 槽 FIFO 上限
 9. `repo-search-subagent` — 只读 Repo Search 子 Agent
 10. `subagent-console` — `/subagents`、`Alt+A` 与 `subagent_followup`；显示 queued/运行/idle 时间并按精确 ID 复用相关 Agent
-11. `task-duration` — 在最终回复下方持久显示首次 `agent_start` 到最终 `agent_settled` 的任务耗时，不进入 LLM 上下文
-12. `worktree` — `/new-worktree`、`/apply-worktree`、`/delete-worktree`，实现位于本入口的 `worktree/` 子目录
-13. `startup-dashboard` — 启动面板与 Footer
-14. `helps` — `/helps` 在浏览器打开 [my-pi-toolkit](https://github.com/xiaoming6969/my-pi-toolkit) 仓库页
+11. `session-branch-guard` — 第一条用户消息后记录 Git 分支；resume 或新终端打开旧会话时若不一致，可选切回或改绑（`/session-branch`）
+12. `task-duration` — 在最终回复下方持久显示首次 `agent_start` 到最终 `agent_settled` 的任务耗时，不进入 LLM 上下文
+13. `worktree` — `/new-worktree`、`/apply-worktree`、`/delete-worktree`，实现位于本入口的 `worktree/` 子目录
+14. `startup-dashboard` — 启动面板与 Footer
+15. `helps` — `/helps` 在浏览器打开 [my-pi-toolkit](https://github.com/xiaoming6969/my-pi-toolkit) 仓库页
 
 除内置的 `worktree/` 外，其余实现仍在各自目录；本入口负责组合注册。新增或更新这些模块的终端 UI 时，必须遵循 [`docs/tui-development-guidelines.md`](../../docs/tui-development-guidelines.md)，并优先复用 `extensions/shared/tui/`。
 
