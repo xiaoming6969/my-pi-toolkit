@@ -2,16 +2,23 @@
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-01
+
 ### 新增
 
 - Herdr 薄调度技能：用户要操作 Herdr 时先执行 `herdr --skill`，以当前安装二进制输出的指令为准。
 - 会话分支提醒：第一条用户消息后记录当前 Git 分支；从其他对话 resume 或新终端打开旧会话时，若分支不一致可选切回或改绑。同一会话内的 `git switch` 不再拦截。
+- 浏览器审阅为 Markdown 代码块和 Git diff 增加语法高亮。
 - 建立仓库测试流程：每个模块使用 `extensions/<module>/test/`，根目录 `npm test` / `npm run test:coverage`，以及 GitHub Actions CI。
 - 为原先缺少测试的模块补齐公共 API 覆盖（agent-todos、helps、model-manager、task-duration、built-in-tool-style），并扩展 TAPD、Chat Mode、Dashboard、Multi Task、Context7、OpenAI 兼容模型等纯逻辑用例。
 - 补齐其余值得测的公共 API：Plan 生命周期、TAPD HTTP/合入版本、文档快照、会话选择输入、Git 运行时、浏览器 diff 收集、Context7 环境配置等。
 - 覆盖率门禁针对应测源码：行 / 分支 / 函数 ≥ 95%；TUI Overlay、扩展 `index.ts` 注册样板、子进程/浏览器拉起，以及只剩 Git CLI / 体积上限边沿的封装不计入统计。应测公共逻辑尽量提高覆盖率，不要用空 import 灌覆盖率。
 - PR 自动生成覆盖率报告（Job Summary、产物、PR 评论）。行 / 分支 / 函数任一低于 95% 时 CI 失败，用于拦住合入。
 - CI 合并为单个 `测试` 任务（Node 22）：一次跑测试、覆盖率报告和发包清单校验。
+
+### 修复
+
+- 移除 Subagent 每轮运行时限，避免长任务被中途打断。
 
 ## [1.2.1] - 2026-08-26
 
@@ -68,6 +75,7 @@
 - 修复 Windows 下启动面板发现路径的分隔符显示问题。
 - 修复 TAPD 审阅工作流使用不受支持的通知级别问题。
 
+[1.3.0]: https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.1.0...v1.1.1
