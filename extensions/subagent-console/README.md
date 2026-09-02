@@ -22,7 +22,7 @@ Repo Search、TAPD Review 和 Multi Task worker 的 managed RPC 首轮结果在�
 
 `subagent_followup` 只接受当前主会话创建、仍存活且 `reusable: true` 的精确 ID；不会猜测最近 Agent，也不会在目标失效时静默新建。它适合同一线程内补充证据、修正结论、继续实现或处理反馈，并保留原子 Agent 的上下文、cwd、模型、system prompt、extensions 和工具权限，不能借 follow-up 改变执行 profile。同一 ID 的多个请求按 FIFO 串行，每一轮分别返回自己的 output、tool calls 和递增 turn。需要独立审查或复核时必须启动新的 reviewer；不能让产出实现或结论的同一 Agent 自我审查。
 
-复用不会跨当前主会话切换、reload、退出或 Pi 重启恢复。`~/.pi/agent/subagents.json` 的 `keepOpen: false` 会禁用复用；Multi Task worker 还会在 Batch 结束后的 2 分钟空闲期到期时自动回收。Repo Search 的 `inline`、`split`、`tab` 是一次性 backend；managed RPC/manual 才可续接。Overlay 继续保持只读，不提供输入框。
+复用不会跨当前主会话切换、reload、退出或 Pi 重启恢复。`~/.pi/agent/ming-core.json` 里 `subagents.keepOpen: false` 会禁用复用；Multi Task worker 还会在 Batch 结束后的 2 分钟空闲期到期时自动回收。Repo Search 的 `inline`、`split`、`tab` 是一次性 backend；managed RPC/manual 才可续接。Overlay 继续保持只读，不提供输入框。
 
 ## 实时与历史详情
 
@@ -42,4 +42,4 @@ Capturing Overlay 可见期间始终拥有键盘优先级：若主对话同时�
 
 实时详情打开时订阅 run 更新并获取共享 mouse tracking；regular 模式由扩展按引用计数启停 SGR tracking，Pi 0.84 fullscreen 模式则复用宿主管理的 mouse mode。左右切换时会取消旧 run 订阅、按需加载新详情并订阅新的 live run，同时重置滚动和 auto-follow。组件关闭、异常销毁或 reload 时会幂等取消当前订阅并释放扩展持有的 tracking，且不会禁用 fullscreen 宿主的滚轮/选择。关闭 Overlay 不会终止子 Agent。根因总结等主动弹出的过程 Overlay 在任务完成或失败时自动关闭；`Esc` 会取消该次总结。
 
-主会话 shutdown 会终止 active 与 idle reusable 子进程并释放 queued 请求、timer 和路径锁。managed RPC turn 不设固定运行时限，会持续到正常 settled、用户取消、主会话 shutdown/reload、子进程退出或强制 dispose。用户取消运行中的 follow-up 最多等待 5 秒；若未收到 settled 就终止该进程，queued 请求和路径锁也会随取消或清理释放。Overlay 的 1 秒显示刷新 timer、run 订阅和 mouse tracking 在 Esc、自动关闭、异常、dispose 或 reload 时幂等释放。运行记录默认位于系统临时目录的 `my-pi-toolkit-subagents/`，保留时间由 `~/.pi/agent/subagents.json` 的 `retainCompletedMinutes` 控制。
+主会话 shutdown 会终止 active 与 idle reusable 子进程并释放 queued 请求、timer 和路径锁。managed RPC turn 不设固定运行时限，会持续到正常 settled、用户取消、主会话 shutdown/reload、子进程退出或强制 dispose。用户取消运行中的 follow-up 最多等待 5 秒；若未收到 settled 就终止该进程，queued 请求和路径锁也会随取消或清理释放。Overlay 的 1 秒显示刷新 timer、run 订阅和 mouse tracking 在 Esc、自动关闭、异常、dispose 或 reload 时幂等释放。运行记录默认位于系统临时目录的 `my-pi-toolkit-subagents/`，保留时间由 `~/.pi/agent/ming-core.json` 的 `subagents.retainCompletedMinutes` 控制。

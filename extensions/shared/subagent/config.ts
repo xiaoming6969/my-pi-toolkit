@@ -1,6 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import { readUserToolkitConfig } from "../toolkit-config.js";
 
 export type SubagentPresentation =
 	| "manual"
@@ -29,18 +27,12 @@ function isPresentation(value: unknown): value is SubagentPresentation {
 	return ["manual", "auto", "inline", "split", "tab"].includes(String(value));
 }
 
-function readRawConfig(path: string): Record<string, unknown> {
-	if (!existsSync(path)) return {};
-	try {
-		const parsed = JSON.parse(readFileSync(path, "utf8"));
-		if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-			throw new Error("配置必须是 JSON 对象");
-		return parsed as Record<string, unknown>;
-	} catch (error) {
-		throw new Error(
-			`无法解析子 Agent UI 配置 ${path}: ${error instanceof Error ? error.message : String(error)}`,
-		);
+function readSection(value: unknown): Record<string, unknown> {
+	if (value === undefined) return {};
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		throw new Error("无法解析子 Agent UI 配置: subagents 必须是 JSON 对象");
 	}
+	return value as Record<string, unknown>;
 }
 
 function resolveConfiguredPresentation(
@@ -73,7 +65,7 @@ function resolveTerminalConfig(raw: Record<string, unknown>): {
 export function loadSubagentUiConfig(
 	override?: SubagentPresentation,
 ): SubagentUiConfig {
-	const raw = readRawConfig(join(getAgentDir(), "subagents.json"));
+	const raw = readSection(readUserToolkitConfig().subagents);
 	const retain = raw.retainCompletedMinutes;
 	return {
 		presentation: resolveConfiguredPresentation(raw, override),

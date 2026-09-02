@@ -24,19 +24,11 @@
 
 ## 配置
 
-用户级配置：
+用户级配置：`~/.pi/agent/ming-core.json` 的 `newConversation`。
 
-```text
-~/.pi/agent/model-manager.json
-```
+项目级配置（仅可信项目生效）：`<project>/.pi/ming-core.json` 的同名字段。
 
-项目级配置（仅可信项目生效）：
-
-```text
-<project>/.pi/model-manager.json
-```
-
-会从当前工作目录向上查找最近的项目级配置，因此配置可以放在包含多个子项目的父目录。项目级 `newConversation` 字段会覆盖用户级同名字段；未提供的字段继续继承用户配置。
+会从当前工作目录向上查找最近的 `.pi/ming-core.json`；同目录没有该文件时才读取旧的 `.pi/model-manager.json`。项目级 `newConversation` 字段会覆盖用户级同名字段；未提供的字段继续继承用户配置。用户级旧文件 `~/.pi/agent/model-manager.json` 会在首次读取时导入 `ming-core.json` 并归档为 `.migrated.bak`。
 
 示例：
 

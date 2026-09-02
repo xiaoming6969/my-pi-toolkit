@@ -138,6 +138,7 @@ pi --no-session
 
 | 能力 | 配置 |
 | --- | --- |
+| Toolkit 用户设置 | `~/.pi/agent/ming-core.json`（`builtinToolStyle`、`newConversation`、`repoSearch`、`subagents`）。旧的 `model-manager.json` / `repo-search-subagent.json` / `subagents.json` 会在首次读取时导入并归档 |
 | TAPD | `~/.pi/agent/tapd.json`（详见 [`extensions/tapd/README.md`](extensions/tapd/README.md)） |
 | Context7 | `~/.pi/agent/context7.json` 或环境变量 `CONTEXT7_API_KEY` |
 | GitLab（TAPD MR 等） | `tapd.json` 的 `gitlab.token` 或 `GITLAB_PERSONAL_ACCESS_TOKEN` |

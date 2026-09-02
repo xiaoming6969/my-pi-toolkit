@@ -1,9 +1,13 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { CONFIG_DIR_NAME, getAgentDir } from "@earendil-works/pi-coding-agent";
 import type { SubagentPresentation } from "../shared/subagent/config.js";
+import {
+	projectSectionValue,
+	projectToolkitConfigPath,
+	readToolkitJsonFile,
+	readUserToolkitConfig,
+	userToolkitConfigPath,
+} from "../shared/toolkit-config.js";
 
-export interface RepoSearchSubagentConfig {
+interface RepoSearchSubagentConfig {
 	model?: string;
 	presentation?: SubagentPresentation;
 }
@@ -16,19 +20,11 @@ export interface ResolvedRepoSearchConfig {
 	presentation?: SubagentPresentation;
 }
 
-function readConfig(filePath: string): RepoSearchSubagentConfig | undefined {
-	if (!fs.existsSync(filePath)) return undefined;
-
-	let value: unknown;
-	try {
-		value = JSON.parse(fs.readFileSync(filePath, "utf8"));
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		throw new Error(
-			`无法解析 Repo Search 子 Agent 配置 ${filePath}: ${message}`,
-		);
-	}
-
+function parseConfig(
+	value: unknown,
+	filePath: string,
+): RepoSearchSubagentConfig | undefined {
+	if (value === undefined) return undefined;
 	if (!value || typeof value !== "object" || Array.isArray(value)) {
 		throw new Error(`Repo Search 子 Agent 配置必须是 JSON 对象: ${filePath}`);
 	}
@@ -59,23 +55,11 @@ function readConfig(filePath: string): RepoSearchSubagentConfig | undefined {
 }
 
 export function userConfigPath(): string {
-	return path.join(getAgentDir(), "repo-search-subagent.json");
+	return userToolkitConfigPath();
 }
 
 export function projectConfigPath(cwd: string): string {
-	let current = path.resolve(cwd);
-	while (true) {
-		const candidate = path.join(
-			current,
-			CONFIG_DIR_NAME,
-			"repo-search-subagent.json",
-		);
-		if (fs.existsSync(candidate)) return candidate;
-		const parent = path.dirname(current);
-		if (parent === current)
-			return path.join(cwd, CONFIG_DIR_NAME, "repo-search-subagent.json");
-		current = parent;
-	}
+	return projectToolkitConfigPath(cwd, "repoSearch");
 }
 
 export function resolveRepoSearchConfig(
@@ -84,9 +68,17 @@ export function resolveRepoSearchConfig(
 	currentModel: { provider: string; id: string } | undefined,
 ): ResolvedRepoSearchConfig {
 	const projectPath = projectConfigPath(cwd);
-	const projectConfig = projectTrusted ? readConfig(projectPath) : undefined;
+	const projectRaw = projectTrusted
+		? readToolkitJsonFile(projectPath)
+		: undefined;
+	const projectConfig = projectRaw
+		? parseConfig(
+				projectSectionValue(projectRaw, projectPath, "repoSearch"),
+				projectPath,
+			)
+		: undefined;
 	const userPath = userConfigPath();
-	const userConfig = readConfig(userPath);
+	const userConfig = parseConfig(readUserToolkitConfig().repoSearch, userPath);
 	const presentation = projectConfig?.presentation ?? userConfig?.presentation;
 	if (projectConfig?.model)
 		return {
@@ -106,7 +98,7 @@ export function resolveRepoSearchConfig(
 		};
 	if (!currentModel) {
 		throw new Error(
-			`未配置 Repo Search 子 Agent 模型，且主 Agent 当前没有可继承的模型。请在 ${userPath} 中配置 { "model": "provider/model-id" }。`,
+			`未配置 Repo Search 子 Agent 模型，且主 Agent 当前没有可继承的模型。请在 ${userPath} 中配置 { "repoSearch": { "model": "provider/model-id" } }。`,
 		);
 	}
 

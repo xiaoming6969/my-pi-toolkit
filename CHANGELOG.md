@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### 改进
+
+- 将 `model-manager`、Repo Search、子 Agent UI 的用户设置合并进 `~/.pi/agent/ming-core.json`。首次读取会从旧的独立 JSON 导入并归档为 `.migrated.bak`；项目级改为 `.pi/ming-core.json`，仍可读旧文件且不改写仓库。
+
 ## [1.3.0] - 2026-09-01
 
 ### 新增

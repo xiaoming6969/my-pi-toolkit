@@ -12,7 +12,7 @@ export interface TapdReviewConfig {
 	model?: string;
 	/** Review 思考等级；off / minimal / low / medium / high / xhigh / max；默认继承主会话。 */
 	thinkingLevel?: string;
-	/** 子 Agent 展示方式；默认由 ~/.pi/agent/subagents.json 决定。 */
+	/** 子 Agent 展示方式；默认由 ~/.pi/agent/ming-core.json 的 subagents 决定。 */
 	presentation?: SubagentPresentation;
 }
 

@@ -30,36 +30,32 @@ ast_grep_outline, ast_grep_dump
 
 ## 模型配置
 
-用户级配置：
-
-```text
-~/.pi/agent/repo-search-subagent.json
-```
+用户级配置：`~/.pi/agent/ming-core.json` 的 `repoSearch`。
 
 ```json
 {
-  "model": "anthropic/claude-haiku-4-5",
-  "presentation": "manual"
+  "repoSearch": {
+    "model": "anthropic/claude-haiku-4-5",
+    "presentation": "manual"
+  }
 }
 ```
 
-受信任项目可以覆盖用户配置：
-
-```text
-.pi/repo-search-subagent.json
-```
+受信任项目可以覆盖用户配置：`.pi/ming-core.json` 的同名字段。
 
 ```json
 {
-  "model": "openai/gpt-5-mini",
-  "presentation": "inline"
+  "repoSearch": {
+    "model": "openai/gpt-5-mini",
+    "presentation": "inline"
+  }
 }
 ```
 
 优先级：
 
-1. 受信任项目的 `.pi/repo-search-subagent.json`
-2. 用户级 `~/.pi/agent/repo-search-subagent.json`
+1. 受信任项目的 `.pi/ming-core.json`（同目录没有时回退 `.pi/repo-search-subagent.json`）
+2. 用户级 `~/.pi/agent/ming-core.json` 的 `repoSearch`（旧的 `repo-search-subagent.json` 会在首次读取时导入并归档）
 3. 当前主 Agent 模型
 
 目标模型支持 reasoning 时，思考等级继承主会话当前的 `thinkingLevel`，并显示在工具卡 summary 与 Subagent Overlay Header 中；不支持 reasoning 的模型不会显示或传递思考等级。
@@ -102,17 +98,19 @@ manual/RPC 且 `keepOpen: true` 时，首轮结果会附带完整 `subagentId`�
 
 如需原来的 Windows Terminal 行为，可显式设置 `presentation: "split"` 或 `"tab"`；`"auto"` 会在原生 Windows Terminal 中自动分屏，在其他环境回退到内联模式。
 
-全局配置位于 `~/.pi/agent/subagents.json`：
+全局配置位于 `~/.pi/agent/ming-core.json` 的 `subagents`：
 
 ```json
 {
-  "presentation": "manual",
-  "fallback": "inline",
-  "keepOpen": true,
-  "retainCompletedMinutes": 60,
-  "windowsTerminal": {
-    "size": 0.45,
-    "shell": "pwsh.exe"
+  "subagents": {
+    "presentation": "manual",
+    "fallback": "inline",
+    "keepOpen": true,
+    "retainCompletedMinutes": 60,
+    "windowsTerminal": {
+      "size": 0.45,
+      "shell": "pwsh.exe"
+    }
   }
 }
 ```

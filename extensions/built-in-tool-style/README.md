@@ -14,11 +14,7 @@ Pi 没有 renderer-only 注册 API。本模块采用官方支持的同名 tool o
 
 ## 配置与命令
 
-默认启用七个工具的 Grok 展示；不需要创建配置文件。配置保存在：
-
-```text
-~/.pi/agent/ming-core.json
-```
+默认启用七个工具的 Grok 展示；不需要创建配置文件。配置保存在 `~/.pi/agent/ming-core.json` 的 `builtinToolStyle`（该文件同时存放 `newConversation`、`repoSearch`、`subagents`；`/grok-tools` 只改这一字段）。
 
 显式保持完整启用：
 
