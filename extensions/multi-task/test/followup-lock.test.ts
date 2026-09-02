@@ -57,7 +57,7 @@ test("implementation follow-up locks block overlapping paths until release", () 
 
 test("research follow-ups may overlap each other but still reserve reads", () => {
 	const cwd = process.cwd();
-	const path = normalizeTaskPath(cwd, "extensions/repo-search-subagent");
+	const path = normalizeTaskPath(cwd, "extensions/subagent/repo-search");
 	const first = reserveFollowupPaths({
 		subagentId: "research-agent-1",
 		kind: "research",

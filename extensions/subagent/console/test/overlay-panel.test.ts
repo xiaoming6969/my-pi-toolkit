@@ -6,8 +6,8 @@ import {
 	type KeybindingsManager,
 	type TUI,
 } from "@earendil-works/pi-tui";
-import type { LiveSubagentRun } from "../../shared/subagent/registry.ts";
-import type { SharedMarkdownRendering } from "../../shared/tui/markdown.ts";
+import type { LiveSubagentRun } from "../../../shared/subagent/registry.ts";
+import type { SharedMarkdownRendering } from "../../../shared/tui/markdown.ts";
 import type { SubagentView } from "../detail-navigation.ts";
 import {
 	createSubagentOverlay,

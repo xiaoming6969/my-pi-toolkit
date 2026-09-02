@@ -5,10 +5,10 @@ import {
 	UserMessageComponent,
 } from "@earendil-works/pi-coding-agent";
 import type { TUI } from "@earendil-works/pi-tui";
-import { createConfiguredBuiltinRenderers } from "../built-in-tool-style/renderers.js";
-import type { BuiltinToolName } from "../built-in-tool-style/config.js";
-import type { SubagentTranscriptEntry } from "../shared/subagent/registry.js";
-import type { SharedMarkdownRendering } from "../shared/tui/markdown.js";
+import { createConfiguredBuiltinRenderers } from "../../built-in-tool-style/renderers.js";
+import type { BuiltinToolName } from "../../built-in-tool-style/config.js";
+import type { SubagentTranscriptEntry } from "../../shared/subagent/registry.js";
+import type { SharedMarkdownRendering } from "../../shared/tui/markdown.js";
 
 interface EntryRenderOptions {
 	toolsExpanded: boolean;

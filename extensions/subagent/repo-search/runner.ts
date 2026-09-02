@@ -6,7 +6,7 @@ import { truncateHead } from "@earendil-works/pi-coding-agent";
 import {
 	appendThinkingCliArgs,
 	runTerminalSubagent,
-} from "../shared/subagent/terminal-runner.js";
+} from "../../shared/subagent/terminal-runner.js";
 import {
 	resolveRepoSearchExtensionPaths,
 	REPO_SEARCH_TOOLS,

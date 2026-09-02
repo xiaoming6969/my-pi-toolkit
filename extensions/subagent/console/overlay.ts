@@ -6,10 +6,10 @@ import {
 	type OverlayHandle,
 	type TUI,
 } from "@earendil-works/pi-tui";
-import type { LiveSubagentRun } from "../shared/subagent/registry.js";
-import { SUBAGENT_RUNS_ROOT } from "../shared/subagent/run-paths.js";
-import { createSharedMarkdownRendering } from "../shared/tui/markdown.js";
-import { STANDARD_OVERLAY_OPTIONS } from "../shared/tui/overlay-shell.js";
+import type { LiveSubagentRun } from "../../shared/subagent/registry.js";
+import { SUBAGENT_RUNS_ROOT } from "../../shared/subagent/run-paths.js";
+import { createSharedMarkdownRendering } from "../../shared/tui/markdown.js";
+import { STANDARD_OVERLAY_OPTIONS } from "../../shared/tui/overlay-shell.js";
 import type { SubagentDetailItem } from "./detail-navigation.js";
 import { createSubagentOverlay } from "./overlay-panel.js";
 

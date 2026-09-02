@@ -11,14 +11,14 @@ import {
 	getLiveSubagent,
 	type LiveSubagentRun,
 	type SubagentToolCall,
-} from "../shared/subagent/registry.js";
+} from "../../shared/subagent/registry.js";
 import {
 	compactText,
 	formatModelWithThinking,
 	previewLines,
 	resultText,
-} from "../shared/tui/tool-format.js";
-import { toolCall, toolResult } from "../shared/tui/tool-render.js";
+} from "../../shared/tui/tool-format.js";
+import { toolCall, toolResult } from "../../shared/tui/tool-render.js";
 
 const MAX_RESULT_BYTES = 50 * 1024;
 const MAX_RESULT_LINES = 2000;

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { registerRepoSearchCommand } from "../command.ts";
-import { createFakeContext, createFakePi } from "../../shared/test/fake-extension.ts";
+import { createFakeContext, createFakePi } from "../../../shared/test/fake-extension.ts";
 
 test("registerRepoSearchCommand requires a task and an idle agent", () => {
 	const { pi, commands, userMessages } = createFakePi();

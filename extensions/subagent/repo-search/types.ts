@@ -1,4 +1,4 @@
-import type { SubagentPresentation } from "../shared/subagent/config.js";
+import type { SubagentPresentation } from "../../shared/subagent/config.js";
 
 export interface RepoSearchDetails {
 	task: string;

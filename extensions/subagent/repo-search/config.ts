@@ -1,11 +1,11 @@
-import type { SubagentPresentation } from "../shared/subagent/config.js";
+import type { SubagentPresentation } from "../../shared/subagent/config.js";
 import {
 	projectSectionValue,
 	projectToolkitConfigPath,
 	readToolkitJsonFile,
 	readUserToolkitConfig,
 	userToolkitConfigPath,
-} from "../shared/toolkit-config.js";
+} from "../../shared/toolkit-config.js";
 
 interface RepoSearchSubagentConfig {
 	model?: string;

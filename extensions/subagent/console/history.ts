@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
-import type { SubagentTranscriptEntry } from "../shared/subagent/registry.js";
+import type { SubagentTranscriptEntry } from "../../shared/subagent/registry.js";
 
 interface ContentBlock {
 	type?: unknown;

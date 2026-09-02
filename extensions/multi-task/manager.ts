@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
-import type { RepoSearchRunConfig } from "../repo-search-subagent/types.js";
+import type { RepoSearchRunConfig } from "../subagent/repo-search/types.js";
 import { getLiveSubagent, setLiveSubagentIdleTimeout, setSubagentFollowupGuard } from "../shared/subagent/registry.js";
 import { batches } from "./batch-store.js";
 import {

@@ -1,5 +1,5 @@
-import { runRepoSearchSubagent } from "../repo-search-subagent/runner.js";
-import type { RepoSearchRunConfig } from "../repo-search-subagent/types.js";
+import { runRepoSearchSubagent } from "../subagent/repo-search/runner.js";
+import type { RepoSearchRunConfig } from "../subagent/repo-search/types.js";
 import { runRpcSubagent } from "../shared/subagent/rpc-runner.js";
 import type { TerminalSubagentUpdate } from "../shared/subagent/terminal-runner.js";
 import { buildWorkerTask, MULTI_TASK_WORKER_PROMPT } from "./prompt.js";

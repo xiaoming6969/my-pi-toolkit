@@ -5,7 +5,7 @@ import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { waitForLiveSubagent } from "../../shared/subagent/registry.js";
 import { thinkingLevelForModel } from "../../shared/subagent/thinking-level.js";
 import { runTerminalSubagent } from "../../shared/subagent/terminal-runner.js";
-import { watchLiveSubagentOverlay } from "../../subagent-console/overlay.js";
+import { watchLiveSubagentOverlay } from "../../subagent/console/overlay.js";
 import type { TapdConfig } from "../types.js";
 import type { IntroducedCommitCandidate } from "./bug-analysis.js";
 import { collectRootCauseEvidence } from "./root-cause-evidence.js";

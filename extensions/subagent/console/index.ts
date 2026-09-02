@@ -13,8 +13,8 @@ import {
 	listLiveSubagents,
 	subscribeSubagentRegistry,
 	type LiveSubagentRun,
-} from "../shared/subagent/registry.js";
-import { SUBAGENT_RUNS_ROOT } from "../shared/subagent/run-paths.js";
+} from "../../shared/subagent/registry.js";
+import { SUBAGENT_RUNS_ROOT } from "../../shared/subagent/run-paths.js";
 import type {
 	HistoricalSubagentView,
 	SubagentDetailItem,

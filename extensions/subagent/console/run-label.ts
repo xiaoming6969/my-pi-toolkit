@@ -1,8 +1,8 @@
-import type { LiveSubagentRun } from "../shared/subagent/registry.js";
+import type { LiveSubagentRun } from "../../shared/subagent/registry.js";
 import {
 	formatDuration,
 	UI_GLYPHS,
-} from "../shared/tui/visual-language.js";
+} from "../../shared/tui/visual-language.js";
 
 export type RunDisplayState =
 	| "starting"
