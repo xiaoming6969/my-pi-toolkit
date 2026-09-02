@@ -1,10 +1,11 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
+import { existsSync } from "node:fs";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import {
-	CONFIG_DIR_NAME,
-	getAgentDir,
-	type ExtensionAPI,
-} from "@earendil-works/pi-coding-agent";
+	projectToolkitConfigPath,
+	readToolkitJsonFile,
+	readUserToolkitConfig,
+	userToolkitConfigPath,
+} from "../shared/toolkit-config.js";
 
 type ThinkingLevel = ReturnType<ExtensionAPI["getThinkingLevel"]>;
 
@@ -37,21 +38,6 @@ export interface ResolvedNewConversationConfig {
 	configPaths: string[];
 }
 
-function readJsonObject(filePath: string): Record<string, unknown> {
-	let value: unknown;
-	try {
-		value = JSON.parse(fs.readFileSync(filePath, "utf8"));
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		throw new Error(`无法解析模型管理配置 ${filePath}: ${message}`);
-	}
-
-	if (!value || typeof value !== "object" || Array.isArray(value)) {
-		throw new Error(`模型管理配置必须是 JSON 对象: ${filePath}`);
-	}
-	return value as Record<string, unknown>;
-}
-
 function optionalBoolean(
 	value: unknown,
 	filePath: string,
@@ -79,10 +65,11 @@ function optionalThinkingLevel(
 	);
 }
 
-function parseConfig(filePath: string): ModelManagerConfig | undefined {
-	if (!fs.existsSync(filePath)) return undefined;
-
-	const value = readJsonObject(filePath);
+function parseConfig(
+	value: Record<string, unknown> | undefined,
+	filePath: string,
+): ModelManagerConfig | undefined {
+	if (!value) return undefined;
 	const section = value.newConversation;
 	if (section === undefined) return {};
 	if (!section || typeof section !== "object" || Array.isArray(section)) {
@@ -110,19 +97,11 @@ function splitModel(value: string, filePath: string): [string, string] {
 }
 
 export function userConfigPath(): string {
-	return path.join(getAgentDir(), "model-manager.json");
+	return userToolkitConfigPath();
 }
 
 export function projectConfigPath(cwd: string): string {
-	let current = path.resolve(cwd);
-	while (true) {
-		const candidate = path.join(current, CONFIG_DIR_NAME, "model-manager.json");
-		if (fs.existsSync(candidate)) return candidate;
-		const parent = path.dirname(current);
-		if (parent === current)
-			return path.join(cwd, CONFIG_DIR_NAME, "model-manager.json");
-		current = parent;
-	}
+	return projectToolkitConfigPath(cwd, "newConversation");
 }
 
 export function resolveNewConversationConfig(
@@ -130,9 +109,16 @@ export function resolveNewConversationConfig(
 	projectTrusted: boolean,
 ): ResolvedNewConversationConfig {
 	const userPath = userConfigPath();
+	const userRaw = readUserToolkitConfig();
+	const userConfig =
+		userRaw.newConversation !== undefined || existsSync(userPath)
+			? parseConfig(userRaw, userPath)
+			: undefined;
 	const projectPath = projectConfigPath(cwd);
-	const userConfig = parseConfig(userPath);
-	const projectConfig = projectTrusted ? parseConfig(projectPath) : undefined;
+	const projectRaw = projectTrusted
+		? readToolkitJsonFile(projectPath)
+		: undefined;
+	const projectConfig = parseConfig(projectRaw, projectPath);
 	const configPaths = [
 		...(userConfig ? [userPath] : []),
 		...(projectConfig ? [projectPath] : []),

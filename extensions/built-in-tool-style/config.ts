@@ -1,6 +1,8 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import {
+	readUserToolkitConfig,
+	updateUserToolkitConfig,
+	userToolkitConfigPath,
+} from "../shared/toolkit-config.js";
 
 export const BUILTIN_TOOL_NAMES = [
 	"read",
@@ -17,10 +19,6 @@ export const READ_ONLY_TOOL_NAMES = ["read", "grep", "find", "ls"] as const;
 export type BuiltinToolName = (typeof BUILTIN_TOOL_NAMES)[number];
 export type BuiltinToolStyle = "native" | "grok" | BuiltinToolName[];
 export const DEFAULT_BUILTIN_TOOL_STYLE: BuiltinToolStyle = "grok";
-
-export interface BuiltinToolStyleConfig {
-	builtinToolStyle?: BuiltinToolStyle;
-}
 
 export interface ResolvedBuiltinToolStyle {
 	style: BuiltinToolStyle;
@@ -47,27 +45,9 @@ function parseStyle(value: unknown, configPath: string): BuiltinToolStyle {
 	);
 }
 
-function readConfigObject(configPath: string): Record<string, unknown> {
-	if (!fs.existsSync(configPath)) return {};
-	try {
-		const value: unknown = JSON.parse(fs.readFileSync(configPath, "utf8"));
-		if (!value || typeof value !== "object" || Array.isArray(value)) {
-			throw new Error("配置根节点必须是 JSON 对象");
-		}
-		return value as Record<string, unknown>;
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		throw new Error(`无法解析 ${configPath}: ${message}`);
-	}
-}
-
-export function builtinToolStyleConfigPath(): string {
-	return path.join(getAgentDir(), "ming-core.json");
-}
-
 export function resolveBuiltinToolStyle(): ResolvedBuiltinToolStyle {
-	const configPath = builtinToolStyleConfigPath();
-	const config = readConfigObject(configPath);
+	const configPath = userToolkitConfigPath();
+	const config = readUserToolkitConfig();
 	const style = parseStyle(config.builtinToolStyle, configPath);
 	let enabledTools: BuiltinToolName[];
 	if (style === "native") enabledTools = [];
@@ -77,10 +57,5 @@ export function resolveBuiltinToolStyle(): ResolvedBuiltinToolStyle {
 }
 
 export function writeBuiltinToolStyle(style: BuiltinToolStyle): string {
-	const configPath = builtinToolStyleConfigPath();
-	const config = readConfigObject(configPath);
-	config.builtinToolStyle = style;
-	fs.mkdirSync(path.dirname(configPath), { recursive: true });
-	fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
-	return configPath;
+	return updateUserToolkitConfig({ builtinToolStyle: style });
 }

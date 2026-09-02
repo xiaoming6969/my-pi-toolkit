@@ -66,7 +66,7 @@
 
 ## 复用已完成 worker
 
-全局 `~/.pi/agent/subagents.json` 保持默认 `keepOpen: true` 时，`run` / `collect` 会为成功完成的 research 与 implementation worker 返回完整 `subagentId`。主 Agent 对同一 worker 有直接相关的后续任务时，可使用 `subagent_followup`；原进程、上下文、模型、工具快照和 scope 均保持不变，同一 ID 的请求按 FIFO 串行。Batch 结束后，每个 reusable worker 有 2 分钟空闲期；运行 follow-up 时暂停计时，完成后重新计时并自动回收。
+全局 `~/.pi/agent/ming-core.json` 的 `subagents.keepOpen` 保持默认 `true` 时，`run` / `collect` 会为成功完成的 research 与 implementation worker 返回完整 `subagentId`。主 Agent 对同一 worker 有直接相关的后续任务时，可使用 `subagent_followup`；原进程、上下文、模型、工具快照和 scope 均保持不变，同一 ID 的请求按 FIFO 串行。Batch 结束后，每个 reusable worker 有 2 分钟空闲期；运行 follow-up 时暂停计时，完成后重新计时并自动回收。
 
 implementation follow-up 发出 prompt 前会重新占用原 `paths`，与运行中 Batch、其他 implementation follow-up 以及主 Agent 的 `edit` / `write` 互斥；结束、失败、取消或子进程退出后释放。子进程内原有 `path-guard.ts` 继续阻止 `edit` / `write` 扩大范围，follow-up 参数也不能提供新 paths。`bash` 和其他扩展工具的副作用仍不受这个门禁可靠覆盖，安全限制与首轮 worker 相同。research follow-up 不取得写锁并保持只读；它只登记允许 research/research 重叠的读占用，用于阻止新的重叠 implementation Batch。
 

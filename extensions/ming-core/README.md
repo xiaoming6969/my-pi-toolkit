@@ -28,6 +28,31 @@
 
 `auto-format` 无需 toolkit 配置：项目本地安装 ESLint / Prettier 后，模块会在 `agent_settled` 时按 ESLint → Prettier 顺序处理主会话本轮成功 `edit` / `write` 的文件。详细边界见 [`../auto-format/README.md`](../auto-format/README.md)。
 
+## 用户配置
+
+通用设置集中在 `~/.pi/agent/ming-core.json`：
+
+```json
+{
+  "builtinToolStyle": "grok",
+  "newConversation": {
+    "enabled": true,
+    "model": "provider/model-id",
+    "thinkingLevel": "medium"
+  },
+  "repoSearch": {
+    "model": "provider/model-id",
+    "presentation": "manual"
+  },
+  "subagents": {
+    "presentation": "manual",
+    "keepOpen": true
+  }
+}
+```
+
+受信任项目可用 `.pi/ming-core.json` 覆盖 `newConversation` 和 `repoSearch`。TAPD / Context7 凭证仍使用各自的独立文件。
+
 ## 独立加载路径
 
 子 Agent 禁止加载本入口。继续使用：

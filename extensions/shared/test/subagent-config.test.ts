@@ -28,13 +28,15 @@ test("loadSubagentUiConfig reads presentation, fallback, and terminal settings",
 	await withTempAgentDir(t, async (dir) => {
 		assert.equal(loadSubagentUiConfig().presentation, "manual");
 		await writeFile(
-			join(dir, "subagents.json"),
+			join(dir, "ming-core.json"),
 			JSON.stringify({
-				presentation: "split",
-				fallback: "error",
-				keepOpen: false,
-				retainCompletedMinutes: 3,
-				windowsTerminal: { size: 0.9, shell: "bash.exe" },
+				subagents: {
+					presentation: "split",
+					fallback: "error",
+					keepOpen: false,
+					retainCompletedMinutes: 3,
+					windowsTerminal: { size: 0.9, shell: "bash.exe" },
+				},
 			}),
 		);
 		const loaded = loadSubagentUiConfig();
@@ -48,14 +50,34 @@ test("loadSubagentUiConfig reads presentation, fallback, and terminal settings",
 	});
 });
 
+test("loadSubagentUiConfig imports legacy subagents.json", async (t) => {
+	await withTempAgentDir(t, async (dir) => {
+		await writeFile(
+			join(dir, "subagents.json"),
+			JSON.stringify({ presentation: "inline", keepOpen: false }),
+		);
+		const loaded = loadSubagentUiConfig();
+		assert.equal(loaded.presentation, "inline");
+		assert.equal(loaded.keepOpen, false);
+	});
+});
+
 test("loadSubagentUiConfig rejects invalid JSON objects", async (t) => {
 	await withTempAgentDir(t, async (dir) => {
-		await writeFile(join(dir, "subagents.json"), "[]");
-		assert.throws(() => loadSubagentUiConfig(), /无法解析子 Agent UI 配置/);
-		await writeFile(join(dir, "subagents.json"), "null");
-		assert.throws(() => loadSubagentUiConfig(), /无法解析子 Agent UI 配置/);
+		await writeFile(join(dir, "ming-core.json"), "[]");
+		assert.throws(() => loadSubagentUiConfig(), /必须是 JSON 对象/);
+		await writeFile(join(dir, "ming-core.json"), "null");
+		assert.throws(() => loadSubagentUiConfig(), /必须是 JSON 对象/);
 		await mkdir(dir, { recursive: true });
-		await writeFile(join(dir, "subagents.json"), '{ "presentation": "nope" }');
+		await writeFile(
+			join(dir, "ming-core.json"),
+			JSON.stringify({ subagents: { presentation: "nope" } }),
+		);
 		assert.throws(() => loadSubagentUiConfig(), /presentation 必须是/);
+		await writeFile(
+			join(dir, "ming-core.json"),
+			JSON.stringify({ subagents: [] }),
+		);
+		assert.throws(() => loadSubagentUiConfig(), /subagents 必须是 JSON 对象/);
 	});
 });

@@ -49,19 +49,24 @@ test("wantsNewConversationDefaults stays true until an assistant reply", () => {
 	);
 });
 
-test("projectConfigPath walks up to the nearest model-manager.json", async (t) => {
+test("projectConfigPath walks up to ming-core.json or legacy model-manager.json", async (t) => {
 	const root = await mkdtemp(join(tmpdir(), "model-manager-"));
 	t.after(() => rm(root, { recursive: true, force: true }));
 	const nested = join(root, "apps", "web");
 	await mkdir(nested, { recursive: true });
 	assert.equal(
 		projectConfigPath(nested),
-		join(nested, CONFIG_DIR_NAME, "model-manager.json"),
+		join(nested, CONFIG_DIR_NAME, "ming-core.json"),
 	);
 
-	const configPath = join(root, CONFIG_DIR_NAME, "model-manager.json");
+	const legacyPath = join(root, CONFIG_DIR_NAME, "model-manager.json");
 	await mkdir(join(root, CONFIG_DIR_NAME), { recursive: true });
-	await writeFile(configPath, "{}\n");
-	assert.equal(projectConfigPath(nested), configPath);
-	assert.equal(projectConfigPath(root), configPath);
+	await writeFile(legacyPath, "{}\n");
+	assert.equal(projectConfigPath(nested), legacyPath);
+	assert.equal(projectConfigPath(root), legacyPath);
+
+	const toolkitPath = join(root, CONFIG_DIR_NAME, "ming-core.json");
+	await writeFile(toolkitPath, "{}\n");
+	assert.equal(projectConfigPath(nested), toolkitPath);
+	assert.equal(projectConfigPath(root), toolkitPath);
 });
