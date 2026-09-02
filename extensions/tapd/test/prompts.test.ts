@@ -54,23 +54,19 @@ test("buildReviewTask includes files, range, and extra instructions", () => {
 	assert.match(branched, /focus on auth/);
 });
 
-test("root-cause prompt asks for the three-section remark", () => {
+test("root-cause prompt asks the subagent to locate the introducing commit", () => {
 	assert.match(ROOT_CAUSE_SYSTEM_PROMPT, /【产生原因】/);
+	assert.match(ROOT_CAUSE_SYSTEM_PROMPT, /【引入commit】/);
 	assert.match(ROOT_CAUSE_SYSTEM_PROMPT, /【根因大类】/);
-	const withCommit = buildRootCauseTask({
+	assert.match(ROOT_CAUSE_SYSTEM_PROMPT, /自行定位/);
+	const task = buildRootCauseTask({
 		bugId: "8",
 		workspaceId: "99",
 		evidenceFile: "/tmp/evidence.md",
-		introducedCommit: "abc1234",
+		targetBranch: "dev",
 	});
-	assert.match(withCommit, /Bug 8/);
-	assert.match(withCommit, /abc1234/);
-	assert.match(
-		buildRootCauseTask({
-			bugId: "8",
-			workspaceId: "99",
-			evidenceFile: "/tmp/evidence.md",
-		}),
-		/未能定位引入 commit/,
-	);
+	assert.match(task, /Bug 8/);
+	assert.match(task, /origin\/dev/);
+	assert.match(task, /不要使用任何预先提供的候选列表或已确认 hash/);
+	assert.doesNotMatch(task, /已确认的引入 commit/);
 });

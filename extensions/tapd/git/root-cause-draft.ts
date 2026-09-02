@@ -55,27 +55,34 @@ export async function loadBugRootCauseDraft(
 	}
 }
 
+const SECTION_NAMES = "产生原因|引入commit|commit信息|修复|根因大类";
+
 function sectionValue(text: string, label: string, nextLabel?: string): string {
-	const next = nextLabel ? `(?=\\n【${nextLabel}】|$)` : "$";
+	const next = nextLabel ? `${nextLabel}|${SECTION_NAMES}` : SECTION_NAMES;
 	const match = text.match(
-		new RegExp(`【${label}】\\s*([\\s\\S]*?)${next}`, "i"),
+		new RegExp(`【${label}】\\s*([\\s\\S]*?)(?=\\n【(?:${next})】|$)`, "i"),
 	);
 	return match?.[1]?.trim() ?? "";
 }
 
-export function parseGeneratedCauseAndFix(
-	text: string,
-): { cause: string; fix: string; category?: string } | null {
+export function parseGeneratedCauseAndFix(text: string): {
+	cause: string;
+	fix: string;
+	category?: string;
+	introducedCommit?: string;
+} | null {
 	const body = text.replace(/```[\w]*\n?([\s\S]*?)```/g, "$1").trim();
-	const cause =
-		sectionValue(body, "产生原因", "修复") ||
-		sectionValue(body, "产生原因", "引入commit") ||
-		sectionValue(body, "产生原因", "根因大类");
-	const fix =
-		sectionValue(body, "修复", "根因大类") || sectionValue(body, "修复");
+	const cause = sectionValue(body, "产生原因");
+	const introducedCommit = sectionValue(body, "引入commit");
+	const fix = sectionValue(body, "修复");
 	const category = sectionValue(body, "根因大类");
 	if (!cause && !fix) return null;
-	return { cause, fix, category: category || undefined };
+	return {
+		cause,
+		fix,
+		category: category || undefined,
+		introducedCommit: introducedCommit || undefined,
+	};
 }
 
 export function parseBugRootCauseEditor(

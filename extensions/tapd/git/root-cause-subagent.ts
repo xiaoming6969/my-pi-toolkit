@@ -7,7 +7,10 @@ import { thinkingLevelForModel } from "../../shared/subagent/thinking-level.js";
 import { runTerminalSubagent } from "../../shared/subagent/terminal-runner.js";
 import { watchLiveSubagentOverlay } from "../../subagent/console/overlay.js";
 import type { TapdConfig } from "../types.js";
-import type { IntroducedCommitCandidate } from "./bug-analysis.js";
+import {
+	resolveIntroducedCommit,
+	type IntroducedCommitCandidate,
+} from "./bug-analysis.js";
 import { collectRootCauseEvidence } from "./root-cause-evidence.js";
 import { parseGeneratedCauseAndFix } from "./root-cause-draft.js";
 import {
@@ -17,7 +20,7 @@ import {
 import type { TapdKeyword } from "./types.js";
 import { abortError } from "./working-cancel.js";
 
-const READ_ONLY_TOOLS = "read";
+const READ_ONLY_TOOLS = "read,grep,find,ls,bash";
 const EXTENSION_DIR = dirname(fileURLToPath(import.meta.url));
 const MODEL_EXTENSIONS = [
 	resolve(EXTENSION_DIR, "../../openai-compat-models/index.ts"),
@@ -35,10 +38,14 @@ export async function generateBugRootCauseSummary(options: {
 	bug: TapdKeyword;
 	cwd: string;
 	targetBranch: string;
-	candidate: IntroducedCommitCandidate | undefined;
 	signal?: AbortSignal;
-}): Promise<{ cause: string; fix: string; category?: string } | null> {
-	const { ctx, bug, cwd, candidate, signal } = options;
+}): Promise<{
+	cause: string;
+	fix: string;
+	category?: string;
+	candidate?: IntroducedCommitCandidate;
+} | null> {
+	const { ctx, bug, cwd, targetBranch, signal } = options;
 	if (signal?.aborted) throw abortError();
 	const model = currentModel(ctx);
 	if (!model) {
@@ -68,7 +75,7 @@ export async function generateBugRootCauseSummary(options: {
 				bugId: bug.shortId,
 				workspaceId: bug.workspaceId,
 				evidenceFile: evidence.evidenceFile,
-				introducedCommit: candidate?.hash,
+				targetBranch,
 			}),
 			systemPrompt: ROOT_CAUSE_SYSTEM_PROMPT,
 			tools: READ_ONLY_TOOLS,
@@ -113,7 +120,21 @@ export async function generateBugRootCauseSummary(options: {
 			);
 			return null;
 		}
-		return parsed;
+		const candidate = await resolveIntroducedCommit(
+			cwd,
+			parsed.introducedCommit,
+		);
+		if (
+			!candidate &&
+			parsed.introducedCommit &&
+			/^[0-9a-f]{7,40}/i.test(parsed.introducedCommit.trim())
+		) {
+			ctx.ui.notify(
+				`Bug ${bug.shortId}: 引入 commit 无效或不在当前 HEAD 历史中，将按未能定位预填`,
+				"warning",
+			);
+		}
+		return { ...parsed, candidate };
 	} catch (error) {
 		const overlayReason = await overlay;
 		if (signal?.aborted) throw abortError();

@@ -4,7 +4,6 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import type { TapdConfig } from "../types.js";
 import { scanLinkedCommits, uniqueLinkedObjects } from "./analysis.js";
-import { selectIntroducedCommitCandidate } from "./bug-analysis.js";
 import { updateBugFromDraft } from "./bug-workflow.js";
 import {
 	createOrUpdateMergeRequest,
@@ -100,27 +99,7 @@ export async function runMergeRequest(
 			reportProgress?.({
 				step: 2,
 				total: 5,
-				message: `Bug ${bug.shortId}: 正在选择引入 commit，随后将总结根因...`,
-			});
-			cancel?.suspend();
-			let candidate: Awaited<
-				ReturnType<typeof selectIntroducedCommitCandidate>
-			>;
-			try {
-				candidate = await selectIntroducedCommitCandidate(
-					ctx,
-					repository.root,
-					targetBranch,
-					bug.shortId,
-				);
-			} finally {
-				cancel?.resume("Working...");
-			}
-			cancel?.throwIfAborted();
-			reportProgress?.({
-				step: 2,
-				total: 5,
-				message: `Bug ${bug.shortId}: 正在总结产生原因和修复方式...`,
+				message: `Bug ${bug.shortId}: 正在定位引入 commit 并总结根因...`,
 			});
 			cancel?.suspend();
 			let generated: Awaited<ReturnType<typeof generateBugRootCauseSummary>>;
@@ -131,7 +110,6 @@ export async function runMergeRequest(
 					bug,
 					cwd: repository.root,
 					targetBranch,
-					candidate,
 					signal: cancel?.signal,
 				});
 			} finally {
@@ -145,7 +123,7 @@ export async function runMergeRequest(
 					ctx,
 					bug.shortId,
 					head,
-					candidate,
+					generated?.candidate,
 					generated ?? undefined,
 				);
 			} finally {

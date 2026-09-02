@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { uniqueLinkedObjects, parseIntroducedCommit } from "../git/analysis.ts";
-import { candidateLabel } from "../git/bug-analysis.ts";
 import { currentTapdObject } from "../git/context.ts";
 import { fetchBugMrFields, matchCategoryOption, selectCategoryOption } from "../git/bug-fields.ts";
 import {
@@ -47,20 +46,7 @@ test("uniqueLinkedObjects and parseIntroducedCommit keep confirmed hashes", () =
 	assert.equal(parseIntroducedCommit("no field"), null);
 });
 
-test("candidateLabel and selectCategoryOption walk TAPD option trees", async () => {
-	assert.equal(
-		candidateLabel({
-			hash: "abc",
-			shortHash: "abc1234",
-			date: "2026-01-01",
-			author: "me",
-			subject: "fix crash",
-			lineCount: 4,
-			files: ["a.ts", "b.ts"],
-		}),
-		"abc1234 · 命中 4 行/2 文件 · fix crash",
-	);
-
+test("selectCategoryOption walks TAPD option trees", async () => {
 	const leaves = [
 		{ label: "前端 / 交互", value: "前端/交互", path: ["前端", "交互"] },
 		{ label: "前端 / 样式", value: "前端/样式", path: ["前端", "样式"] },
@@ -119,13 +105,20 @@ test("candidateLabel and selectCategoryOption walk TAPD option trees", async () 
 
 test("root-cause draft parse/render round-trips editor sections", () => {
 	const generated = parseGeneratedCauseAndFix(
-		"```md\n【产生原因】空指针\n【修复】加判断\n【根因大类】后端/接口\n```",
+		"```md\n【产生原因】空指针\n【引入commit】abc1234\n【修复】加判断\n【根因大类】后端/接口\n```",
 	);
 	assert.deepEqual(generated, {
 		cause: "空指针",
 		fix: "加判断",
 		category: "后端/接口",
+		introducedCommit: "abc1234",
 	});
+	assert.equal(
+		parseGeneratedCauseAndFix(
+			"【产生原因】空指针\n【修复】加判断\n【根因大类】后端/接口",
+		)?.introducedCommit,
+		undefined,
+	);
 	assert.equal(parseGeneratedCauseAndFix("plain"), null);
 
 	const draft = parseBugRootCauseEditor(
@@ -332,8 +325,6 @@ test("root-cause drafts persist per bug and collect editor input", async (t) => 
 			date: "2026-01-01",
 			author: "me",
 			subject: "fix",
-			lineCount: 1,
-			files: ["a.ts"],
 		},
 		{ cause: "空指针", fix: "加判断" },
 	);
