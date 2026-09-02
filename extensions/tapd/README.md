@@ -13,14 +13,14 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 | `/tapd preview [understanding\|design\|collaboration]` | 在浏览器批阅当前需求的本地 Markdown 文档并把意见交给 Agent；不带参数时先选择文档，且不需要 TAPD Token |
 | `/tapd review [--base origin/dev] [补充要求]` | 选择“仅未提交”或“当前分支全部修改”后，启动只读子代理审核实现与过度设计，并将分级报告返回主 Agent |
 | `/tapd sub-task` | 根据 `design.md` 创建或同步设计、开发子需求 |
-| `/tapd bug` | 获取当前 Bug 完整信息并让 Agent 定位代码原因；定位提示对用户隐藏；结果只输出原因、带具体代码的因果链与置信度，不写长篇分析报告 |
+| `/tapd bug` | 根据当前会话已有缺陷描述启动定位；定位提示显示在对话中，不二次拉取 TAPD；结果只输出原因、带具体代码的因果链与置信度，不写长篇分析报告 |
 | `/tapd bug-reject` | 单页 Overlay 拒绝当前 Bug：评价原因多行预览，Enter 进 Overlay 用 Pi Editor 编辑（Enter 确认 / Ctrl+Enter 换行）；解决方法/开发人员同样 Enter 打开 Overlay；FAQ 默认否 |
 | `/tapd git-status` | 直接执行 TAPD Git 工作流，并用对话区工具风格卡片显示关联事项、分支、upstream 与工作区状态 |
 | `/tapd branch [--base origin/dev]` | 直接获取 TAPD keyword；本地关联分支已存在时切换，否则从指定基础分支创建；结果显示为对话区工具风格卡片 |
 | `/tapd commit [--no-push]` | 直接使用 TAPD keyword 生成提交信息，提交并默认推送；结果显示为对话区工具风格卡片 |
 | `/tapd mr [--draft] [--target dev] [--no-delete-source-branch]` | 直接创建或更新 GitLab MR 并回写 TAPD；结果显示为对话区工具风格卡片 |
 
-长耗时 TAPD 操作（待办列表冷启动、`Ctrl+Shift+T`、子需求同步、`bug`/`bug-reject` 拉取与提交、创建关联会话取详情，以及 `git-status`/`branch`/`commit`/`mr`）会在 editor 上方、TASKS 之上显示 `Working...`（含 `Esc 取消`）。Overlay/confirm/select 期间暂时隐藏 Working，Esc 交给对话框。Git 工作流另在对话区保留一张 `running`→终态单卡；Esc 中止会尽量结束 `git`/hooks 进程树并将卡片标为 `cancelled`。`analyze`/`design`/`collaboration`/`review` 交给 Agent streaming，不重复挂 Working。
+长耗时 TAPD 操作（待办列表冷启动、`Ctrl+Shift+T`、子需求同步、`bug-reject` 拉取与提交、创建关联会话取详情，以及 `git-status`/`branch`/`commit`/`mr`）会在 editor 上方、TASKS 之上显示 `Working...`（含 `Esc 取消`）。Overlay/confirm/select 期间暂时隐藏 Working，Esc 交给对话框。Git 工作流另在对话区保留一张 `running`→终态单卡；Esc 中止会尽量结束 `git`/hooks 进程树并将卡片标为 `cancelled`。`analyze`/`design`/`collaboration`/`review`/`bug` 交给 Agent streaming，不重复挂 Working。
 
 工作流命令支持附加自然语言和 `@文件`：
 

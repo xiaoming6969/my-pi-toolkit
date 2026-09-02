@@ -24,7 +24,8 @@ import {
 	TAPD_SESSION_STATE_TYPE,
 	type TapdSessionState,
 } from "../sessions/session-state.ts";
-import { createFakePi } from "../../shared/test/fake-extension.ts";
+import { locateTapdBug } from "../documents/workflows.ts";
+import { createFakeContext, createFakePi } from "../../shared/test/fake-extension.ts";
 
 const state: TapdSessionState = {
 	version: 1,
@@ -151,20 +152,45 @@ test("document prompts include ids, urls, and empty-description fallbacks", () =
 		projectPaths: ["src"],
 	});
 	assert.match(bug, /- src/);
-	assert.match(bug, /执行 \/tapd bug/);
-	assert.match(
-		buildBugLocatePrompt({
-			title: "崩溃",
-			bugId: "8",
-			url: "https://tapd.example/8",
-			projectPaths: [],
-			detail: { title: "崩溃" },
-		}),
-		/TAPD 完整字段/,
-	);
+	assert.match(bug, /## 缺陷描述\nboom/);
+	assert.match(bug, /执行 \/tapd bug 结合项目代码/);
+	assert.doesNotMatch(bug, /完整缺陷信息/);
+	const locate = buildBugLocatePrompt();
+	assert.match(locate, /根据上文 TAPD 缺陷信息/);
+	assert.match(locate, /## 定位要求/);
+	assert.match(locate, /## 原因/);
+	assert.doesNotMatch(locate, /TAPD 完整字段/);
+	assert.doesNotMatch(locate, /custom_field_/);
+	assert.doesNotMatch(locate, /<p style=/);
 	assert.match(ANALYZE_TRIGGER_PROMPT, /不要调用 enter_plan_mode/);
 	assert.match(DESIGN_TRIGGER_PROMPT, /ask_user_choice/);
 	assert.match(COLLABORATION_TRIGGER_PROMPT, /collaboration\.md/);
+});
+
+test("locateTapdBug sends a visible prompt from session context", async () => {
+	const { pi, userMessages, messages } = createFakePi();
+	await locateTapdBug(
+		pi,
+		createFakeContext({
+			entries: [
+				{
+					type: "custom",
+					customType: TAPD_SESSION_STATE_TYPE,
+					data: { ...state, kind: "bug", itemName: "崩溃" },
+				},
+			],
+		}) as never,
+	);
+	assert.equal(messages.length, 0);
+	assert.equal(userMessages.length, 1);
+	assert.match(String(userMessages[0]), /根据上文 TAPD 缺陷信息/);
+	assert.match(String(userMessages[0]), /## 定位要求/);
+
+	const idle = createFakePi();
+	const busyCtx = createFakeContext({ isIdle: false });
+	await locateTapdBug(idle.pi, busyCtx as never);
+	assert.equal(idle.userMessages.length, 0);
+	assert.match(busyCtx.notifies[0]?.message ?? "", /正在执行/);
 });
 
 test("previewTapdDocument routes missing docs, feedback, and unchanged snapshots", async (t) => {

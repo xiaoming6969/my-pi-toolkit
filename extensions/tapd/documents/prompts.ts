@@ -55,33 +55,14 @@ export function buildBugContextPrompt(opts: {
 		buildPathBlock(opts.projectPaths),
 		"",
 		"## 后续处理",
-		"执行 /tapd bug 获取最新的完整缺陷信息，并结合项目代码尝试定位问题原因。",
+		"执行 /tapd bug 结合项目代码尝试定位问题原因。",
 		"定位阶段不要修改代码，不要创建分析文档或 bug-{id} 目录。定位完成后直接展示代码分析和定位结论，等待我确认后再修改。",
 	].join("\n");
 }
 
-export function buildBugLocatePrompt(opts: {
-	title: string;
-	bugId: string;
-	url: string;
-	projectPaths: string[];
-	detail: Record<string, unknown>;
-}): string {
+export function buildBugLocatePrompt(): string {
 	return [
-		"请根据以下 TAPD 缺陷完整信息，结合关联项目代码尝试定位问题原因。",
-		"",
-		"## 缺陷",
-		`标题：${opts.title}`,
-		`链接：${opts.url}`,
-		`ID：${opts.bugId}`,
-		"",
-		"## 相关项目路径",
-		buildPathBlock(opts.projectPaths),
-		"",
-		"## TAPD 完整字段",
-		"```json",
-		JSON.stringify(opts.detail, null, 2),
-		"```",
+		"请根据上文 TAPD 缺陷信息，结合关联项目代码尝试定位问题原因。",
 		"",
 		"## 定位要求",
 		"1. 先理解缺陷现象、复现条件、期望与实际表现；在相关项目路径中搜索入口、组件、状态、接口与数据流，并沿调用链分析。区分已确认事实与推测。",
