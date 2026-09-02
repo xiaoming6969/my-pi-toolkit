@@ -4,6 +4,7 @@ coverage/
 .tmp-*
 nul
 plan
+.cursor/
 .pi/plan.md
 .pi/model-manager.json
 .pi/plans/

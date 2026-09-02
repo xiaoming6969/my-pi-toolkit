@@ -10,7 +10,6 @@ import { longTapdObjectId } from "../core/object-id.js";
 import { extractLocateReason } from "../documents/bug-reject-reason.js";
 import { readTapdSessionState } from "../sessions/session-state.js";
 import type { TapdConfig } from "../types.js";
-import type { IntroducedCommitCandidate } from "./bug-analysis.js";
 import { fetchBugMrFields } from "./bug-fields.js";
 import { git } from "./repository.js";
 import type { TapdKeyword } from "./types.js";
@@ -74,10 +73,9 @@ export async function collectRootCauseEvidence(options: {
 	bug: TapdKeyword;
 	cwd: string;
 	targetBranch: string;
-	candidate: IntroducedCommitCandidate | undefined;
 	signal?: AbortSignal;
 }): Promise<RootCauseEvidenceFiles> {
-	const { ctx, config, bug, cwd, targetBranch, candidate, signal } = options;
+	const { ctx, config, bug, cwd, targetBranch, signal } = options;
 	const detail = await fetchBugDetail(
 		bug.workspaceId,
 		bug.shortId,
@@ -99,13 +97,6 @@ export async function collectRootCauseEvidence(options: {
 		["diff", "--no-color", base, "HEAD"],
 		signal,
 	);
-	const introduced = candidate
-		? await gitOutput(
-				cwd,
-				["show", "--no-color", "--stat", "-p", candidate.hash],
-				signal,
-			)
-		: "";
 	const fields = await fetchBugMrFields(config, bug.workspaceId, signal);
 	const categoryOptions = fields.category?.leaves.map((leaf) => leaf.label) ?? [];
 	const evidence = [
@@ -113,27 +104,13 @@ export async function collectRootCauseEvidence(options: {
 		"",
 		`标题：${detail?.title ?? bug.name ?? "（未知）"}`,
 		`Workspace：${bug.workspaceId}`,
+		`对比分支：origin/${targetBranch}`,
 		"",
 		"## TAPD 描述",
 		clipText(description || "（无描述）"),
 		"",
 		"## 会话定位原因",
 		clipText(locateReason || "（当前会话没有可用的 /tapd bug 定位结论）"),
-		"",
-		"## 引入 commit",
-		candidate
-			? [
-					`${candidate.hash}`,
-					`${candidate.shortHash} ${candidate.date} ${candidate.author} ${candidate.subject}`,
-					`blame 命中 ${candidate.lineCount} 行 / ${candidate.files.length} 文件`,
-					candidate.files.length ? `文件：${candidate.files.join(", ")}` : "",
-				]
-					.filter(Boolean)
-					.join("\n")
-			: "未能定位",
-		"",
-		"## 引入 commit 变更",
-		clipGit(introduced || "（无）"),
 		"",
 		"## 当前分支修复统计",
 		clipGit(fixStat || "（无）"),
