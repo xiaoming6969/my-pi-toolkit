@@ -3,12 +3,8 @@ import type {
 	ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
 import { ENSURE_ASK_FOR_DOCS_ENTRY } from "../../chat-mode/ensure-ask-for-docs.js";
-import { fetchBugDetail, htmlToText } from "../core/api.js";
-import { bugUrl } from "../todo/model.js";
 import { buildBugLocatePrompt } from "./prompts.js";
 import { readTapdSessionState } from "../sessions/session-state.js";
-import type { TapdConfig } from "../types.js";
-import { withTapdWorking } from "../working.js";
 
 const DOCS_WORKFLOW_MODE_RULES = [
 	"",
@@ -53,7 +49,6 @@ export async function sendTapdWorkflowPrompt(
 export async function locateTapdBug(
 	pi: ExtensionAPI,
 	ctx: ExtensionCommandContext,
-	config: TapdConfig,
 ): Promise<void> {
 	if (!ctx.isIdle()) {
 		ctx.ui.notify("Agent 正在执行，请稍后再试", "warning");
@@ -72,36 +67,6 @@ export async function locateTapdBug(
 		return;
 	}
 
-	await withTapdWorking(ctx, "tapd-bug", async (cancel) => {
-		cancel?.setMessage("Working... 正在获取 TAPD 完整缺陷信息...");
-		const detail = await fetchBugDetail(
-			state.workspaceId,
-			state.itemId,
-			config,
-		);
-		cancel?.throwIfAborted();
-		if (!detail) {
-			ctx.ui.notify("获取 TAPD 缺陷详情失败，请检查权限或稍后重试", "error");
-			return;
-		}
-		const normalizedDetail: Record<string, unknown> = { ...detail };
-		if (typeof detail.description === "string") {
-			normalizedDetail.description_text = htmlToText(detail.description);
-		}
-		// Use this command's factory pi, not a ctx captured across newSession/switchSession.
-		pi.sendMessage(
-			{
-				customType: "tapd-bug-locate",
-				content: buildBugLocatePrompt({
-					title: detail.title || state.itemName,
-					bugId: state.itemId,
-					url: bugUrl(state.workspaceId, state.itemId),
-					projectPaths: state.projectPaths ?? [],
-					detail: normalizedDetail,
-				}),
-				display: false,
-			},
-			{ triggerTurn: true },
-		);
-	});
+	// Use this command's factory pi, not a ctx captured across newSession/switchSession.
+	pi.sendUserMessage(buildBugLocatePrompt());
 }

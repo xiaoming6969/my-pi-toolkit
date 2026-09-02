@@ -122,7 +122,7 @@ export default function tapdExtension(pi: ExtensionAPI) {
 			}
 			if (await runTapdGitCommand(pi, sub, restArgs, ctx, config)) return;
 			if (sub === "bug") {
-				await locateTapdBug(pi, ctx, config);
+				await locateTapdBug(pi, ctx);
 				return;
 			}
 			if (sub === "bug-reject") {

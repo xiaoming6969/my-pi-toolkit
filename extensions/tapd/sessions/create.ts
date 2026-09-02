@@ -119,7 +119,7 @@ export async function createTapdSession(
 		sessionPrompt,
 		notifyMessage:
 			parsed.kind === "bug"
-				? "Bug 会话已创建，输入 /tapd bug 获取完整缺陷信息并定位原因"
+				? "Bug 会话已创建，输入 /tapd bug 定位原因"
 				: "会话已创建，输入 /tapd analyze 开始需求理解",
 	});
 }
