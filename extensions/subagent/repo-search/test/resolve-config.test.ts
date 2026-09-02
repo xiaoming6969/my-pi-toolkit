@@ -4,7 +4,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { CONFIG_DIR_NAME } from "@earendil-works/pi-coding-agent";
 import { resolveRepoSearchConfig, userConfigPath } from "../config.ts";
-import { withTempAgentDir } from "../../shared/test/fake-extension.ts";
+import { withTempAgentDir } from "../../../shared/test/fake-extension.ts";
 
 test("resolveRepoSearchConfig prefers project, then user, then current model", async (t) => {
 	await withTempAgentDir(t, async (dir) => {

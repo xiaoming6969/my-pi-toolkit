@@ -2,8 +2,8 @@ import type { TUI } from "@earendil-works/pi-tui";
 import type {
 	LiveSubagentRun,
 	SubagentTranscriptEntry,
-} from "../shared/subagent/registry.js";
-import type { SharedMarkdownRendering } from "../shared/tui/markdown.js";
+} from "../../shared/subagent/registry.js";
+import type { SharedMarkdownRendering } from "../../shared/tui/markdown.js";
 import {
 	createSubagentEntryRenderer,
 	type SubagentEntryRenderer,

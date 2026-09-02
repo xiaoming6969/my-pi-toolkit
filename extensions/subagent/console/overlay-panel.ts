@@ -12,18 +12,18 @@ import {
 	type KeybindingsManager,
 	type TUI,
 } from "@earendil-works/pi-tui";
-import type { SharedMarkdownRendering } from "../shared/tui/markdown.js";
+import type { SharedMarkdownRendering } from "../../shared/tui/markdown.js";
 import {
 	overlayInnerWidth,
 	overlayViewportHeight,
 	renderOverlayShell,
-} from "../shared/tui/overlay-shell.js";
+} from "../../shared/tui/overlay-shell.js";
 import {
 	formatDuration,
 	statusGlyph,
 	thinkingLevelText,
 	type VisualStatus,
-} from "../shared/tui/visual-language.js";
+} from "../../shared/tui/visual-language.js";
 import {
 	createSubagentDetailNavigator,
 	type SubagentDetailItem,

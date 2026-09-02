@@ -1,6 +1,6 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { resolveRepoSearchConfig } from "../repo-search-subagent/config.js";
-import type { RepoSearchRunConfig } from "../repo-search-subagent/types.js";
+import { resolveRepoSearchConfig } from "../subagent/repo-search/config.js";
+import type { RepoSearchRunConfig } from "../subagent/repo-search/types.js";
 import { thinkingLevelForModel } from "../shared/subagent/thinking-level.js";
 import type { MultiTaskInput } from "./types.js";
 

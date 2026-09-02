@@ -4,12 +4,12 @@ import {
 	registerLiveSubagent,
 	removeLiveSubagent,
 	type LiveSubagentRun,
-} from "../../shared/subagent/registry.ts";
+} from "../../../shared/subagent/registry.ts";
 import { registerSubagentFollowupTool, resolveFollowupRun } from "../followup-tool.ts";
 import {
 	createFakeContext,
 	createFakePi,
-} from "../../shared/test/fake-extension.ts";
+} from "../../../shared/test/fake-extension.ts";
 
 function fakeRun(overrides: Partial<LiveSubagentRun> = {}): LiveSubagentRun {
 	return {

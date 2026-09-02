@@ -3,7 +3,7 @@
  * Discover per-module tests and run them through Node's test runner
  * with the tsx loader (TypeScript syntax + `.js` → `.ts` resolution).
  *
- * Layout: `extensions/<module>/test/*.test.*` plus repo-level `test/*.test.*`.
+ * Layout: extensions glob `test/` directories plus repo-level `test/*.test.*`.
  *
  * Coverage excludes files that are not worth unit-testing here: Pi `index.ts`
  * registration, live TUI overlays, OS/browser/subagent process launchers,
@@ -24,7 +24,7 @@ const extraFlags = rest.filter((arg) => arg.startsWith("--"));
 const requested = rest.filter((arg) => !arg.startsWith("--"));
 
 const patterns = [
-	"extensions/*/test/**/*.test.{js,mjs,cjs,ts}",
+	"extensions/**/test/**/*.test.{js,mjs,cjs,ts}",
 	"test/**/*.test.{js,mjs,cjs,ts}",
 ];
 

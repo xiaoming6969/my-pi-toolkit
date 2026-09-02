@@ -6,8 +6,8 @@ import {
 	type KeybindingsManager,
 	type TUI,
 } from "@earendil-works/pi-tui";
-import { overlayViewportHeight } from "../shared/tui/overlay-shell.js";
-import { fitLine } from "../shared/tui/visual-language.js";
+import { overlayViewportHeight } from "../../shared/tui/overlay-shell.js";
+import { fitLine } from "../../shared/tui/visual-language.js";
 
 export interface SubagentPickerItem {
 	id: string;

@@ -6,9 +6,9 @@ import type {
 	ToolRenderResultOptions,
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { thinkingLevelForModel } from "../shared/subagent/thinking-level.js";
-import { previewLines, resultText, formatModelWithThinking } from "../shared/tui/tool-format.js";
-import { toolCall, toolResult } from "../shared/tui/tool-render.js";
+import { thinkingLevelForModel } from "../../shared/subagent/thinking-level.js";
+import { previewLines, resultText, formatModelWithThinking } from "../../shared/tui/tool-format.js";
+import { toolCall, toolResult } from "../../shared/tui/tool-render.js";
 import { registerRepoSearchCommand } from "./command.js";
 import { resolveRepoSearchConfig } from "./config.js";
 import { runRepoSearchSubagent } from "./runner.js";
