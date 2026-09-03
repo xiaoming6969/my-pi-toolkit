@@ -2,6 +2,12 @@ import type { ToolCallEvent } from "@earendil-works/pi-coding-agent";
 import { checkAskBashCommand, isAskBashTool } from "./ask-bash-policy.js";
 import { isPlanFilePath, isProjectPiPath } from "./paths.js";
 import { ENTER_PLAN_TOOL, EXIT_PLAN_TOOL } from "./plan-file.js";
+import {
+	checkReadOnlySubagentCall,
+	SUBAGENT_FOLLOWUP_TOOL,
+	SUBAGENT_OBSERVE_TOOLS,
+	SUBAGENT_SPAWN_TOOL,
+} from "./subagent-policy.js";
 
 const PATH_GATED_TOOLS = new Set(["write", "edit"]);
 const SAFE_TOOLS = new Set([
@@ -17,7 +23,10 @@ const SAFE_TOOLS = new Set([
 	"agent_todo_write",
 	ENTER_PLAN_TOOL,
 	EXIT_PLAN_TOOL,
+	...SUBAGENT_OBSERVE_TOOLS,
 ]);
+/** Allowed per call once the target child is confirmed read-only. */
+const ROLE_GATED_TOOLS = new Set([SUBAGENT_SPAWN_TOOL, SUBAGENT_FOLLOWUP_TOOL]);
 
 export function restrictedModeToolNames(
 	activeTools: string[],
@@ -27,6 +36,7 @@ export function restrictedModeToolNames(
 		(name) =>
 			SAFE_TOOLS.has(name) ||
 			PATH_GATED_TOOLS.has(name) ||
+			ROLE_GATED_TOOLS.has(name) ||
 			isAskBashTool(name, mode),
 	);
 	for (const name of [ENTER_PLAN_TOOL, EXIT_PLAN_TOOL]) {
@@ -38,8 +48,11 @@ export function restrictedModeToolNames(
 export async function checkAskToolCall(
 	event: ToolCallEvent,
 	cwd: string,
+	projectTrusted = false,
 ): Promise<string | undefined> {
 	if (SAFE_TOOLS.has(event.toolName)) return undefined;
+	if (ROLE_GATED_TOOLS.has(event.toolName))
+		return checkReadOnlySubagentCall(event, cwd, projectTrusted, "Ask");
 	if (event.toolName === "bash") {
 		return checkAskBashCommand((event.input as { command?: unknown }).command);
 	}
@@ -59,8 +72,11 @@ export async function checkPlanToolCall(
 	event: ToolCallEvent,
 	cwd: string,
 	activePlanRelativePath: string | undefined,
+	projectTrusted = false,
 ): Promise<string | undefined> {
 	if (SAFE_TOOLS.has(event.toolName)) return undefined;
+	if (ROLE_GATED_TOOLS.has(event.toolName))
+		return checkReadOnlySubagentCall(event, cwd, projectTrusted, "Plan");
 	if (!PATH_GATED_TOOLS.has(event.toolName)) {
 		return `Rejected: "${event.toolName}" is not allowed in plan mode.`;
 	}

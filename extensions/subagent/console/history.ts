@@ -1,7 +1,6 @@
-import { existsSync, readdirSync } from "node:fs";
-import { join } from "node:path";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
 import type { SubagentTranscriptEntry } from "../../shared/subagent/registry.js";
+import { latestSessionFile } from "../../shared/subagent/run-paths.js";
 
 interface ContentBlock {
 	type?: unknown;
@@ -18,19 +17,6 @@ interface StoredMessage {
 	toolName?: unknown;
 	details?: unknown;
 	isError?: unknown;
-}
-
-function latestSessionPath(runDir: string): string | undefined {
-	const sessionsDir = join(runDir, "sessions");
-	if (!existsSync(sessionsDir)) return undefined;
-	try {
-		const names = readdirSync(sessionsDir)
-			.filter((name) => name.endsWith(".jsonl"))
-			.sort((left, right) => right.localeCompare(left));
-		return names[0] ? join(sessionsDir, names[0]) : undefined;
-	} catch {
-		return undefined;
-	}
 }
 
 function contentBlocks(content: unknown): ContentBlock[] {
@@ -110,7 +96,7 @@ function appendToolResult(
 export function readHistoricalEntries(
 	runDir: string,
 ): SubagentTranscriptEntry[] {
-	const sessionPath = latestSessionPath(runDir);
+	const sessionPath = latestSessionFile(runDir);
 	if (!sessionPath) return [];
 	try {
 		const manager = SessionManager.open(sessionPath);

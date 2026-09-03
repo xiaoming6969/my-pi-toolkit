@@ -33,6 +33,7 @@ export async function harness(
 	await mkdir(join(dir, "sessions"));
 	const child = new FakeChild();
 	const prompts: string[] = [];
+	const steers: string[] = [];
 	let abortCount = 0;
 	let buffer = "";
 	child.stdin.on("data", (chunk) => {
@@ -44,6 +45,8 @@ export async function harness(
 			const command = JSON.parse(line) as { type?: string; message?: string };
 			if (command.type === "prompt" && command.message)
 				prompts.push(command.message);
+			if (command.type === "steer" && command.message)
+				steers.push(command.message);
 			if (command.type === "abort") abortCount++;
 		}
 	});
@@ -68,6 +71,7 @@ export async function harness(
 	return {
 		child,
 		prompts,
+		steers,
 		get abortCount() {
 			return abortCount;
 		},

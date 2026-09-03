@@ -1,77 +1,15 @@
-import { spawn } from "node:child_process";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { fileURLToPath } from "node:url";
-import { truncateHead } from "@earendil-works/pi-coding-agent";
-import {
-	appendThinkingCliArgs,
-	runTerminalSubagent,
-} from "../../shared/subagent/terminal-runner.js";
-import {
-	resolveRepoSearchExtensionPaths,
-	REPO_SEARCH_TOOLS,
-} from "./pi-lens.js";
-import { REPO_SEARCH_PROMPT } from "./prompt.js";
+import { truncateSubagentOutput } from "../../shared/subagent/output-limit.js";
+import { BUILTIN_SUBAGENT_ROLES } from "../roles/builtin.js";
+import { runRoleSubagent } from "../roles/launch.js";
 import type {
 	RepoSearchDetails,
 	RepoSearchRunConfig,
 	RepoSearchRunResult,
 } from "./types.js";
 
-const READ_ONLY_TOOLS = REPO_SEARCH_TOOLS.join(",");
-const EXTENSION_DIR = path.dirname(fileURLToPath(import.meta.url));
-const GITIGNORE_GUARD_EXTENSION = path.resolve(
-	EXTENSION_DIR,
-	"gitignore-guard.ts",
-);
-const MAX_RESULT_BYTES = 50 * 1024;
-const MAX_RESULT_LINES = 2000;
-
-function getPiInvocation(args: string[]): { command: string; args: string[] } {
-	const currentScript = process.argv[1];
-	if (
-		currentScript &&
-		!currentScript.startsWith("/$bunfs/root/") &&
-		fs.existsSync(currentScript)
-	)
-		return { command: process.execPath, args: [currentScript, ...args] };
-	const executable = path.basename(process.execPath).toLowerCase();
-	return /^(node|bun)(\.exe)?$/.test(executable)
-		? { command: "pi", args }
-		: { command: process.execPath, args };
-}
-
-function finalAssistantText(messages: unknown[]): string {
-	for (let index = messages.length - 1; index >= 0; index--) {
-		const message = messages[index] as {
-			role?: string;
-			content?: Array<{ type?: string; text?: string }>;
-		};
-		if (message.role !== "assistant" || !Array.isArray(message.content))
-			continue;
-		const texts = message.content.flatMap((part) =>
-			part.type === "text" && typeof part.text === "string" ? [part.text] : [],
-		);
-		if (texts.length > 0) return texts.join("\n");
-	}
-	return "";
-}
-
-function truncateResult(output: string): {
-	content: string;
-	truncated: boolean;
-} {
-	const truncation = truncateHead(output, {
-		maxBytes: MAX_RESULT_BYTES,
-		maxLines: MAX_RESULT_LINES,
-	});
-	return {
-		content: truncation.truncated
-			? `${truncation.content}\n\n[Repo Search 子 Agent 输出已截断；完整输出保存在工具 details 中。]`
-			: truncation.content,
-		truncated: truncation.truncated,
-	};
-}
+const EXPLORE_ROLE = BUILTIN_SUBAGENT_ROLES.find((role) => role.name === "explore")!;
+const TRUNCATED_NOTICE =
+	"[Repo Search 子 Agent 输出已截断；完整输出保存在工具 details 中。]";
 
 function makeDetails(options: {
 	task: string;
@@ -103,6 +41,7 @@ function makeDetails(options: {
 	};
 }
 
+/** `repo_search` is the built-in `explore` role with the Repo Search model config. */
 export async function runRepoSearchSubagent(options: {
 	cwd: string;
 	task: string;
@@ -112,22 +51,14 @@ export async function runRepoSearchSubagent(options: {
 	signal?: AbortSignal;
 	onUpdate?: (details: RepoSearchDetails) => void;
 }): Promise<RepoSearchRunResult> {
-	const optionalExtensions = await resolveRepoSearchExtensionPaths(
-		options.cwd,
-		options.config.projectTrusted ?? false,
-		options.config.model,
-	);
-	const extensionPaths = [GITIGNORE_GUARD_EXTENSION, ...optionalExtensions];
-	const terminal = await runTerminalSubagent({
+	const result = await runRoleSubagent({
+		role: EXPLORE_ROLE,
 		cwd: options.cwd,
 		title: "Repo Search Subagent",
 		model: options.config.model,
 		thinkingLevel: options.config.thinkingLevel,
 		task: `Repository search task: ${options.task}`,
-		systemPrompt: REPO_SEARCH_PROMPT,
-		tools: READ_ONLY_TOOLS,
-		extensionPaths,
-		disableContextFiles: true,
+		projectTrusted: options.config.projectTrusted ?? false,
 		presentation: options.config.presentation,
 		keepOpen: options.keepOpen,
 		parentSessionId: options.parentSessionId,
@@ -147,146 +78,23 @@ export async function runRepoSearchSubagent(options: {
 				}),
 			),
 	});
-	if (terminal) {
-		const visible = truncateResult(terminal.output);
-		return {
-			content: terminal.reusable
-				? `${visible.content}\n\nReusable subagentId: ${terminal.subagentId} (turn ${terminal.turn}).`
-				: visible.content,
-			details: makeDetails({
-				task: options.task,
-				config: options.config,
-				output: terminal.output,
-				toolCalls: terminal.toolCalls,
-				exitCode: 0,
-				stderr: "",
-				truncated: visible.truncated,
-				subagentId: terminal.subagentId,
-				reusable: terminal.reusable,
-				turn: terminal.turn,
-				runDir: terminal.runDir,
-			}),
-		};
-	}
-
-	const args = [
-		"--mode",
-		"json",
-		"-p",
-		"--no-session",
-		"--no-extensions",
-		"--extension",
-		GITIGNORE_GUARD_EXTENSION,
-		...optionalExtensions.flatMap((extension) => ["--extension", extension]),
-		"--no-skills",
-		"--no-prompt-templates",
-		"--no-context-files",
-		"--tools",
-		READ_ONLY_TOOLS,
-		"--models",
-		options.config.model,
-		"--model",
-		options.config.model,
-		"--system-prompt",
-		REPO_SEARCH_PROMPT,
-	];
-	appendThinkingCliArgs(args, options.config.thinkingLevel);
-	args.push(`Repository search task: ${options.task}`);
-	const invocation = getPiInvocation(args);
-	const messages: unknown[] = [];
-	const toolCalls: RepoSearchDetails["toolCalls"] = [];
-	let stderr = "";
-	let buffer = "";
-	let aborted = false;
-
-	const exitCode = await new Promise<number>((resolveExit, reject) => {
-		// Arguments are passed as an array with shell disabled; no user text is executed by a shell.
-		// nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
-		const child = spawn(invocation.command, invocation.args, {
-			cwd: options.cwd,
-			shell: false,
-			stdio: ["ignore", "pipe", "pipe"],
-		});
-		const processLine = (line: string) => {
-			if (!line.trim()) return;
-			let event: {
-				type?: string;
-				message?: {
-					role?: string;
-					content?: Array<{
-						type?: string;
-						name?: string;
-						arguments?: Record<string, unknown>;
-					}>;
-				};
-			};
-			try {
-				event = JSON.parse(line);
-			} catch {
-				return;
-			}
-			if (event.type !== "message_end" || !event.message) return;
-			messages.push(event.message);
-			if (event.message.role === "assistant") {
-				for (const part of event.message.content ?? []) {
-					if (part.type === "toolCall" && part.name)
-						toolCalls.push({
-							name: part.name,
-							arguments: part.arguments ?? {},
-						});
-				}
-			}
-			options.onUpdate?.(
-				makeDetails({
-					task: options.task,
-					config: options.config,
-					output: finalAssistantText(messages),
-					toolCalls,
-					exitCode: -1,
-					stderr,
-				}),
-			);
-		};
-		child.stdout.on("data", (data) => {
-			buffer += data.toString();
-			const lines = buffer.split("\n");
-			buffer = lines.pop() ?? "";
-			for (const line of lines) processLine(line);
-		});
-		child.stderr.on("data", (data) => {
-			stderr += data.toString();
-		});
-		child.on("error", reject);
-		child.on("close", (code) => {
-			if (buffer.trim()) processLine(buffer);
-			resolveExit(code ?? 1);
-		});
-		const stop = () => {
-			aborted = true;
-			child.kill("SIGTERM");
-			const timer = setTimeout(() => child.kill("SIGKILL"), 5000);
-			timer.unref();
-		};
-		if (options.signal?.aborted) stop();
-		else options.signal?.addEventListener("abort", stop, { once: true });
-	});
-	if (aborted) throw new Error("Repo Search 子 Agent 已取消");
-	const output = finalAssistantText(messages);
-	if (exitCode !== 0 || !output)
-		throw new Error(
-			`Repo Search 子 Agent 运行失败（exit ${exitCode}，model ${options.config.model}）: ${stderr.trim() || "未返回结果"}`,
-		);
-	const visible = truncateResult(output);
+	const visible = truncateSubagentOutput(result.output, TRUNCATED_NOTICE);
 	return {
-		content: visible.content,
+		content: result.reusable
+			? `${visible.content}\n\nReusable subagentId: ${result.subagentId} (turn ${result.turn}).`
+			: visible.content,
 		details: makeDetails({
 			task: options.task,
 			config: options.config,
-			output,
-			toolCalls,
-			exitCode,
-			stderr,
+			output: result.output,
+			toolCalls: result.toolCalls,
+			exitCode: result.exitCode,
+			stderr: result.stderr,
 			truncated: visible.truncated,
+			subagentId: result.subagentId,
+			reusable: result.reusable,
+			turn: result.turn,
+			runDir: result.runDir,
 		}),
 	};
 }

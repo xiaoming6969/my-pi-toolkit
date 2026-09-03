@@ -6,6 +6,8 @@ import type {
 	ToolRenderResultOptions,
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
+import { assertNotSubagentChild } from "../../shared/subagent/child-guard.js";
+import { acquireSubagentSlot } from "../../shared/subagent/slot-semaphore.js";
 import { thinkingLevelForModel } from "../../shared/subagent/thinking-level.js";
 import { previewLines, resultText, formatModelWithThinking } from "../../shared/tui/tool-format.js";
 import { toolCall, toolResult } from "../../shared/tui/tool-render.js";
@@ -74,34 +76,42 @@ export default function repoSearchSubagentExtension(pi: ExtensionAPI) {
 				| undefined,
 			ctx: ExtensionContext,
 		) {
+			assertNotSubagentChild("派生子 Agent");
 			const config = resolveRepoSearchConfig(
 				ctx.cwd,
 				ctx.isProjectTrusted(),
 				ctx.model,
 			);
-			const result = await runRepoSearchSubagent({
-				cwd: ctx.cwd,
-				task: params.task,
-				config: {
-					...config,
-					thinkingLevel: thinkingLevelForModel(
-						config.model,
-						ctx.thinkingLevel,
-						ctx.modelRegistry,
-					),
-				},
-				parentSessionId: ctx.sessionManager.getSessionId(),
-				signal,
-				onUpdate: (details) =>
-					onUpdate?.({
-						content: [{ type: "text", text: runningText(details) }],
-						details,
-					}),
-			});
-			return {
-				content: [{ type: "text" as const, text: result.content }],
-				details: result.details,
-			};
+			const release = await acquireSubagentSlot(
+				signal ?? new AbortController().signal,
+			);
+			try {
+				const result = await runRepoSearchSubagent({
+					cwd: ctx.cwd,
+					task: params.task,
+					config: {
+						...config,
+						thinkingLevel: thinkingLevelForModel(
+							config.model,
+							ctx.thinkingLevel,
+							ctx.modelRegistry,
+						),
+					},
+					parentSessionId: ctx.sessionManager.getSessionId(),
+					signal,
+					onUpdate: (details) =>
+						onUpdate?.({
+							content: [{ type: "text", text: runningText(details) }],
+							details,
+						}),
+				});
+				return {
+					content: [{ type: "text" as const, text: result.content }],
+					details: result.details,
+				};
+			} finally {
+				release();
+			}
 		},
 
 		renderCall(args: { task?: string }, theme: Theme) {

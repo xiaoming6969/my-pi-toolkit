@@ -1,6 +1,169 @@
 # Subagent
 
-由 `ming-core` 注册的子 Agent 模块：只读 `repo_search`、按精确 ID 续接的 `subagent_followup`，以及 `/subagents` / `Alt+A` 只读 Overlay。RPC 运行时仍在 [`../shared/subagent/`](../shared/subagent/)；TAPD Review 与 Multi Task 继续作为调用方，不并入本目录。
+由 `ming-core` 注册的子 Agent 模块：通用 `spawn_subagent`、只读 `repo_search`、按精确 ID 续接的 `subagent_followup`，以及 `/subagents` / `Alt+A` 只读 Overlay。RPC 运行时仍在 [`../shared/subagent/`](../shared/subagent/)；TAPD Review 与 Multi Task 继续作为调用方，不并入本目录。
+
+## `spawn_subagent` 与角色
+
+`spawn_subagent` 把一个自包含任务委派给独立上下文窗口中的子 Agent。参数：
+
+```json
+{
+  "prompt": "完整任务描述",
+  "description": "3-8 个词的短标签",
+  "role": "explore",
+  "cwd": "可选，默认主 Agent 当前目录",
+  "background": false,
+  "relevantFiles": ["src/auth/", "src/api/login.ts"],
+  "constraints": ["不要修改文件"],
+  "expectedOutput": "Markdown，含文件与行号证据",
+  "resumeFrom": "可选，已结束子 Agent 的 subagentId"
+}
+```
+
+### 结构化 brief 与结果契约
+
+`relevantFiles`、`constraints`、`expectedOutput` 由共享层渲染为子 Agent 的首条 user message（`Relevant files:` / `Constraints:` / `Expected output:` 分节），主 Agent 不必把这些信息揉进 prose；不传时 prompt 保持原样。
+
+每次运行结束后，完整报告写入 `runDir/report.md`（`runDir` 位于系统临时目录的 `my-pi-toolkit-subagents/<subagentId>/`）。返回主 Agent 的文本仍受 50 KB / 2000 行截断，被截断时会附上 `Full report: <path>`，主 Agent 可用 `read` 直接读取。
+
+角色可以声明 `outputs` 文件契约：
+
+```json
+{
+  "capability": "read-only",
+  "prompt": "...",
+  "outputs": [
+    { "name": "plan.md", "description": "Ordered implementation steps", "required": true },
+    { "name": "risks.md", "description": "Open questions" }
+  ]
+}
+```
+
+启动前共享层创建 `runDir/outputs/`，并在 brief 中列出每个文件的精确路径；结束后工具结果附 `Output files:` 列表（存在的给路径，缺失的标 `missing`，必填项标 `(required)`），工具 `details.outputs` 保留结构化信息。这样 review → implement 等链式任务可以直接把上一步的产物路径交给下一步。
+
+### `resumeFrom`：以已完成子 Agent 为起点
+
+`resumeFrom` 传入本会话内已结束（completed / failed / cancelled）子 Agent 的 `subagentId`，新子 Agent 会用 Pi 的 `--fork` 复制其 session transcript 后再以**新的角色、system prompt 与工具白名单**继续，例如把 `explore` 的调研结果直接交给 `implement`，或让 `review` 基于 `implement` 的完整过程做独立审查。规则：
+
+- 来源必须属于当前主会话且已停止运行；仍在运行时报错，等待其结束后再调用。
+- 来源可以是 live 可复用子 Agent、后台任务，或仍在 `retainCompletedMinutes` 保留期内的运行目录。
+- `inline` 一次性子进程不保存 session，不能作为来源。
+- 带 `resumeFrom` 的子 Agent 始终走 managed RPC，忽略 `inline` / `split` / `tab` 配置。
+
+`resumeFrom` 与 `subagent_followup` 的区别：follow-up 在同一进程、同一 profile 上继续下一 turn；`resumeFrom` 是新进程、新角色，只继承对话记录。
+
+### `isolation: "worktree"`：在独立 worktree 中修改文件
+
+`isolation: "worktree"` 让子 Agent 在复用 `ming-core/worktree` 创建的独立 Git worktree 中运行：从当前 `HEAD` 派生分支 `subagent/<id 前 8 位>`，目录位于 `<repo>-worktrees/subagent-<id>`。子 Agent 的 brief 会说明它在该 worktree 内工作，不能切分支或触碰其它目录。运行结束后 worktree **保留**，工具结果给出三条命令：
+
+```text
+Review with:    git -C <root> diff HEAD...subagent/xxxxxxxx
+Integrate with: git -C <root> merge subagent/xxxxxxxx
+Discard with:   git -C <root> worktree remove --force <path> && git -C <root> branch -D subagent/xxxxxxxx
+```
+
+由主 Agent（或用户）决定合并还是丢弃。它与 `cwd` 互斥，要求当前目录在 Git 仓库内；适合 `implement` 等会写文件的角色，是共享工作区 + 路径守卫之外更硬的隔离边界。
+
+### 角色级模型路由
+
+除角色定义里的 `model` / `thinkingLevel` 外，`~/.pi/agent/ming-core.json` 的 `subagents.roleModels` 可以把任意角色（含内置角色）路由到指定模型而无需重新定义角色：
+
+```json
+{
+  "subagents": {
+    "roleModels": {
+      "explore": "provider/cheap-model",
+      "review": "provider/strong-model"
+    }
+  }
+}
+```
+
+优先级：`roleModels` > 角色定义的 `model` > `explore` 的 `repoSearch` 配置 > 主 Agent 当前模型。指向不存在的角色或空字符串会明确报错。
+
+### 与 Ask / Plan 模式、Todo、任务耗时的集成
+
+- **chat-mode**：Ask / Plan 模式允许 `spawn_subagent`，但只放行能力为 `read-only` 的角色（含自定义角色）；`subagent_followup` 只放行目标 live 子 Agent 以 `read-only` 启动的情况；`subagent_wait` / `subagent_output` / `subagent_cancel` 始终可用。写角色在这两个模式下会被拦截并提示 `Shift+Tab` 切换。
+- **agent-todos**：`agent_todo_write` 的条目可带 `subagentId`。后台任务或 live 子 Agent 成功完成时，关联的 pending / in_progress 条目自动置为 completed，面板即时刷新，并以 `agent-todos-subagent-sync` 会话条目持久化；失败或取消不会自动改状态。推荐流程：`spawn_subagent(background: true)` → `agent_todo_write(merge: true, todos: [{ id, content, status: "in_progress", subagentId }])`。
+- **task-duration**：任务结束行显示 `本次任务耗时 X · 子 Agent 运行 Y，峰值 N 个并行`，其中 Y 是本轮任务中至少有一个子 Agent 在运行的墙钟时间（并行不重复计）。
+
+### 后台运行与等待原语
+
+`background: true` 时工具立即返回 `subagentId`，主 Agent 可以继续做其它独立工作；子 Agent 完成、失败或被取消后，扩展会向主会话排队一条 `subagent-complete` follow-up（与 `multi_task start` 相同机制），要求主 Agent 调用 `subagent_output` 读取报告。不要轮询。配套工具：
+
+| 工具 | 参数 | 作用 |
+| --- | --- | --- |
+| `subagent_wait` | `subagentIds[]`（≤ 20）、`mode: wait_all \| wait_any`（默认 `wait_all`）、`timeoutMs`（默认 30000，最大 600000） | 阻塞直到全部 / 任一后台子 Agent 结束或超时，返回每个 ID 的状态；超时不报错 |
+| `subagent_output` | `subagentId` | 已结束的后台任务返回报告（同样受 50 KB / 2000 行截断，可复用时附 `Reusable subagentId`）；运行中的任务或 live 可复用子 Agent 返回状态、最近工具调用与最新 assistant 文本 |
+| `subagent_cancel` | `subagentId` | 取消排队 / 运行中的后台任务，或终止 live 可复用子 Agent；已结束时返回成功并说明状态 |
+
+三者都只接受当前主会话创建的 ID。后台任务若使用 managed RPC，同样出现在 `/subagents` 与 `Alt+A` Overlay 中；主会话 shutdown / reload 会取消本会话所有排队和运行中的后台任务。
+
+### 并发上限
+
+所有启动路径（`spawn_subagent` 前台与后台、`repo_search`、`tapd_review`、Multi Task worker）共用 `shared/subagent/slot-semaphore.ts` 的进程级 6 槽 FIFO 信号量：超出时新任务保持 queued 等待，取消会移出等待队列。`subagent_followup` 续接已存在的子进程，不占用新槽位。
+
+`role` 决定子 Agent 的 system prompt、能力模式与资源加载方式。内置角色：
+
+| 角色 | 能力 | 资源 | 用途 |
+| --- | --- | --- | --- |
+| `explore`（默认） | `read-only` + pi-lens 只读工具 | lean，带 `.gitignore` 守卫，不读上下文文件 | 跨文件检索、调用关系与证据收集；即 `repo_search` 的角色 |
+| `plan` | `read-only` | lean | 只读探索并返回结构化实现计划 |
+| `implement` | `all`（父 Agent 工具快照） | inherit，加载父 Agent 的 extensions / skills | 执行一个独立实现任务并自检 |
+| `review` | `execute`（只读工具 + `bash` 跑 `git diff/log/show`） | lean | 独立审查，按严重级别返回问题；不得让产出方自审 |
+
+lean 角色以 `--no-extensions` 启动，只显式加载 `openai-compat-models`（自定义 provider）、选择 `cursor/*` 模型时的 `pi-cursor` provider，以及 `explore` 的 `.gitignore` 守卫与已启用的 pi-lens；inherit 角色加载父 Agent 的正常资源（可能包含 `ming-core`）。无论哪种模式，`repo_search`、`spawn_subagent`、`subagent_followup`、`subagent_wait` / `subagent_output` / `subagent_cancel`、`multi_task`、`tapd_review` 都不会下发给子进程，子进程还会带 `PI_SUBAGENT_CHILD=1`，因此子 Agent 不能再派生子 Agent（嵌套深度上限 1）。
+
+模型优先级：角色定义的 `model` → `explore` 沿用 `repoSearch` 的项目 / 用户配置 → 主 Agent 当前模型。思考等级取角色 `thinkingLevel` 或主会话当前值，并只在目标模型支持 reasoning 时传递。首轮完成后可复用的子 Agent 会返回 `Reusable subagentId`，用 `subagent_followup` 续接。
+
+### 自定义角色
+
+用户级：`~/.pi/agent/ming-core.json` 的 `subagents.roles`。
+
+```json
+{
+  "subagents": {
+    "roles": {
+      "tester": {
+        "description": "运行测试并解释失败",
+        "capability": "execute",
+        "prompt": "You run the project's tests and explain failures with file and line evidence.",
+        "model": "provider/model-id",
+        "thinkingLevel": "low",
+        "tools": ["lsp_diagnostics"]
+      }
+    }
+  }
+}
+```
+
+受信任项目：`.pi/agents/<name>.md`（从当前目录向上查找最近的 `.pi/agents/`），YAML frontmatter + Markdown 正文作为 system prompt：
+
+```markdown
+---
+description: Project-specific reviewer
+capability: read-only
+model: provider/model-id
+contextFiles: true
+---
+Review changes against docs/architecture.md ...
+```
+
+字段：`capability`（`read-only` / `read-write` / `execute` / `all`，默认 `read-only`）、`resources`（`lean` / `inherit`，`all` 默认 `inherit`）、`prompt` / `promptFile` / 正文、`model`、`thinkingLevel`、`tools`（追加到能力基础集的额外工具）、`repoSearchGuard`、`contextFiles`、`outputs`（文件契约，见上）。角色名只允许小写字母、数字与连字符。优先级：受信任项目 `.pi/agents/*.md` > 用户 `subagents.roles` > 内置角色；同名可覆盖内置角色。未受信任项目的角色文件不会读取。配置非法时 `spawn_subagent` 明确报错，不会静默回退。
+
+## 共享运行时入口
+
+所有子 Agent 调用方（`spawn_subagent`、Repo Search、TAPD Review、TAPD 根因总结、Multi Task worker）都通过 `shared/subagent/run.ts` 的 `runSubagent()` 启动，不再各自拼装 CLI 参数或复制一次性子进程逻辑。角色定义与角色级启动（extension 路径、资源模式）在本模块的 `roles/`；`repo_search` 只是 `explore` 角色加 Repo Search 模型配置的薄封装。
+
+- `capability.ts`：能力模式 → 精确 `--tools` 白名单。`read-only` = `read, grep, find, ls`；`read-write` 追加 `edit, write`；`execute` 追加 `bash`；`all` 使用调用方提供的父 Agent 工具快照。可用 `extraTools` 追加角色专属工具（如 Repo Search 的 pi-lens 只读工具）。所有会派生或操控子 Agent 的父进程控制工具在任何模式下都不会下发给子进程。
+- `child-guard.ts`：所有启动路径为子进程设置 `PI_SUBAGENT_CHILD=1`；`spawn_subagent` / `subagent_followup` 等控制工具在子进程内直接拒绝执行。
+- `slot-semaphore.ts`：进程级 6 槽 FIFO 启动信号量。
+- `background.ts`：后台任务表（queued / running / completed / failed / cancelled）、`wait_any` / `wait_all` 等待与按会话取消；managed RPC 子进程仍由 `registry.ts` 记录。
+- `run.ts`：按 `presentation` 分流到 managed RPC（`manual`）、Windows Terminal（`split` / `tab`），否则回退到 `json-runner.ts` 的一次性 `pi --mode json -p` 子进程。一次性子进程没有 `subagentId`，`reusable` 恒为 `false`。
+- `pi-invocation.ts`：统一决定如何拉起子 Pi（复用父进程入口脚本、PATH 上的 `pi` 或已编译二进制）。
+- `output-limit.ts`：统一 50 KB / 2000 行的返回文本截断；完整输出保留在工具 `details`。
+
+各调用方只声明 `capability`、system prompt、扩展路径与任务文本；工具白名单、扩展隔离与 presentation 回退由共享层保证一致。
 
 `repo_search` 专门探索当前本地代码库。主 Agent 判断本地仓库任务需要跨多个目录、多个文件或梳理分散调用关系时会自动调用；用户也可以通过 `/repo-search <检索任务>` 明确唤起。`multi_task` 的 `kind: "research"` 任务会直接复用同一个 runner，作为 Batch 内的平级只读 worker，而不是由通用 worker 再嵌套调用 `repo_search`。它不能联网，也不用于第三方库、外部 API、官方文档或 GitHub 项目调研；这类任务应优先使用 Context7 或可用的联网搜索工具。`@` 继续保留给文件引用，不作为子 Agent 前缀。
 
@@ -92,7 +255,10 @@ ast_grep_outline, ast_grep_dump
 
 - `/subagents`：打开任务列表。默认显示当前主会话创建的任务，`Tab` 切换全部会话；live 项按实际状态显示 queued 数、当前 turn 运行时长或 Multi worker 的 2 分钟 idle 剩余时间。
 - `Alt+A`：直接进入当前会话最近的活跃子 Agent；没有活跃任务时打开列表。
-- 列表：`↑/↓` 选择，`Enter` 执行默认动作，`C` 请求取消，`X` 终止活跃任务，`D` 清理已退出记录，`Esc` 关闭。
+- 列表：`↑/↓` 选择，`Enter` 执行默认动作，`S` 向 live 子 Agent 发送消息，`C` 请求取消，`X` 终止活跃任务，`D` 清理已退出记录，`Esc` 关闭。
+- 发送消息（`S`）：弹出单行输入框。目标正在运行时通过 Pi RPC `steer` 立即插入当前 turn（transcript 记为 `STEER:`）；目标空闲且可复用时排队为新一轮任务；一次性或其他会话的子 Agent 会被拒绝。子 Agent 的 turn 结果仍只返回给发起它的工具调用，手动排队的一轮只在 Overlay 中可见。
+- Footer：`subagent 2 run · 1 queued · 1 idle` 按状态分组显示当前进程内的子 Agent —— `run` 为正在执行 turn 的 live 子进程与尚未注册进程的后台任务，`queued` 为等待中的 follow-up 与等待槽位的后台任务，`idle` 为保活等待复用的子进程；全部为零时隐藏该段。
+- `spawn_subagent` 工具卡运行时第一条 `└` 行显示 `now: <最近工具调用> · <已运行时长>`，其后是最近 6 条工具调用，`Ctrl+O` 展开全部。
 - 详情：`←/→` 按列表排序循环切换上一个/下一个子 Agent。Header 左侧显示当前位置与标题，右侧显示状态与 queued/运行时长/idle 剩余时间；宽屏且该行仍有剩余列时再显示模型、可复用短 ID/turn 与 thinking，空间不足或窄屏时先隐藏这些元数据，不截断运行时长。`↑/↓`、`PageUp/PageDown`、`Home/End` 滚动，regular 模式还支持鼠标滚轮；Pi 0.84 fullscreen 会先消费 wheel，因此详情 Footer 会隐藏无效的 wheel 提示并保留完整键盘操作。`app.thinking.toggle`（默认 `Ctrl+T`）折叠/恢复 thinking，`app.tools.expand`（默认 `Ctrl+O`）展开工具结果，`Esc` 返回列表。Footer 会显示当前配置的实际键位。详情切换范围沿用打开时的 `CURRENT`/`ALL` 列表范围；`Alt+A` 打开的详情只在当前会话的活跃子 Agent 间切换。
 
 ## 复用相关 Agent

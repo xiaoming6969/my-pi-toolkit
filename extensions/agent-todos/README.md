@@ -27,6 +27,7 @@ agent_todo_write({
     id: string;
     content: string;
     status: "pending" | "in_progress" | "completed" | "cancelled";
+    subagentId?: string; // 可选：关联 spawn_subagent 返回的 subagentId
   }>;
 })
 ```
@@ -37,6 +38,7 @@ agent_todo_write({
 | `merge: true` | 按 `id` 合并；可只传变更项 |
 | `in_progress` | 合并后全表最多 1 条，且必须与当前正在执行的工作一致 |
 | `completed` | 仅表示目标结果已达成并验证；后续发现仍需补做时先重新打开，不允许清单停在下一阶段继续补做上一阶段 |
+| `subagentId` | 关联子 Agent：该子 Agent（后台任务或 live managed 子进程）成功完成时，pending / in_progress 条目自动置为 completed 并刷新面板；失败或取消不改状态。自动写回以 `agent-todos-subagent-sync` 会话条目持久化，参与 `/reload` 与历史重建 |
 
 ## UI
 

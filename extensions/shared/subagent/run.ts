@@ -1,0 +1,108 @@
+import {
+	resolveSubagentTools,
+	type SubagentCapability,
+} from "./capability.js";
+import { runJsonSubagent } from "./json-runner.js";
+import type { SubagentToolCall } from "./registry.js";
+import {
+	runTerminalSubagent,
+	type TerminalSubagentOptions,
+} from "./terminal-runner.js";
+
+export interface SubagentRunOptions
+	extends Omit<TerminalSubagentOptions, "tools"> {
+	capability: SubagentCapability;
+	/** Parent tool snapshot; required when `capability` is `all`. */
+	availableTools?: readonly string[];
+	/** Extra allowlisted tools appended to the capability base set. */
+	extraTools?: readonly string[];
+}
+
+export interface SubagentOutputFile {
+	name: string;
+	path: string;
+	exists: boolean;
+	required: boolean;
+}
+
+/** What a run left on disk for the parent: report, declared outputs, worktree. */
+export interface SubagentRunArtifacts {
+	reportFile?: string;
+	outputs?: SubagentOutputFile[];
+	worktree?: { root: string; branch: string; path: string };
+}
+
+export interface SubagentRunResult {
+	output: string;
+	model: string;
+	toolCalls: SubagentToolCall[];
+	/** Present for managed runs; one-shot JSON children have no handle. */
+	subagentId?: string;
+	reusable: boolean;
+	turn: number;
+	runDir?: string;
+	exitCode: number;
+	stderr: string;
+	artifacts?: SubagentRunArtifacts;
+}
+
+/**
+ * Single entry point for launching a subagent turn. Resolves the tool
+ * allowlist from the capability mode, prefers the configured presentation
+ * (managed RPC or Windows Terminal), and falls back to a one-shot JSON child
+ * when the presentation is inline or the terminal launch was declined.
+ */
+export async function runSubagent(
+	options: SubagentRunOptions,
+): Promise<SubagentRunResult> {
+	const { capability, availableTools, extraTools, ...launch } = options;
+	const tools = resolveSubagentTools({
+		capability,
+		availableTools,
+		extraTools,
+	}).join(",");
+	// A forked transcript needs a persistent session, which only the managed
+	// RPC and terminal paths provide; the one-shot JSON child is sessionless.
+	const terminal = await runTerminalSubagent({
+		...launch,
+		tools,
+		capability,
+		presentation: launch.forkSessionFile ? "manual" : launch.presentation,
+	});
+	if (terminal)
+		return {
+			...terminal,
+			model: terminal.model ?? options.model,
+			exitCode: 0,
+			stderr: "",
+		};
+
+	const oneShot = await runJsonSubagent({
+		cwd: launch.cwd,
+		title: launch.title,
+		model: launch.model,
+		thinkingLevel: launch.thinkingLevel,
+		task: launch.task,
+		systemPrompt: launch.systemPrompt,
+		tools,
+		extensionPaths: launch.extensionPaths,
+		loadDefaultResources: launch.loadDefaultResources,
+		disableContextFiles: launch.disableContextFiles,
+		signal: launch.signal,
+		onUpdate: ({ toolCalls }) =>
+			launch.onUpdate?.({
+				status: "running",
+				toolCalls,
+				subagentId: launch.runId,
+				reusable: false,
+				turn: 1,
+			}),
+	});
+	return {
+		...oneShot,
+		model: launch.model,
+		subagentId: launch.runId,
+		reusable: false,
+		turn: 1,
+	};
+}

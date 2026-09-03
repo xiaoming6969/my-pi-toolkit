@@ -27,6 +27,7 @@ BUILD → PLAN → ASK → DEBUG → BUILD
 Plan 用于实施前的只读调研与方案审批：
 
 - 只启用登记的只读工具、Plan 生命周期工具、`ask_user_choice` 和受路径保护的 `write` / `edit`。
+- 子 Agent 工具按能力放行：`spawn_subagent` 只允许能力为 `read-only` 的角色（如内置 `explore` / `plan`），`subagent_followup` 只允许续接以 `read-only` 启动的 live 子 Agent，`subagent_wait` / `subagent_output` / `subagent_cancel` 始终可用；写角色会被拒绝并提示切换模式。
 - 遇到会实质影响方案的待确认决策时，Agent 在写 Plan 前收集全部当前已知决策并只调用一次 `ask_user_choice`。多题问卷使用 Tab / Shift+Tab 切换，全部回答后集中提交；每题展示 2～5 个候选方案，可标记一个推荐项，最后固定提供“其他（自定义输入）”。已有代码证据可以确认的内容不重复询问。
 - 用户取消选择时停止规划，不推测答案，也不进入 Plan 审批。
 - `write` / `edit` 只能修改本 session 固定的 `plan.md`。
@@ -122,6 +123,7 @@ TAPD 的 `/tapd analyze`、`/tapd design`、`/tapd collaboration` 会写入 `cha
 Ask 用于问答、解释、诊断和只读调研：
 
 - 启用登记的只读工具、受路径保护的 `write` / `edit`，以及严格白名单约束的 Bash 查询。
+- 子 Agent 工具与 Plan 相同：只放行 `read-only` 角色的 `spawn_subagent` 和只读 live 子 Agent 的 `subagent_followup`，观察类控制工具始终可用。
 - Bash 仅允许单条、无 shell 组合语法的查询命令：HTTP(S) GET/HEAD `curl`、stdout `defuddle parse`、只读 Git、GitHub `view`/`list`、npm/pnpm 包元数据查询。
 - 禁止管道、重定向、命令串联、命令替换、变量展开、通配符、上传/请求写操作、输出文件、Git external diff/textconv、AST 替换及未登记命令；不在白名单中的 Bash 默认拒绝。
 - `write` / `edit` 仍只能修改当前项目 `.pi/**`。

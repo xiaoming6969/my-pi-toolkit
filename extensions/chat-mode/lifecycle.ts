@@ -9,7 +9,6 @@ import type {
 	KeybindingsManager,
 	SessionCompactEvent,
 	SessionStartEvent,
-	ToolCallEvent,
 } from "@earendil-works/pi-coding-agent";
 import type { EditorTheme, TUI } from "@earendil-works/pi-tui";
 import type { DebugSessionCollector } from "./debug-session.js";
@@ -33,7 +32,6 @@ import {
 	ENSURE_ASK_FOR_DOCS_CONSUMED_ENTRY,
 	wantsAskModeForDocs,
 } from "./ensure-ask-for-docs.js";
-import { checkAskToolCall, checkPlanToolCall } from "./policy.js";
 import {
 	ASK_MODE_PROMPT,
 	BUILD_MODE_PROMPT,
@@ -44,6 +42,7 @@ import {
 	planReminderText,
 } from "./prompt.js";
 import { getChatMode, isRestrictedMode, type ChatMode } from "./state.js";
+import { createToolCallHandler } from "./tool-call-guard.js";
 
 export const CHAT_MODE_STATE_ENTRY = "chat-mode-state";
 const EPHEMERAL_PLAN_ROOT = resolve(tmpdir(), "pi-plan-sessions");
@@ -80,7 +79,10 @@ export function registerChatModeLifecycle(
 	pi.on("session_compact", createSessionCompactHandler(options));
 	pi.on("before_agent_start", createBeforeAgentStartHandler(pi, options));
 	pi.on("context", createContextHandler(options));
-	pi.on("tool_call", createToolCallHandler(options));
+	pi.on(
+		"tool_call",
+		createToolCallHandler(() => options.getPlan()?.absolutePath),
+	);
 	pi.on("agent_settled", (_event: AgentSettledEvent, ctx: ExtensionContext) => {
 		if (getChatMode() === "debug") void options.openDebugPanel(ctx);
 	});
@@ -280,21 +282,5 @@ function createContextHandler(options: ChatModeLifecycleOptions) {
 				},
 			],
 		};
-	};
-}
-
-function createToolCallHandler(options: ChatModeLifecycleOptions) {
-	return async (event: ToolCallEvent, ctx: ExtensionContext) => {
-		const mode = getChatMode();
-		let reason: string | undefined;
-		if (mode === "ask") reason = await checkAskToolCall(event, ctx.cwd);
-		if (mode === "plan") {
-			reason = await checkPlanToolCall(
-				event,
-				ctx.cwd,
-				options.getPlan()?.absolutePath,
-			);
-		}
-		return reason ? { block: true, reason } : undefined;
 	};
 }

@@ -5,11 +5,8 @@ import {
 	type ResolvedResource,
 } from "@earendil-works/pi-coding-agent";
 
-export const REPO_SEARCH_TOOLS = [
-	"read",
-	"grep",
-	"find",
-	"ls",
+/** Read-only pi-lens tools appended to the `read-only` capability base set. */
+export const REPO_SEARCH_PI_LENS_TOOLS = [
 	"lens_diagnostics",
 	"lsp_diagnostics",
 	"symbol_search",
@@ -48,11 +45,12 @@ export function extractPiLensExtensionPaths(
 export function extractRepoSearchExtensionPaths(
 	resources: ResolvedResource[],
 	model: string,
+	includePiLens = true,
 ): string[] {
 	return resources.flatMap((resource) => {
 		if (!resource.enabled) return [];
 		if (/^npm:pi-lens(?:@[^/]+)?$/.test(resource.metadata.source))
-			return [resource.path];
+			return includePiLens ? [resource.path] : [];
 		if (
 			model.startsWith("cursor/") &&
 			/^npm:@rahularya01\/pi-cursor(?:@[^/]+)?$/.test(resource.metadata.source)
@@ -66,6 +64,7 @@ export async function resolveRepoSearchExtensionPaths(
 	cwd: string,
 	projectTrusted: boolean,
 	model: string,
+	includePiLens = true,
 ): Promise<string[]> {
 	try {
 		const settingsManager = SettingsManager.create(cwd, getAgentDir(), {
@@ -77,7 +76,11 @@ export async function resolveRepoSearchExtensionPaths(
 			settingsManager,
 		});
 		const resources = await packageManager.resolve(async () => "skip");
-		return extractRepoSearchExtensionPaths(resources.extensions, model);
+		return extractRepoSearchExtensionPaths(
+			resources.extensions,
+			model,
+			includePiLens,
+		);
 	} catch {
 		// Optional package resolution failures degrade to the isolated base tools.
 		return [];

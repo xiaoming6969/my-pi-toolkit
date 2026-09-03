@@ -1,46 +1,16 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
-import { copyFile, mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import { basename, join } from "node:path";
-import { SUBAGENT_RUNS_ROOT } from "./run-paths.js";
+import { join } from "node:path";
+import { SUBAGENT_CHILD_ENV } from "./child-guard.js";
+import { getPiInvocation } from "./pi-invocation.js";
+import { prepareTaskArtifacts, SUBAGENT_RUNS_ROOT } from "./run-paths.js";
 import { RpcSubagentSession } from "./rpc-session.js";
 import {
 	appendThinkingCliArgs,
 	type TerminalSubagentOptions,
 	type TerminalSubagentResult,
 } from "./terminal-runner.js";
-
-function getPiInvocation(args: string[]): { command: string; args: string[] } {
-	const currentScript = process.argv[1];
-	if (
-		currentScript &&
-		!currentScript.startsWith("/$bunfs/root/") &&
-		existsSync(currentScript)
-	)
-		return { command: process.execPath, args: [currentScript, ...args] };
-	const executable = basename(process.execPath).toLowerCase();
-	return /^(node|bun)(\.exe)?$/.test(executable)
-		? { command: "pi", args }
-		: { command: process.execPath, args };
-}
-
-async function prepareTask(
-	runDir: string,
-	task: string,
-	artifactFiles: string[],
-): Promise<string> {
-	let prepared = task;
-	const artifactsDir = join(runDir, "artifacts");
-	await mkdir(artifactsDir, { recursive: true, mode: 0o700 });
-	for (let index = 0; index < artifactFiles.length; index += 1) {
-		const source = artifactFiles[index];
-		const destination = join(artifactsDir, `${index + 1}-${basename(source)}`);
-		await copyFile(source, destination);
-		prepared = prepared.split(source).join(destination);
-	}
-	return prepared;
-}
 
 function buildArgs(options: TerminalSubagentOptions, runDir: string): string[] {
 	const args = [
@@ -51,6 +21,7 @@ function buildArgs(options: TerminalSubagentOptions, runDir: string): string[] {
 		"--name",
 		options.title,
 	];
+	if (options.forkSessionFile) args.push("--fork", options.forkSessionFile);
 	if (!options.loadDefaultResources) args.push("--no-extensions");
 	for (const extension of options.extensionPaths ?? [])
 		args.push("--extension", extension);
@@ -102,10 +73,10 @@ export async function runRpcSubagent(
 	options: TerminalSubagentOptions,
 ): Promise<TerminalSubagentResult> {
 	await mkdir(SUBAGENT_RUNS_ROOT, { recursive: true, mode: 0o700 });
-	const id = randomUUID();
+	const id = options.runId ?? randomUUID();
 	const runDir = join(SUBAGENT_RUNS_ROOT, id);
 	await mkdir(join(runDir, "sessions"), { recursive: true, mode: 0o700 });
-	const task = await prepareTask(
+	const task = await prepareTaskArtifacts(
 		runDir,
 		options.task,
 		options.artifactFiles ?? [],
@@ -116,7 +87,7 @@ export async function runRpcSubagent(
 	// nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
 	const child = spawn(invocation.command, invocation.args, {
 		cwd: options.cwd,
-		env: { ...process.env, ...options.env },
+		env: { ...process.env, ...options.env, [SUBAGENT_CHILD_ENV]: "1" },
 		shell: false,
 		stdio: ["pipe", "pipe", "pipe"],
 	});

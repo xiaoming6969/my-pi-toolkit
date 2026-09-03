@@ -21,7 +21,7 @@ import type {
 	NormalizedMultiTaskTask,
 } from "./types.js";
 import { executeWorker } from "./worker-runner.js";
-import { acquireWorkerSlot } from "./worker-semaphore.js";
+import { acquireSubagentSlot } from "../shared/subagent/slot-semaphore.js";
 
 const WORKER_IDLE_TIMEOUT_MS = 2 * 60_000;
 const progressEmitters = new Map<string, ProgressEmitter>();
@@ -91,7 +91,7 @@ async function executeBatch(options: {
 		if (cursor >= batch.workers.length || batch.cancelRequested) return;
 		const worker = batch.workers[cursor++];
 		try {
-			const release = await acquireWorkerSlot(worker.controller.signal);
+			const release = await acquireSubagentSlot(worker.controller.signal);
 			try {
 				await executeWorker({
 					batch,

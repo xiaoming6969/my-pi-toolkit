@@ -16,8 +16,8 @@
 
 | 模块 | 说明 | 文档 |
 | --- | --- | --- |
-| Multi Task | 对独立、非重叠文件任务运行后台并行 worker；所有 Batch 共享进程级固定 6 槽 FIFO 上限，完成后可凭 worker `subagentId` 继续相关任务 | [`multi-task/README.md`](multi-task/README.md) |
-| Subagent | 只读 Repo Search、`/subagents` / `Alt+A` Overlay 与 `subagent_followup`；按精确 ID 串行复用当前主会话内的 managed RPC Agent | [`subagent/README.md`](subagent/README.md) |
+| Multi Task | 对独立、非重叠文件任务运行后台并行 worker；与其它子 Agent 工具共享进程级固定 6 槽 FIFO 上限，完成后可凭 worker `subagentId` 继续相关任务 | [`multi-task/README.md`](multi-task/README.md) |
+| Subagent | 角色化 `spawn_subagent`（内置 explore / plan / implement / review，支持用户与项目自定义角色）、只读 Repo Search、`/subagents` / `Alt+A` Overlay 与 `subagent_followup`；按精确 ID 串行复用当前主会话内的 managed RPC Agent | [`subagent/README.md`](subagent/README.md) |
 | Session Branch Guard | 第一条用户消息后记录 Git 分支；resume 或新终端打开旧会话时若不一致，可选切回或改绑 | [`session-branch-guard/README.md`](session-branch-guard/README.md) |
 | Worktree | `ming-core` 内置的 worktree 创建、应用和删除命令 | [`ming-core/worktree/`](ming-core/worktree/) |
 | Agent Todos | Cursor TodoWrite 风格任务清单，editor 上方完整进度 | [`agent-todos/README.md`](agent-todos/README.md) |

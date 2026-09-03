@@ -1,7 +1,6 @@
 import { runRepoSearchSubagent } from "../subagent/repo-search/runner.js";
 import type { RepoSearchRunConfig } from "../subagent/repo-search/types.js";
-import { runRpcSubagent } from "../shared/subagent/rpc-runner.js";
-import type { TerminalSubagentUpdate } from "../shared/subagent/terminal-runner.js";
+import { runSubagent } from "../shared/subagent/run.js";
 import { buildWorkerTask, MULTI_TASK_WORKER_PROMPT } from "./prompt.js";
 import type { MultiTaskBatch, MultiTaskWorker } from "./types.js";
 
@@ -22,23 +21,27 @@ async function runImplementation(
 	extensionPaths: string[],
 	emitProgress: () => void,
 ): Promise<void> {
-	const result = await runRpcSubagent({
+	const result = await runSubagent({
 		cwd: batch.cwd,
 		title: `Multi Task · ${worker.id}`,
 		model: worker.model,
 		thinkingLevel: worker.thinkingLevel,
 		task: buildWorkerTask(worker.task, worker.paths),
 		systemPrompt: MULTI_TASK_WORKER_PROMPT,
-		tools: batch.implementationTools.join(","),
+		capability: "all",
+		availableTools: batch.implementationTools,
 		extensionPaths,
 		loadDefaultResources: true,
+		// Batch progress lives in one aggregated tool card, so workers always
+		// run as managed RPC children regardless of the Repo Search presentation.
+		presentation: "manual",
 		parentSessionId: batch.parentSessionId,
 		keepOpen: batch.keepOpen,
 		signal: worker.controller.signal,
 		env: {
 			PI_MULTI_TASK_ALLOWED_PATHS: JSON.stringify(worker.paths),
 		},
-		onUpdate: (update: TerminalSubagentUpdate) => {
+		onUpdate: (update) => {
 			worker.progress = update.status;
 			worker.toolCalls = update.toolCalls.slice(-MAX_VISIBLE_TOOL_CALLS);
 			worker.subagentId = update.subagentId;

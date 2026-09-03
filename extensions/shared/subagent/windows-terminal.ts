@@ -1,8 +1,9 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
-import { basename, dirname, join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { SUBAGENT_CHILD_ENV } from "./child-guard.js";
+import { getPiInvocation } from "./pi-invocation.js";
 import {
 	appendThinkingCliArgs,
 	type TerminalSubagentOptions,
@@ -12,20 +13,6 @@ const BRIDGE_EXTENSION = resolve(
 	dirname(fileURLToPath(import.meta.url)),
 	"child-bridge.ts",
 );
-
-function getPiInvocation(): { command: string; args: string[] } {
-	const currentScript = process.argv[1];
-	if (
-		currentScript &&
-		!currentScript.startsWith("/$bunfs/root/") &&
-		existsSync(currentScript)
-	)
-		return { command: process.execPath, args: [currentScript] };
-	const executable = basename(process.execPath).toLowerCase();
-	return /^(node|bun)(\.exe)?$/.test(executable)
-		? { command: "pi", args: [] }
-		: { command: process.execPath, args: [] };
-}
 
 function buildPiArgs(
 	options: TerminalSubagentOptions,
@@ -41,6 +28,7 @@ function buildPiArgs(
 		"--extension",
 		BRIDGE_EXTENSION,
 	];
+	if (options.forkSessionFile) args.push("--fork", options.forkSessionFile);
 	for (const extension of options.extensionPaths ?? [])
 		args.push("--extension", extension);
 	args.push("--no-skills", "--no-prompt-templates");
@@ -93,6 +81,7 @@ export async function launchWindowsTerminal(
 			"$ErrorActionPreference = 'Stop'",
 			`$launch = Get-Content -LiteralPath '${launchPath.replace(/'/g, "''")}' -Raw | ConvertFrom-Json`,
 			"$env:PI_SUBAGENT_RUN_DIR = [string]$launch.runDir",
+			`$env:${SUBAGENT_CHILD_ENV} = '1'`,
 			"$env:PI_SUBAGENT_KEEP_OPEN = if ($launch.keepOpen) { '1' } else { '0' }",
 			"Set-Location -LiteralPath ([string]$launch.cwd)",
 			"$piArgs = @($launch.arguments | ForEach-Object { [string]$_ })",

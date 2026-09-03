@@ -1,12 +1,13 @@
-import {
-	truncateHead,
-	type AgentToolResult,
-	type ExtensionAPI,
-	type ExtensionContext,
-	type Theme,
-	type ToolRenderResultOptions,
+import type {
+	AgentToolResult,
+	ExtensionAPI,
+	ExtensionContext,
+	Theme,
+	ToolRenderResultOptions,
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
+import { assertNotSubagentChild } from "../../shared/subagent/child-guard.js";
+import { truncateSubagentOutput } from "../../shared/subagent/output-limit.js";
 import {
 	getLiveSubagent,
 	type LiveSubagentRun,
@@ -20,8 +21,8 @@ import {
 } from "../../shared/tui/tool-format.js";
 import { toolCall, toolResult } from "../../shared/tui/tool-render.js";
 
-const MAX_RESULT_BYTES = 50 * 1024;
-const MAX_RESULT_LINES = 2000;
+const TRUNCATED_NOTICE =
+	"[Subagent follow-up 输出已截断；完整输出保存在工具 details 中。]";
 
 export interface SubagentFollowupDetails {
 	running: boolean;
@@ -57,19 +58,6 @@ function shortId(id: string): string {
 
 function previewToolCall(call: SubagentToolCall): string {
 	return `→ ${call.name} ${compactText(JSON.stringify(call.arguments), 72)}`;
-}
-
-function visibleOutput(output: string): { text: string; truncated: boolean } {
-	const result = truncateHead(output, {
-		maxBytes: MAX_RESULT_BYTES,
-		maxLines: MAX_RESULT_LINES,
-	});
-	return {
-		text: result.truncated
-			? `${result.content}\n\n[Subagent follow-up 输出已截断；完整输出保存在工具 details 中。]`
-			: result.content,
-		truncated: result.truncated,
-	};
 }
 
 export function registerSubagentFollowupTool(pi: ExtensionAPI): void {
@@ -108,6 +96,7 @@ export function registerSubagentFollowupTool(pi: ExtensionAPI): void {
 				| undefined,
 			ctx: ExtensionContext,
 		) {
+			assertNotSubagentChild("续接子 Agent");
 			const run = resolveFollowupRun(
 				params.subagentId,
 				ctx.sessionManager.getSessionId(),
@@ -142,12 +131,12 @@ export function registerSubagentFollowupTool(pi: ExtensionAPI): void {
 					});
 				},
 			});
-			const visible = visibleOutput(result.output);
+			const visible = truncateSubagentOutput(result.output, TRUNCATED_NOTICE);
 			return {
 				content: [
 					{
 						type: "text" as const,
-						text: `${visible.text}\n\nReusable subagentId: ${result.subagentId} (turn ${result.turn}).`,
+						text: `${visible.content}\n\nReusable subagentId: ${result.subagentId} (turn ${result.turn}).`,
 					},
 				],
 				details: {

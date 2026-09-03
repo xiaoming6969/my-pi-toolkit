@@ -3,8 +3,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { waitForLiveSubagent } from "../../shared/subagent/registry.js";
+import { runSubagent } from "../../shared/subagent/run.js";
 import { thinkingLevelForModel } from "../../shared/subagent/thinking-level.js";
-import { runTerminalSubagent } from "../../shared/subagent/terminal-runner.js";
 import { watchLiveSubagentOverlay } from "../../subagent/console/overlay.js";
 import type { TapdConfig } from "../types.js";
 import {
@@ -20,7 +20,6 @@ import {
 import type { TapdKeyword } from "./types.js";
 import { abortError } from "./working-cancel.js";
 
-const READ_ONLY_TOOLS = "read,grep,find,ls,bash";
 const EXTENSION_DIR = dirname(fileURLToPath(import.meta.url));
 const MODEL_EXTENSIONS = [
 	resolve(EXTENSION_DIR, "../../openai-compat-models/index.ts"),
@@ -62,7 +61,7 @@ export async function generateBugRootCauseSummary(options: {
 			signal,
 		});
 		if (signal?.aborted) throw abortError();
-		const running = runTerminalSubagent({
+		const running = runSubagent({
 			cwd,
 			title,
 			model,
@@ -78,7 +77,8 @@ export async function generateBugRootCauseSummary(options: {
 				targetBranch,
 			}),
 			systemPrompt: ROOT_CAUSE_SYSTEM_PROMPT,
-			tools: READ_ONLY_TOOLS,
+			// Read-only inspection plus `bash` for git history lookups; no edit/write.
+			capability: "execute",
 			extensionPaths: MODEL_EXTENSIONS,
 			artifactFiles: [evidence.evidenceFile],
 			disableContextFiles: true,
@@ -112,7 +112,7 @@ export async function generateBugRootCauseSummary(options: {
 			);
 			return null;
 		}
-		const parsed = parseGeneratedCauseAndFix(result?.output ?? "");
+		const parsed = parseGeneratedCauseAndFix(result.output);
 		if (!parsed) {
 			ctx.ui.notify(
 				`Bug ${bug.shortId}: 子 Agent 未返回可用的产生原因/修复，请手动填写`,

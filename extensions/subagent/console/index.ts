@@ -8,8 +8,11 @@ import type {
 	SessionShutdownEvent,
 } from "@earendil-works/pi-coding-agent";
 import {
+	cancelBackgroundSubagentsForSession,
+	subscribeBackgroundSubagents,
+} from "../../shared/subagent/background.js";
+import {
 	abortAllLiveSubagents,
-	activeSubagentCount,
 	listLiveSubagents,
 	subscribeSubagentRegistry,
 	type LiveSubagentRun,
@@ -22,7 +25,9 @@ import type {
 import { openSubagentOverlay } from "./overlay.js";
 import { readHistoricalEntries } from "./history.js";
 import { selectSubagentAction } from "./picker.js";
+import { currentSubagentFooterStatus } from "./footer-status.js";
 import { formatRunLabel, type RunDisplayState } from "./run-label.js";
+import { promptSubagentMessage } from "./steer.js";
 
 interface RunSummary {
 	dir: string;
@@ -126,7 +131,7 @@ async function listRuns(): Promise<RunSummary[]> {
 }
 
 function availableActions(run: RunSummary): string[] {
-	if (run.live) return ["进入子 Agent", "请求取消", "终止子 Agent"];
+	if (run.live) return ["进入子 Agent", "发送消息", "请求取消", "终止子 Agent"];
 	if (run.state === "running") return ["查看详情", "请求取消", "清理任务记录"];
 	return ["查看详情", "清理任务记录"];
 }
@@ -206,6 +211,10 @@ async function showSubagents(ctx: ExtensionContext): Promise<void> {
 			ctx.ui.notify(`已终止 ${run.title}`, "warning");
 			continue;
 		}
+		if (action === "发送消息" && run.live) {
+			await promptSubagentMessage(ctx, run.live);
+			continue;
+		}
 		if (action !== "清理任务记录") continue;
 		if (run.state === "running") {
 			const confirmed = await ctx.ui.confirm(
@@ -251,11 +260,14 @@ export default function subagentConsole(pi: ExtensionAPI): void {
 	let unsubscribeStatus: (() => void) | undefined;
 	pi.on("session_start", (_event: unknown, ctx: ExtensionContext) => {
 		unsubscribeStatus?.();
-		const refreshStatus = () => {
-			const count = activeSubagentCount();
-			ctx.ui.setStatus("subagent", count > 0 ? `subagent*${count}` : undefined);
+		const refreshStatus = () =>
+			ctx.ui.setStatus("subagent", currentSubagentFooterStatus());
+		const unsubscribeRegistry = subscribeSubagentRegistry(refreshStatus);
+		const unsubscribeBackground = subscribeBackgroundSubagents(refreshStatus);
+		unsubscribeStatus = () => {
+			unsubscribeRegistry();
+			unsubscribeBackground();
 		};
-		unsubscribeStatus = subscribeSubagentRegistry(refreshStatus);
 		refreshStatus();
 	});
 	pi.on(
@@ -264,6 +276,7 @@ export default function subagentConsole(pi: ExtensionAPI): void {
 			unsubscribeStatus?.();
 			unsubscribeStatus = undefined;
 			ctx.ui.setStatus("subagent", undefined);
+			cancelBackgroundSubagentsForSession(ctx.sessionManager.getSessionId());
 			abortAllLiveSubagents();
 		},
 	);

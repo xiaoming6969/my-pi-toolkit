@@ -8,6 +8,7 @@ import type {
 import { getMarkdownTheme } from "@earendil-works/pi-coding-agent";
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
+import { acquireSubagentSlot } from "../../shared/subagent/slot-semaphore.js";
 import { thinkingLevelForModel } from "../../shared/subagent/thinking-level.js";
 import {
 	compactText,
@@ -22,8 +23,8 @@ import {
 } from "../../shared/tui/tool-render.js";
 import { loadConfig } from "../core/config.js";
 import { DEFAULT_GIT_WORKFLOW_POLICY } from "../git/policy.js";
-import type { TapdConfig } from "../types.js";
 import { collectTapdReviewContext } from "./context.js";
+import { resolveReviewModel, resolveReviewThinkingLevel } from "./model-config.js";
 import { buildReviewTask } from "./prompt.js";
 import { runReviewSubagent } from "./subagent.js";
 import type {
@@ -36,46 +37,6 @@ interface ReviewToolParams {
 	scope?: TapdReviewScope;
 	baseRef?: string;
 	instructions?: string;
-}
-
-const THINKING_LEVELS = new Set([
-	"off",
-	"minimal",
-	"low",
-	"medium",
-	"high",
-	"xhigh",
-	"max",
-]);
-
-function resolveReviewModel(
-	config: TapdConfig,
-	currentModel: { provider: string; id: string } | undefined,
-): string {
-	const configured = config.review?.model;
-	if (configured !== undefined) {
-		if (typeof configured !== "string" || !configured.trim())
-			throw new Error("tapd.json 中 review.model 必须是非空模型名称");
-		return configured.trim();
-	}
-	if (!currentModel)
-		throw new Error(
-			"未配置 Review 子代理模型，且主 Agent 当前没有可继承的模型",
-		);
-	return `${currentModel.provider}/${currentModel.id}`;
-}
-
-function resolveReviewThinkingLevel(
-	config: TapdConfig,
-	currentThinkingLevel: string | undefined,
-): string | undefined {
-	const configured = config.review?.thinkingLevel;
-	if (configured === undefined) return currentThinkingLevel;
-	if (typeof configured !== "string" || !THINKING_LEVELS.has(configured))
-		throw new Error(
-			"tapd.json 中 review.thinkingLevel 必须是 off、minimal、low、medium、high、xhigh 或 max",
-		);
-	return configured;
 }
 
 function previewToolCall(name: string, args: Record<string, unknown>): string {
@@ -183,20 +144,27 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 				);
 				if (signal?.aborted) throw new Error("TAPD Review 已取消");
 				emit(`Review 子代理运行中：${model}`);
-				const result = await runReviewSubagent({
-					cwd: reviewContext.repositoryRoot,
-					model,
-					thinkingLevel,
-					task: buildReviewTask(reviewContext, params.instructions),
-					presentation: config.review?.presentation,
-					parentSessionId: ctx.sessionManager.getSessionId(),
-					artifactFiles: [reviewContext.contextFile],
-					signal,
-					onToolCall: (name, args) => {
-						toolCalls.push({ name, arguments: args });
-						emit("Review 子代理正在检查代码");
-					},
-				});
+				const releaseSlot = await acquireSubagentSlot(
+					signal ?? new AbortController().signal,
+				);
+				let result: Awaited<ReturnType<typeof runReviewSubagent>>;
+				try {
+					result = await runReviewSubagent({
+						cwd: reviewContext.repositoryRoot,
+						model,
+						thinkingLevel,
+						task: buildReviewTask(reviewContext, params.instructions),
+						parentSessionId: ctx.sessionManager.getSessionId(),
+						artifactFiles: [reviewContext.contextFile],
+						signal,
+						onToolCall: (name, args) => {
+							toolCalls.push({ name, arguments: args });
+							emit("Review 子代理正在检查代码");
+						},
+					});
+				} finally {
+					releaseSlot();
+				}
 				const metadata: TapdReviewMetadata = {
 					storyId: reviewContext.storyId,
 					scope: reviewContext.scope,

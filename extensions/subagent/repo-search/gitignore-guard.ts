@@ -6,10 +6,16 @@ import type {
 	ExtensionContext,
 	ToolCallEvent,
 } from "@earendil-works/pi-coding-agent";
-import { requestedPaths, REPO_SEARCH_TOOLS } from "./pi-lens.js";
+import { resolveSubagentTools } from "../../shared/subagent/capability.js";
+import { requestedPaths, REPO_SEARCH_PI_LENS_TOOLS } from "./pi-lens.js";
 
 const execFileAsync = promisify(execFile);
-const PATH_TOOLS = new Set(REPO_SEARCH_TOOLS);
+const PATH_TOOLS = new Set(
+	resolveSubagentTools({
+		capability: "read-only",
+		extraTools: REPO_SEARCH_PI_LENS_TOOLS,
+	}),
+);
 
 async function findGitRoot(cwd: string): Promise<string | undefined> {
 	try {

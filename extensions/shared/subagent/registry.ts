@@ -1,3 +1,5 @@
+import type { SubagentCapability } from "./capability.js";
+
 export type SubagentRunStatus = "starting" | "running" | "completed" | "failed";
 
 export interface SubagentToolCall {
@@ -8,7 +10,8 @@ export interface SubagentToolCall {
 export interface SubagentTurnUpdate {
 	status: string;
 	toolCalls: SubagentToolCall[];
-	subagentId: string;
+	/** Absent while a one-shot JSON child runs; it has no registry handle. */
+	subagentId?: string;
 	reusable: boolean;
 	turn: number;
 }
@@ -50,6 +53,8 @@ export interface LiveSubagentRun {
 	title: string;
 	model: string;
 	thinkingLevel?: string;
+	/** Capability mode the child was launched with; follow-ups keep it. */
+	capability?: SubagentCapability;
 	cwd: string;
 	status: SubagentRunStatus;
 	startedAt: string;
@@ -65,6 +70,8 @@ export interface LiveSubagentRun {
 		message: string,
 		options?: SubagentRequestOptions,
 	): Promise<SubagentTurnResult>;
+	/** Inject a message into the running turn (Pi RPC `steer`); throws when idle. */
+	steer?(message: string): void;
 	abort(): void;
 	dispose(): void;
 	subscribe(listener: () => void): () => void;

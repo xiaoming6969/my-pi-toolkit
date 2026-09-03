@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { copyFile, mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import { basename, join } from "node:path";
+import { join } from "node:path";
+import type { SubagentCapability } from "./capability.js";
 import {
 	loadSubagentUiConfig,
 	resolvePresentation,
@@ -12,7 +13,7 @@ import type {
 	SubagentTurnUpdate,
 } from "./registry.js";
 import { runRpcSubagent } from "./rpc-runner.js";
-import { SUBAGENT_RUNS_ROOT } from "./run-paths.js";
+import { prepareTaskArtifacts, SUBAGENT_RUNS_ROOT } from "./run-paths.js";
 import { launchWindowsTerminal } from "./windows-terminal.js";
 
 export type TerminalSubagentUpdate = SubagentTurnUpdate;
@@ -26,6 +27,8 @@ export interface TerminalSubagentOptions {
 	task: string;
 	systemPrompt: string;
 	tools: string;
+	/** Capability mode recorded on the live run for mode policies. */
+	capability?: SubagentCapability;
 	extensionPaths?: string[];
 	extraCliArgs?: string[];
 	loadDefaultResources?: boolean;
@@ -33,6 +36,10 @@ export interface TerminalSubagentOptions {
 	artifactFiles?: string[];
 	presentation?: SubagentPresentation;
 	parentSessionId?: string;
+	/** Pre-assigned subagent id so callers can hand out a handle before launch. */
+	runId?: string;
+	/** Fork this session file so the child starts with a prior transcript. */
+	forkSessionFile?: string;
 	keepOpen?: boolean;
 	abortSettleTimeoutMs?: number;
 	env?: Record<string, string>;
@@ -74,23 +81,6 @@ async function cleanupOldRuns(retainMinutes: number): Promise<void> {
 			// A concurrently active run may disappear while cleanup scans it.
 		}
 	}
-}
-
-async function prepareTask(
-	runDir: string,
-	task: string,
-	artifactFiles: string[],
-): Promise<string> {
-	let prepared = task;
-	const artifactsDir = join(runDir, "artifacts");
-	await mkdir(artifactsDir, { recursive: true, mode: 0o700 });
-	for (let index = 0; index < artifactFiles.length; index += 1) {
-		const source = artifactFiles[index];
-		const destination = join(artifactsDir, `${index + 1}-${basename(source)}`);
-		await copyFile(source, destination);
-		prepared = prepared.split(source).join(destination);
-	}
-	return prepared;
 }
 
 function readEvents(path: string): RunEvent[] {
@@ -136,10 +126,10 @@ export async function runTerminalSubagent(
 		throw new Error("交互式子 Agent 当前只支持原生 Windows Terminal");
 	}
 	await cleanupOldRuns(config.retainCompletedMinutes);
-	const subagentId = randomUUID();
+	const subagentId = options.runId ?? randomUUID();
 	const runDir = join(SUBAGENT_RUNS_ROOT, subagentId);
 	await mkdir(join(runDir, "sessions"), { recursive: true, mode: 0o700 });
-	const task = await prepareTask(
+	const task = await prepareTaskArtifacts(
 		runDir,
 		options.task,
 		options.artifactFiles ?? [],
