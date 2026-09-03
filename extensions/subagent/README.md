@@ -255,7 +255,10 @@ ast_grep_outline, ast_grep_dump
 
 - `/subagents`：打开任务列表。默认显示当前主会话创建的任务，`Tab` 切换全部会话；live 项按实际状态显示 queued 数、当前 turn 运行时长或 Multi worker 的 2 分钟 idle 剩余时间。
 - `Alt+A`：直接进入当前会话最近的活跃子 Agent；没有活跃任务时打开列表。
-- 列表：`↑/↓` 选择，`Enter` 执行默认动作，`C` 请求取消，`X` 终止活跃任务，`D` 清理已退出记录，`Esc` 关闭。
+- 列表：`↑/↓` 选择，`Enter` 执行默认动作，`S` 向 live 子 Agent 发送消息，`C` 请求取消，`X` 终止活跃任务，`D` 清理已退出记录，`Esc` 关闭。
+- 发送消息（`S`）：弹出单行输入框。目标正在运行时通过 Pi RPC `steer` 立即插入当前 turn（transcript 记为 `STEER:`）；目标空闲且可复用时排队为新一轮任务；一次性或其他会话的子 Agent 会被拒绝。子 Agent 的 turn 结果仍只返回给发起它的工具调用，手动排队的一轮只在 Overlay 中可见。
+- Footer：`subagent 2 run · 1 queued · 1 idle` 按状态分组显示当前进程内的子 Agent —— `run` 为正在执行 turn 的 live 子进程与尚未注册进程的后台任务，`queued` 为等待中的 follow-up 与等待槽位的后台任务，`idle` 为保活等待复用的子进程；全部为零时隐藏该段。
+- `spawn_subagent` 工具卡运行时第一条 `└` 行显示 `now: <最近工具调用> · <已运行时长>`，其后是最近 6 条工具调用，`Ctrl+O` 展开全部。
 - 详情：`←/→` 按列表排序循环切换上一个/下一个子 Agent。Header 左侧显示当前位置与标题，右侧显示状态与 queued/运行时长/idle 剩余时间；宽屏且该行仍有剩余列时再显示模型、可复用短 ID/turn 与 thinking，空间不足或窄屏时先隐藏这些元数据，不截断运行时长。`↑/↓`、`PageUp/PageDown`、`Home/End` 滚动，regular 模式还支持鼠标滚轮；Pi 0.84 fullscreen 会先消费 wheel，因此详情 Footer 会隐藏无效的 wheel 提示并保留完整键盘操作。`app.thinking.toggle`（默认 `Ctrl+T`）折叠/恢复 thinking，`app.tools.expand`（默认 `Ctrl+O`）展开工具结果，`Esc` 返回列表。Footer 会显示当前配置的实际键位。详情切换范围沿用打开时的 `CURRENT`/`ALL` 列表范围；`Alt+A` 打开的详情只在当前会话的活跃子 Agent 间切换。
 
 ## 复用相关 Agent

@@ -42,7 +42,6 @@ const coverageExcludes = [
 	"**/gitignore-guard.ts",
 	"**/batch-store.ts",
 	"**/rpc-runner.ts",
-	"**/json-runner.ts",
 	"**/subagent/run.ts",
 	"**/roles/launch.ts",
 	"**/spawn/tool.ts",

@@ -39,6 +39,7 @@ function baseDetails(prepared: PreparedSpawn) {
 		description: prepared.description,
 		model: prepared.model,
 		thinkingLevel: prepared.thinkingLevel,
+		startedAt: new Date().toISOString(),
 	};
 }
 

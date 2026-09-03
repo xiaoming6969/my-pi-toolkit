@@ -40,6 +40,31 @@ test("reuses one RPC child with FIFO, per-turn results", async () => {
 	}
 });
 
+test("steer injects into the running turn and is refused when idle", async () => {
+	const app = await harness("steer-agent");
+	try {
+		const turn = app.start("one");
+		await tick();
+		const run = getLiveSubagent("steer-agent");
+		assert.ok(run?.steer);
+		assert.throws(() => run.steer?.("   "), /不能为空/);
+		run.steer?.("focus on tests");
+		await tick();
+		assert.deepEqual(app.steers, ["focus on tests"]);
+		assert.deepEqual(
+			run.entries.filter((entry) => entry.kind === "user").map((entry) => entry.text),
+			["one", "focus on tests"],
+		);
+		app.settle("done");
+		await turn;
+		assert.throws(() => run.steer?.("late"), /没有运行中的 turn/);
+		run.dispose();
+		assert.throws(() => run.steer?.("gone"), /已退出/);
+	} finally {
+		await app.cleanup();
+	}
+});
+
 test("managed RPC turns keep running beyond the former timeout", async (context) => {
 	context.mock.timers.enable({ apis: ["setTimeout"] });
 	const app = await harness("long-running-agent");

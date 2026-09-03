@@ -158,6 +158,7 @@ class SubagentPicker implements Component {
 		if (matchesKey(data, "c")) return this.runNamedAction("请求取消");
 		if (matchesKey(data, "x")) return this.runNamedAction("终止子 Agent");
 		if (matchesKey(data, "d")) return this.runNamedAction("清理任务记录");
+		if (matchesKey(data, "s")) return this.runNamedAction("发送消息");
 	}
 
 	private isTab(data: string): boolean {
@@ -198,6 +199,7 @@ class SubagentPicker implements Component {
 		if (item.actions.includes("请求取消")) hints.push("C 取消");
 		if (item.actions.includes("终止子 Agent")) hints.push("X 终止");
 		if (item.actions.includes("清理任务记录")) hints.push("D 清理");
+		if (item.actions.includes("发送消息")) hints.push("S 发消息");
 		hints.push("Esc 返回");
 		return hints.join(" · ");
 	}

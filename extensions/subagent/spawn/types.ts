@@ -26,6 +26,8 @@ export interface SpawnSubagentDetails {
 	description: string;
 	model: string;
 	thinkingLevel?: string;
+	/** ISO time the tool call started; drives the live elapsed suffix. */
+	startedAt?: string;
 	toolCalls: SubagentToolCall[];
 	output?: string;
 	truncated?: boolean;

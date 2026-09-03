@@ -59,6 +59,7 @@ export class RpcSubagentSession {
 			entries: this.transcript.entries,
 			request: (message, requestOptions) =>
 				this.requestFollowup(message, requestOptions),
+			steer: (message) => this.steer(message),
 			abort: () => this.abortCurrent(),
 			dispose: () => this.dispose(),
 			subscribe: (listener) => this.transcript.subscribe(listener),
@@ -104,6 +105,17 @@ export class RpcSubagentSession {
 			return Promise.reject(new Error("该子 Agent 以一次性模式启动，不能复用"));
 		if (this.disposed) return Promise.reject(new Error("该子 Agent 已退出，不能复用"));
 		return this.enqueue(message, false, options);
+	}
+
+	private steer(message: string): void {
+		const text = message.trim();
+		if (!text) throw new Error("steer 消息不能为空");
+		if (this.disposed) throw new Error("该子 Agent 已退出，不能发送消息");
+		if (!this.turns.current?.promptSent)
+			throw new Error("子 Agent 当前没有运行中的 turn；请改用 request 排队新一轮任务");
+		this.transcript.entries.push({ kind: "user", text });
+		this.transcript.append(`STEER: ${text}`);
+		sendRpc(this.child, { type: "steer", message: text });
 	}
 
 	private enqueue(

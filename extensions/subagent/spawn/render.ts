@@ -11,6 +11,7 @@ import {
 	resultText,
 } from "../../shared/tui/tool-format.js";
 import { toolCall, toolResult } from "../../shared/tui/tool-render.js";
+import { formatDuration } from "../../shared/tui/visual-language.js";
 import type { SpawnSubagentDetails, SpawnSubagentParams } from "./types.js";
 
 const RECENT_CALLS = 6;
@@ -27,6 +28,20 @@ export function previewToolCall(call: SubagentToolCall): string {
 	if (call.name === "bash") return `bash ${compactText(String(args.command ?? ""), 60)}`;
 	if (call.name === "edit" || call.name === "write") return `${call.name} ${path}`;
 	return `${call.name} ${compactText(JSON.stringify(args), 60)}`;
+}
+
+/** `now: read src/a.ts · 12s` — what the child is doing and for how long. */
+export function liveActivityLine(
+	details: Pick<SpawnSubagentDetails, "toolCalls" | "startedAt">,
+	nowMs: number,
+): string {
+	const last = details.toolCalls[details.toolCalls.length - 1];
+	const activity = last ? previewToolCall(last) : "starting";
+	const started = details.startedAt ? Date.parse(details.startedAt) : Number.NaN;
+	const elapsed = Number.isFinite(started)
+		? ` · ${formatDuration(Math.max(0, nowMs - started))}`
+		: "";
+	return `now: ${activity}${elapsed}`;
 }
 
 function summary(details: SpawnSubagentDetails): string {
@@ -72,7 +87,7 @@ export function renderSpawnResult(
 			status: "active",
 			title: details.description,
 			summary: summary(details),
-			details: calls,
+			details: [liveActivityLine(details, Date.now()), ...calls],
 		});
 	if (details.background)
 		return toolResult(theme, {

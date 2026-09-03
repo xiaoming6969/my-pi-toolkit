@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { SUBAGENT_CHILD_ENV } from "./child-guard.js";
-import { getPiInvocation } from "./pi-invocation.js";
+import { getPiInvocation, type PiInvocation } from "./pi-invocation.js";
 import type { SubagentToolCall } from "./registry.js";
 import { appendThinkingCliArgs } from "./terminal-runner.js";
 
@@ -17,6 +17,8 @@ export interface JsonSubagentOptions {
 	disableContextFiles?: boolean;
 	signal?: AbortSignal;
 	onUpdate?: (update: { output: string; toolCalls: SubagentToolCall[] }) => void;
+	/** How to launch the child for the built CLI args; defaults to the parent's Pi. */
+	invocation?: (args: string[]) => PiInvocation;
 }
 
 export interface JsonSubagentResult {
@@ -108,7 +110,7 @@ function buildArgs(options: JsonSubagentOptions): string[] {
 export async function runJsonSubagent(
 	options: JsonSubagentOptions,
 ): Promise<JsonSubagentResult> {
-	const invocation = getPiInvocation(buildArgs(options));
+	const invocation = (options.invocation ?? getPiInvocation)(buildArgs(options));
 	const messages: JsonMessage[] = [];
 	const toolCalls: SubagentToolCall[] = [];
 	let stderr = "";

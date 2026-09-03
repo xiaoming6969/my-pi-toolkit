@@ -70,6 +70,8 @@ export interface LiveSubagentRun {
 		message: string,
 		options?: SubagentRequestOptions,
 	): Promise<SubagentTurnResult>;
+	/** Inject a message into the running turn (Pi RPC `steer`); throws when idle. */
+	steer?(message: string): void;
 	abort(): void;
 	dispose(): void;
 	subscribe(listener: () => void): () => void;
