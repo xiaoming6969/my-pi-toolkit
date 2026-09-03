@@ -7,6 +7,8 @@ import { TOOL_NAME } from "./prompt.js";
 
 /** 历史会话可能仍使用旧工具名 todo_write */
 const TOOL_RESULT_NAMES = new Set([TOOL_NAME, "todo_write"]);
+/** 子 Agent 完成后自动写回的清单快照，与工具结果一样参与重建 */
+export const TODO_SYNC_ENTRY_TYPE = "agent-todos-subagent-sync";
 
 export class TodoStore {
 	private todos: TodoItem[] = [];
@@ -27,6 +29,11 @@ export class TodoStore {
 	reconstructFromBranch(entries: Iterable<unknown>): void {
 		this.todos = [];
 		for (const entry of entries) {
+			const synced = syncEntryTodos(entry);
+			if (synced) {
+				this.todos = synced.map((todo) => ({ ...todo }));
+				continue;
+			}
 			if (!isMessageEntry(entry)) continue;
 			const msg = entry.message;
 			if (msg.role !== "toolResult") continue;
@@ -48,6 +55,15 @@ export function statusText(todos: TodoItem[]): string | undefined {
 	}
 	const prefix = counts.completed === counts.active ? "✅" : "📋";
 	return `${prefix} ${counts.completed}/${counts.active}`;
+}
+
+function syncEntryTodos(entry: unknown): TodoItem[] | undefined {
+	if (!entry || typeof entry !== "object") return undefined;
+	const value = entry as { type?: unknown; customType?: unknown; data?: unknown };
+	if (value.type !== "custom" || value.customType !== TODO_SYNC_ENTRY_TYPE)
+		return undefined;
+	const todos = (value.data as { todos?: unknown } | undefined)?.todos;
+	return Array.isArray(todos) ? (todos as TodoItem[]) : undefined;
 }
 
 function isMessageEntry(

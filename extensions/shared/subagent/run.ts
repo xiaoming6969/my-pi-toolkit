@@ -25,10 +25,11 @@ export interface SubagentOutputFile {
 	required: boolean;
 }
 
-/** Files a run left on disk for the parent: the full report and declared outputs. */
+/** What a run left on disk for the parent: report, declared outputs, worktree. */
 export interface SubagentRunArtifacts {
 	reportFile?: string;
 	outputs?: SubagentOutputFile[];
+	worktree?: { root: string; branch: string; path: string };
 }
 
 export interface SubagentRunResult {
@@ -65,6 +66,7 @@ export async function runSubagent(
 	const terminal = await runTerminalSubagent({
 		...launch,
 		tools,
+		capability,
 		presentation: launch.forkSessionFile ? "manual" : launch.presentation,
 	});
 	if (terminal)

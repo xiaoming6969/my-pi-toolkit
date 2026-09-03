@@ -91,6 +91,7 @@ async function runForeground(
 			reportFile: result.artifacts?.reportFile,
 			outputs: result.artifacts?.outputs,
 			resumedFrom: prepared.resumedFrom,
+			worktree: prepared.worktree,
 		} satisfies SpawnSubagentDetails,
 	};
 }
@@ -117,11 +118,14 @@ function startBackground(
 				{ deliverAs: "followUp", triggerTurn: true },
 			),
 	});
+	const worktree = prepared.worktree
+		? ` It works in worktree ${prepared.worktree.path} (branch ${prepared.worktree.branch}).`
+		: "";
 	return {
 		content: [
 			{
 				type: "text" as const,
-				text: `Background subagent started: ${job.id} (${job.title}). Continue with independent work; a completion follow-up will arrive. Use subagent_wait to block on it, subagent_output to read progress or the report, and subagent_cancel to stop it.`,
+				text: `Background subagent started: ${job.id} (${job.title}).${worktree} Continue with independent work; a completion follow-up will arrive. Use subagent_wait to block on it, subagent_output to read progress or the report, and subagent_cancel to stop it.`,
 			},
 		],
 		details: {
@@ -132,6 +136,8 @@ function startBackground(
 			subagentId: job.id,
 			reusable: false,
 			turn: 0,
+			resumedFrom: prepared.resumedFrom,
+			worktree: prepared.worktree,
 		} satisfies SpawnSubagentDetails,
 	};
 }
@@ -147,6 +153,7 @@ export function registerSpawnSubagentTool(pi: ExtensionAPI): void {
 			"Use spawn_subagent when a task is self-contained, benefits from a separate context window, and can be described completely in the prompt; pass relevantFiles, constraints and expectedOutput instead of burying them in prose.",
 			"Use resumeFrom to hand a finished research or plan transcript to an implement or review child instead of re-explaining the findings; the source must belong to this session and have stopped running.",
 			"Pick the least-privileged role that can finish the task: explore or plan for read-only work, review for independent verification, implement only when files must change.",
+			"Prefer isolation=worktree for implement children whose edits you want to review before they touch the working tree; the result tells you how to diff, merge or discard the worktree.",
 			"Use background=true only when you have other independent work to do meanwhile; then do not poll, wait for the completion follow-up or call subagent_wait once.",
 			"Never ask the agent that produced a change or conclusion to review its own work; spawn a separate review subagent instead.",
 			"Do not use spawn_subagent for tasks the parent can finish with one or two direct tool calls, or for work that needs back-and-forth with the user.",
@@ -202,6 +209,14 @@ export function registerSpawnSubagentTool(pi: ExtensionAPI): void {
 						"subagentId of a settled subagent from this session; the child forks its transcript and continues with the new role and prompt",
 				}),
 			),
+			isolation: Type.Optional(
+				Type.Unsafe<"none" | "worktree">({
+					type: "string",
+					enum: ["none", "worktree"],
+					description:
+						"worktree runs the child in its own git worktree (branch subagent/<id>) so its edits never touch the parent's working tree; mutually exclusive with cwd. Default none.",
+				}),
+			),
 		}),
 
 		async execute(
@@ -212,7 +227,7 @@ export function registerSpawnSubagentTool(pi: ExtensionAPI): void {
 			ctx: ExtensionContext,
 		) {
 			assertNotSubagentChild("派生子 Agent");
-			const prepared = prepareSpawn(params, ctx, pi);
+			const prepared = await prepareSpawn(params, ctx, pi);
 			if (params.background) return startBackground(prepared, ctx, pi);
 			return runForeground(prepared, signal, onUpdate);
 		},

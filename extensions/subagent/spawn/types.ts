@@ -12,6 +12,8 @@ export interface SpawnSubagentParams {
 	expectedOutput?: string;
 	/** Fork a settled subagent's transcript into this child. */
 	resumeFrom?: string;
+	/** `worktree` runs the child in its own git worktree; incompatible with `cwd`. */
+	isolation?: "none" | "worktree";
 }
 
 export type SpawnOutputFile = SubagentOutputFile;
@@ -35,4 +37,5 @@ export interface SpawnSubagentDetails {
 	reportFile?: string;
 	outputs?: SpawnOutputFile[];
 	resumedFrom?: string;
+	worktree?: { root: string; branch: string; path: string };
 }

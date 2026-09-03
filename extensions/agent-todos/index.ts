@@ -15,6 +15,7 @@ import {
 	countTodos,
 	formatTodosForModel,
 	summarizeChanges,
+	syncTodosWithSubagents,
 	validateTodoWrite,
 	type TodoWriteDetails,
 } from "./model.js";
@@ -27,7 +28,8 @@ import {
 } from "./prompt.js";
 import { renderTodoCall, renderTodoResult } from "./render.js";
 import { registerAboveEditorRestack } from "../shared/tui/widget-restack.js";
-import { TodoStore } from "./store.js";
+import { subscribeCompletedSubagents } from "./subagent-sync.js";
+import { TODO_SYNC_ENTRY_TYPE, TodoStore } from "./store.js";
 import {
 	clearTodoUI,
 	hideTodoPanel,
@@ -59,6 +61,12 @@ const TodoWriteParams = Type.Object({
 			}),
 			content: Type.String({ description: "Task description" }),
 			status: TodoStatusSchema,
+			subagentId: Type.Optional(
+				Type.String({
+					description:
+						"Link this item to a spawned subagent; it is marked completed automatically when that child finishes successfully",
+				}),
+			),
 		}),
 		{
 			description:
@@ -86,14 +94,27 @@ export default function agentTodosExtension(pi: ExtensionAPI) {
 		if (panelVisible) restackTodoUI(ctx as ExtensionContext, store);
 	});
 
-	pi.on("session_start", async (_event: unknown, ctx: ExtensionContext) =>
-		reconstruct(ctx),
-	);
+	let sessionCtx: ExtensionContext | undefined;
+	const unsubscribeSubagents = subscribeCompletedSubagents((completedIds) => {
+		if (!sessionCtx) return;
+		const { todos, completed } = syncTodosWithSubagents(store.getTodos(), completedIds);
+		if (completed.length === 0) return;
+		store.setTodos(todos);
+		updateUI(sessionCtx);
+		pi.appendEntry(TODO_SYNC_ENTRY_TYPE, { todos, completed: completed.map((todo) => todo.id) });
+	});
+
+	pi.on("session_start", async (_event: unknown, ctx: ExtensionContext) => {
+		sessionCtx = ctx;
+		reconstruct(ctx);
+	});
 	pi.on("session_tree", async (_event: unknown, ctx: ExtensionContext) =>
 		reconstruct(ctx),
 	);
 	pi.on("session_shutdown", (_event: unknown, ctx: ExtensionContext) => {
+		sessionCtx = undefined;
 		unregisterRestack();
+		unsubscribeSubagents();
 		clearTodoUI(ctx);
 	});
 

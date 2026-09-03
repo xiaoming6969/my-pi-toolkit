@@ -1,3 +1,5 @@
+import type { SubagentCapability } from "./capability.js";
+
 export type SubagentRunStatus = "starting" | "running" | "completed" | "failed";
 
 export interface SubagentToolCall {
@@ -51,6 +53,8 @@ export interface LiveSubagentRun {
 	title: string;
 	model: string;
 	thinkingLevel?: string;
+	/** Capability mode the child was launched with; follow-ups keep it. */
+	capability?: SubagentCapability;
 	cwd: string;
 	status: SubagentRunStatus;
 	startedAt: string;

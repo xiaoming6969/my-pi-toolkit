@@ -42,6 +42,34 @@ function loadUserRoles(options: RoleLoadOptions): SubagentRoleDefinition[] {
 	);
 }
 
+/**
+ * `subagents.roleModels`: route any role (including built-ins) to a model
+ * without redefining the whole role. Applied after every role source so the
+ * override wins regardless of where the role came from.
+ */
+function applyRoleModels(
+	roles: Map<string, SubagentRoleDefinition>,
+	options: RoleLoadOptions,
+): void {
+	const configPath = options.userConfigPath ?? userToolkitConfigPath();
+	const config = options.userConfig ?? readUserToolkitConfig();
+	const subagents = readSection(config.subagents, `${configPath} 的 subagents`);
+	const overrides = readSection(
+		subagents.roleModels,
+		`${configPath} 的 subagents.roleModels`,
+	);
+	for (const [name, value] of Object.entries(overrides)) {
+		if (typeof value !== "string" || !value.trim())
+			throw new Error(`${configPath} subagents.roleModels.${name} 必须是非空模型名称`);
+		const role = roles.get(name);
+		if (!role)
+			throw new Error(
+				`${configPath} subagents.roleModels.${name} 指向不存在的角色，可用角色: ${Array.from(roles.keys()).join(", ")}`,
+			);
+		roles.set(name, { ...role, model: value.trim() });
+	}
+}
+
 /** Nearest `.pi/agents/` directory walking up from cwd. */
 export function findProjectAgentsDir(cwd: string): string | undefined {
 	let current = resolve(cwd);
@@ -96,6 +124,7 @@ export function loadSubagentRoles(
 		: undefined;
 	if (agentsDir)
 		for (const role of loadProjectRoles(agentsDir)) roles.set(role.name, role);
+	applyRoleModels(roles, options);
 	return roles;
 }
 

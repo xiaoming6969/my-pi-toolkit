@@ -92,6 +92,39 @@ test("invalid user role sections fail loudly", () => {
 	);
 });
 
+test("subagents.roleModels routes any role to a model without redefining it", () => {
+	const base = { cwd: tmpdir(), projectTrusted: false, userConfigPath: "/cfg/x.json" };
+	const roles = loadSubagentRoles({
+		...base,
+		userConfig: {
+			subagents: {
+				roles: { tester: { prompt: "t", capability: "execute", model: "role/model" } },
+				roleModels: { explore: "cheap/model", tester: "routed/model" },
+			},
+		},
+	});
+	assert.equal(roles.get("explore")?.model, "cheap/model");
+	assert.equal(roles.get("explore")?.source, "builtin");
+	assert.equal(roles.get("tester")?.model, "routed/model");
+	assert.equal(roles.get("plan")?.model, undefined);
+	assert.throws(
+		() =>
+			loadSubagentRoles({
+				...base,
+				userConfig: { subagents: { roleModels: { explore: "" } } },
+			}),
+		/roleModels\.explore 必须是非空模型名称/,
+	);
+	assert.throws(
+		() =>
+			loadSubagentRoles({
+				...base,
+				userConfig: { subagents: { roleModels: { ghost: "m" } } },
+			}),
+		/roleModels\.ghost 指向不存在的角色/,
+	);
+});
+
 test("getSubagentRole lists available roles for unknown names", () => {
 	const options = {
 		cwd: tmpdir(),

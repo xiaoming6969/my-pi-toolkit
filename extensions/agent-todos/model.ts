@@ -4,6 +4,8 @@ export interface TodoItem {
 	id: string;
 	content: string;
 	status: TodoStatus;
+	/** Linked subagent; the item auto-completes when that child finishes. */
+	subagentId?: string;
 }
 
 export interface TodoCounts {
@@ -116,7 +118,12 @@ export function validateTodoWrite(
 			return { ok: false, error: `duplicate id in request: ${id}` };
 		}
 		seen.add(id);
-		parsed.push({ id, content, status });
+		const rawSubagent = item.subagentId;
+		if (rawSubagent !== undefined && typeof rawSubagent !== "string") {
+			return { ok: false, error: `todos[${i}].subagentId must be a string` };
+		}
+		const subagentId = rawSubagent?.trim() || undefined;
+		parsed.push(subagentId ? { id, content, status, subagentId } : { id, content, status });
 	}
 
 	const next = mergeTodos(existing, parsed, merge);
@@ -138,7 +145,8 @@ export function formatTodosForModel(
 	const header = `Todos updated (merge=${merge}): ${counts.total} total · ${counts.inProgress} in_progress · ${counts.completed} completed · ${counts.pending} pending · ${counts.cancelled} cancelled`;
 	if (todos.length === 0) return `${header}\n\n(no todos)`;
 	const lines = todos.map(
-		(todo) => `[${todo.status}] ${todo.id} — ${todo.content}`,
+		(todo) =>
+			`[${todo.status}] ${todo.id} — ${todo.content}${todo.subagentId ? ` (subagent ${todo.subagentId.slice(0, 8)})` : ""}`,
 	);
 	const focus = todos.find((todo) => todo.status === "in_progress");
 	const executionReminder = focus
@@ -162,7 +170,11 @@ export function summarizeChanges(
 			if (todo.status === "completed") completed++;
 			continue;
 		}
-		if (prev.content !== todo.content || prev.status !== todo.status) {
+		if (
+			prev.content !== todo.content ||
+			prev.status !== todo.status ||
+			prev.subagentId !== todo.subagentId
+		) {
 			updated++;
 			if (prev.status !== "completed" && todo.status === "completed")
 				completed++;
@@ -172,5 +184,30 @@ export function summarizeChanges(
 }
 
 function cloneTodo(todo: TodoItem): TodoItem {
-	return { id: todo.id, content: todo.content, status: todo.status };
+	const copy: TodoItem = { id: todo.id, content: todo.content, status: todo.status };
+	if (todo.subagentId) copy.subagentId = todo.subagentId;
+	return copy;
+}
+
+/**
+ * Complete open todos whose linked subagent finished successfully. Failed or
+ * cancelled children leave the todo untouched so the agent decides what to do.
+ */
+export function syncTodosWithSubagents(
+	todos: TodoItem[],
+	completedSubagentIds: ReadonlySet<string>,
+): { todos: TodoItem[]; completed: TodoItem[] } {
+	const completed: TodoItem[] = [];
+	const next = todos.map((todo) => {
+		if (
+			!todo.subagentId ||
+			!completedSubagentIds.has(todo.subagentId) ||
+			(todo.status !== "pending" && todo.status !== "in_progress")
+		)
+			return cloneTodo(todo);
+		const done = { ...cloneTodo(todo), status: "completed" as const };
+		completed.push(done);
+		return done;
+	});
+	return { todos: next, completed };
 }

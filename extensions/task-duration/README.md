@@ -6,7 +6,10 @@
 
 ```text
 本次任务耗时 2m 18s
+本次任务耗时 2m 18s · 子 Agent 运行 1m 02s，峰值 3 个并行
 ```
+
+本轮任务期间若有子 Agent（`spawn_subagent`、`repo_search`、`tapd_review`、Multi Task worker）运行，第二段显示至少有一个子 Agent 处于运行状态的墙钟时间；多个子 Agent 并行时不重复累加，峰值大于 1 时追加并行数。没有子 Agent 参与时只显示第一段。
 
 耗时行使用低强调的 Theme 语义色，不带缩进与层级字符，不与最终回复竞争。秒级任务显示 `Xs`，分钟任务显示 `Xm SSs`，小时任务显示 `Xh MMm SSs`。
 
@@ -16,6 +19,7 @@
 - 到最终 `agent_settled` 停止计时，因此包含工具调用、自动重试、自动压缩恢复，以及 settle 前的队列续接。
 - 自动恢复过程中再次触发 `agent_start` 不会重置起点。
 - 排队的 steering / follow-up 如果属于同一个 settle 周期，会合并计入同一条耗时记录。
+- 子 Agent 运行时间通过订阅共享 subagent registry 的 running 状态计算，在 `agent_start` 时清零，`agent_settled` 时随耗时一起写入 entry。
 
 ## 持久化与范围
 

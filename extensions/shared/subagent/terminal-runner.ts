@@ -2,6 +2,7 @@ import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
+import type { SubagentCapability } from "./capability.js";
 import {
 	loadSubagentUiConfig,
 	resolvePresentation,
@@ -26,6 +27,8 @@ export interface TerminalSubagentOptions {
 	task: string;
 	systemPrompt: string;
 	tools: string;
+	/** Capability mode recorded on the live run for mode policies. */
+	capability?: SubagentCapability;
 	extensionPaths?: string[];
 	extraCliArgs?: string[];
 	loadDefaultResources?: boolean;

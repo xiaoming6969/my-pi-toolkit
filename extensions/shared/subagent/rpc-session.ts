@@ -47,6 +47,7 @@ export class RpcSubagentSession {
 			title: options.title,
 			model: options.model,
 			thinkingLevel: options.thinkingLevel,
+			capability: options.capability,
 			cwd: options.cwd,
 			status: this.status,
 			startedAt: new Date().toISOString(),

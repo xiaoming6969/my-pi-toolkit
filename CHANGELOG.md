@@ -7,6 +7,7 @@
 - 通用 `spawn_subagent` 工具：按角色把自包含任务委派给独立子 Agent。内置 `explore`（即 `repo_search` 的角色）、`plan`、`implement`、`review`；用户可在 `~/.pi/agent/ming-core.json` 的 `subagents.roles` 定义角色，受信任项目可用 `.pi/agents/*.md`（YAML frontmatter + Markdown prompt）定义或覆盖角色。角色决定能力模式、system prompt、资源加载方式与可选的模型 / 思考等级路由。
 - 子 Agent 后台调度：`spawn_subagent` 支持 `background: true` 立即返回 `subagentId` 并在完成后投递 `subagent-complete` follow-up；新增 `subagent_wait`（`wait_any` / `wait_all` + 超时）、`subagent_output`、`subagent_cancel`。Multi Task 的 6 槽 worker 信号量下沉为 `shared/subagent/slot-semaphore.ts`，`spawn_subagent`、`repo_search`、`tapd_review` 与 Multi Task worker 共用同一进程级并发上限。
 - 子 Agent 上下文与结果契约：`spawn_subagent` 支持结构化 brief（`relevantFiles` / `constraints` / `expectedOutput`）；每次运行的完整报告写入 `runDir/report.md`，返回文本被截断时附带完整路径；角色可声明 `outputs` 文件契约，子 Agent 按精确路径写出，工具结果列出存在 / 缺失情况。`resumeFrom` 以本会话已结束子 Agent 的 session 为起点（Pi `--fork`）用新角色继续。
+- 子 Agent 隔离与模块集成：`spawn_subagent` 新增 `isolation: "worktree"`（复用 `ming-core/worktree` 在 `subagent/<id>` 分支的独立 worktree 中运行，结果给出 diff / merge / 丢弃命令）；`subagents.roleModels` 为任意角色路由模型；Ask / Plan 模式按能力放行只读角色的 `spawn_subagent` 与只读 live 子 Agent 的 `subagent_followup`，观察类控制工具始终可用；`agent_todo_write` 条目可带 `subagentId`，关联子 Agent 成功完成时自动置为 completed 并持久化；任务耗时行追加子 Agent 运行时间与并行峰值。
 - 子 Agent 嵌套深度限制为 1：所有子进程带 `PI_SUBAGENT_CHILD=1`，`repo_search`、`spawn_subagent`、`subagent_followup`、`multi_task`、`tapd_review` 等父进程控制工具不再下发给任何子 Agent（含 Multi Task implementation worker）。
 
 ### 改进

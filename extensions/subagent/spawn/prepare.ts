@@ -15,6 +15,7 @@ import { runRoleSubagent } from "../roles/launch.js";
 import { getSubagentRole } from "../roles/loader.js";
 import type { SubagentRoleOutput } from "../roles/types.js";
 import { buildSubagentBrief, collectDeclaredOutputs } from "./brief.js";
+import { createSubagentWorktree, type SubagentWorktree } from "./isolation.js";
 import { resolveSpawnCwd, resolveSpawnTarget } from "./resolve.js";
 import { resolveResumeSource } from "./resume.js";
 import type { SpawnOutputFile, SpawnSubagentParams } from "./types.js";
@@ -28,6 +29,8 @@ export interface PreparedSpawn {
 	model: string;
 	thinkingLevel?: string;
 	resumedFrom?: string;
+	/** Set when the child runs in its own git worktree. */
+	worktree?: SubagentWorktree;
 	/**
 	 * Take a launch slot, run one turn, release the slot. The result carries
 	 * `artifacts` (full report file and declared outputs) on success.
@@ -50,22 +53,28 @@ function outputsDirFor(runDir: string, outputs: SubagentRoleOutput[]): string | 
  * resume source before anything is spawned, so both foreground and background
  * paths fail early with the same errors.
  */
-export function prepareSpawn(
+export async function prepareSpawn(
 	params: SpawnSubagentParams,
 	ctx: ExtensionContext,
 	pi: ExtensionAPI,
-): PreparedSpawn {
+): Promise<PreparedSpawn> {
 	const prompt = params.prompt.trim();
 	const description = params.description.trim();
 	if (!prompt) throw new Error("prompt 不能为空");
 	if (!description) throw new Error("description 不能为空");
+	const isolation = params.isolation ?? "none";
+	if (isolation === "worktree" && params.cwd?.trim())
+		throw new Error("isolation: worktree 与 cwd 不能同时使用");
 	const projectTrusted = ctx.isProjectTrusted();
 	const parentSessionId = ctx.sessionManager.getSessionId();
-	const cwd = resolveSpawnCwd(ctx.cwd, params.cwd);
-	const role = getSubagentRole(params.role ?? "explore", { cwd, projectTrusted });
+	const baseCwd = resolveSpawnCwd(ctx.cwd, params.cwd);
+	const role = getSubagentRole(params.role ?? "explore", {
+		cwd: baseCwd,
+		projectTrusted,
+	});
 	const target = resolveSpawnTarget({
 		role,
-		cwd,
+		cwd: baseCwd,
 		projectTrusted,
 		currentModel: ctx.model,
 	});
@@ -78,6 +87,9 @@ export function prepareSpawn(
 		? resolveResumeSource(params.resumeFrom, parentSessionId)
 		: undefined;
 	const id = randomUUID();
+	const worktree =
+		isolation === "worktree" ? await createSubagentWorktree(baseCwd, id) : undefined;
+	const cwd = worktree?.path ?? baseCwd;
 	const runDir = subagentRunDir(id);
 	mkdirSync(runDir, { recursive: true, mode: 0o700 });
 	const outputsDir = outputsDirFor(runDir, role.outputs);
@@ -89,6 +101,7 @@ export function prepareSpawn(
 		outputs: role.outputs,
 		outputsDir,
 		resumedFrom: resume?.subagentId,
+		worktree,
 	});
 	const title = `${role.name} · ${description}`;
 	const parentTools = pi.getActiveTools();
@@ -101,6 +114,7 @@ export function prepareSpawn(
 		model: target.model,
 		thinkingLevel,
 		resumedFrom: resume?.subagentId,
+		worktree,
 		async launch(signal, onUpdate) {
 			const release = await acquireSubagentSlot(signal ?? new AbortController().signal);
 			try {
@@ -133,7 +147,7 @@ export function prepareSpawn(
 				const outputs: SpawnOutputFile[] = outputsDir
 					? collectDeclaredOutputs(role.outputs, outputsDir)
 					: [];
-				return { ...result, artifacts: { reportFile, outputs } };
+				return { ...result, artifacts: { reportFile, outputs, worktree } };
 			} finally {
 				release();
 			}

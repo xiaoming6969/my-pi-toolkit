@@ -287,12 +287,14 @@ function createToolCallHandler(options: ChatModeLifecycleOptions) {
 	return async (event: ToolCallEvent, ctx: ExtensionContext) => {
 		const mode = getChatMode();
 		let reason: string | undefined;
-		if (mode === "ask") reason = await checkAskToolCall(event, ctx.cwd);
+		if (mode === "ask")
+			reason = await checkAskToolCall(event, ctx.cwd, ctx.isProjectTrusted());
 		if (mode === "plan") {
 			reason = await checkPlanToolCall(
 				event,
 				ctx.cwd,
 				options.getPlan()?.absolutePath,
+				ctx.isProjectTrusted(),
 			);
 		}
 		return reason ? { block: true, reason } : undefined;

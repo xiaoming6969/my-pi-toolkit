@@ -12,6 +12,8 @@ export interface SubagentBriefInput {
 	outputsDir?: string;
 	/** Set when the child continues a prior transcript via resume. */
 	resumedFrom?: string;
+	/** Set when the child works in an isolated git worktree. */
+	worktree?: { path: string; branch: string };
 }
 
 function cleanList(values: string[] | undefined): string[] {
@@ -47,6 +49,10 @@ export function buildSubagentBrief(input: SubagentBriefInput): string {
 	if (input.resumedFrom)
 		sections.push(
 			`This conversation continues the transcript of subagent ${input.resumedFrom}; build on its findings instead of re-discovering them.`,
+		);
+	if (input.worktree)
+		sections.push(
+			`You are working in an isolated git worktree at ${input.worktree.path} on branch ${input.worktree.branch}. Edit files there only; do not switch branches or touch other worktrees. Leave your changes in the working tree (committing is optional) so the parent can review and merge them.`,
 		);
 	return sections.join("\n\n");
 }

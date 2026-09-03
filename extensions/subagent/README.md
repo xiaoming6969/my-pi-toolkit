@@ -52,6 +52,41 @@
 
 `resumeFrom` 与 `subagent_followup` 的区别：follow-up 在同一进程、同一 profile 上继续下一 turn；`resumeFrom` 是新进程、新角色，只继承对话记录。
 
+### `isolation: "worktree"`：在独立 worktree 中修改文件
+
+`isolation: "worktree"` 让子 Agent 在复用 `ming-core/worktree` 创建的独立 Git worktree 中运行：从当前 `HEAD` 派生分支 `subagent/<id 前 8 位>`，目录位于 `<repo>-worktrees/subagent-<id>`。子 Agent 的 brief 会说明它在该 worktree 内工作，不能切分支或触碰其它目录。运行结束后 worktree **保留**，工具结果给出三条命令：
+
+```text
+Review with:    git -C <root> diff HEAD...subagent/xxxxxxxx
+Integrate with: git -C <root> merge subagent/xxxxxxxx
+Discard with:   git -C <root> worktree remove --force <path> && git -C <root> branch -D subagent/xxxxxxxx
+```
+
+由主 Agent（或用户）决定合并还是丢弃。它与 `cwd` 互斥，要求当前目录在 Git 仓库内；适合 `implement` 等会写文件的角色，是共享工作区 + 路径守卫之外更硬的隔离边界。
+
+### 角色级模型路由
+
+除角色定义里的 `model` / `thinkingLevel` 外，`~/.pi/agent/ming-core.json` 的 `subagents.roleModels` 可以把任意角色（含内置角色）路由到指定模型而无需重新定义角色：
+
+```json
+{
+  "subagents": {
+    "roleModels": {
+      "explore": "provider/cheap-model",
+      "review": "provider/strong-model"
+    }
+  }
+}
+```
+
+优先级：`roleModels` > 角色定义的 `model` > `explore` 的 `repoSearch` 配置 > 主 Agent 当前模型。指向不存在的角色或空字符串会明确报错。
+
+### 与 Ask / Plan 模式、Todo、任务耗时的集成
+
+- **chat-mode**：Ask / Plan 模式允许 `spawn_subagent`，但只放行能力为 `read-only` 的角色（含自定义角色）；`subagent_followup` 只放行目标 live 子 Agent 以 `read-only` 启动的情况；`subagent_wait` / `subagent_output` / `subagent_cancel` 始终可用。写角色在这两个模式下会被拦截并提示 `Shift+Tab` 切换。
+- **agent-todos**：`agent_todo_write` 的条目可带 `subagentId`。后台任务或 live 子 Agent 成功完成时，关联的 pending / in_progress 条目自动置为 completed，面板即时刷新，并以 `agent-todos-subagent-sync` 会话条目持久化；失败或取消不会自动改状态。推荐流程：`spawn_subagent(background: true)` → `agent_todo_write(merge: true, todos: [{ id, content, status: "in_progress", subagentId }])`。
+- **task-duration**：任务结束行显示 `本次任务耗时 X · 子 Agent 运行 Y，峰值 N 个并行`，其中 Y 是本轮任务中至少有一个子 Agent 在运行的墙钟时间（并行不重复计）。
+
 ### 后台运行与等待原语
 
 `background: true` 时工具立即返回 `subagentId`，主 Agent 可以继续做其它独立工作；子 Agent 完成、失败或被取消后，扩展会向主会话排队一条 `subagent-complete` follow-up（与 `multi_task start` 相同机制），要求主 Agent 调用 `subagent_output` 读取报告。不要轮询。配套工具：
