@@ -4,6 +4,10 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import type { TapdConfig } from "../types.js";
 import { scanLinkedCommits, uniqueLinkedObjects } from "./analysis.js";
+import {
+	fetchBugMrFields,
+	resolveBugDraftCategory,
+} from "./bug-fields.js";
 import { updateBugFromDraft } from "./bug-workflow.js";
 import {
 	createOrUpdateMergeRequest,
@@ -93,6 +97,18 @@ export async function runMergeRequest(
 				head,
 			);
 			if (savedDraft) {
+				cancel?.suspend();
+				try {
+					savedDraft.category = await resolveBugDraftCategory(
+						bug.shortId,
+						savedDraft.category,
+						(await fetchBugMrFields(config, bug.workspaceId)).category
+							?.leaves,
+						(title, options) => ctx.ui.select(title, options),
+					);
+				} finally {
+					cancel?.resume("Working...");
+				}
 				bugDrafts.set(bug.shortId, savedDraft);
 				continue;
 			}
@@ -130,7 +146,18 @@ export async function runMergeRequest(
 				cancel?.resume("Working...");
 			}
 			if (!manualDraft) throw new Error(`Bug ${bug.shortId}: 用户取消根因填写`);
-			if (generated?.category) manualDraft.category = generated.category;
+			cancel?.suspend();
+			try {
+				manualDraft.category = await resolveBugDraftCategory(
+					bug.shortId,
+					generated?.category ?? manualDraft.category,
+					(await fetchBugMrFields(config, bug.workspaceId)).category
+						?.leaves,
+					(title, options) => ctx.ui.select(title, options),
+				);
+			} finally {
+				cancel?.resume("Working...");
+			}
 			bugDrafts.set(bug.shortId, manualDraft);
 		}
 	}

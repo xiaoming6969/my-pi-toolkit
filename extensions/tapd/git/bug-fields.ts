@@ -14,6 +14,9 @@ interface BugFieldInfo {
 
 const ROOT_CAUSE_CATEGORY_LABEL = "根因大类";
 const DEVELOPER_FIELD_LABEL = "开发人员";
+const RCA_FIELD_LABEL = "根因分析（RCA）";
+const FIX_PLAN_FIELD_LABEL = "修复方案说明";
+const IMPACT_FIELD_LABEL = "影响范围";
 
 export interface CategoryLeaf {
 	label: string;
@@ -24,6 +27,9 @@ export interface CategoryLeaf {
 interface BugMrFields {
 	category?: { fieldName: string; leaves: CategoryLeaf[] };
 	developerFieldName?: string;
+	rcaFieldName?: string;
+	fixPlanFieldName?: string;
+	impactFieldName?: string;
 }
 
 function optionText(value: unknown): string | undefined {
@@ -107,6 +113,9 @@ export async function fetchBugMrFields(
 	if (!fields) return {};
 	const category = findByLabel(fields, ROOT_CAUSE_CATEGORY_LABEL);
 	const developer = findByLabel(fields, DEVELOPER_FIELD_LABEL);
+	const rca = findByLabel(fields, RCA_FIELD_LABEL);
+	const fixPlan = findByLabel(fields, FIX_PLAN_FIELD_LABEL);
+	const impact = findByLabel(fields, IMPACT_FIELD_LABEL);
 	const leaves = category?.name ? flatOptions(category.options) : [];
 	return {
 		category:
@@ -114,6 +123,9 @@ export async function fetchBugMrFields(
 				? { fieldName: category.name, leaves }
 				: undefined,
 		developerFieldName: developer?.name,
+		rcaFieldName: rca?.name,
+		fixPlanFieldName: fixPlan?.name,
+		impactFieldName: impact?.name,
 	};
 }
 
@@ -135,6 +147,23 @@ export function matchCategoryOption(
 	if (exact) return exact.value;
 	const childHits = leaves.filter((leaf) => leaf.path.at(-1) === trimmed);
 	return childHits.length === 1 ? childHits[0].value : undefined;
+}
+
+export async function resolveBugDraftCategory(
+	shortId: string,
+	category: string | undefined,
+	leaves: CategoryLeaf[] | undefined,
+	select: (title: string, options: string[]) => Promise<string | undefined>,
+): Promise<string | undefined> {
+	if (!leaves?.length) return category;
+	const matched = matchCategoryOption(category, leaves);
+	if (matched) return matched;
+	const selected = await selectCategoryOption(leaves, select, {
+		parent: `Bug ${shortId}: 请选择根因大类`,
+		child: `Bug ${shortId}: 请选择根因子类`,
+	});
+	if (!selected) throw new Error(`Bug ${shortId}: 用户取消根因大类选择`);
+	return selected;
 }
 
 export async function selectCategoryOption(

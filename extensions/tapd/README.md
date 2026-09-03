@@ -104,6 +104,10 @@ TAPD 会话关联保存在 Pi session 自身的 custom entry（`tapd-session-lin
     "thinkingLevel": "可选；off、minimal、low、medium、high、xhigh 或 max；默认继承主会话",
     "presentation": "兼容保留；Review 固定使用 manual RPC，以接入子 Agent 状态栏、Overlay 和 /subagents"
   },
+  "rootCause": {
+    "model": "可选；例如 cursor/composer-2.5；默认继承主 Agent 当前模型",
+    "thinkingLevel": "可选；off、minimal、low、medium、high、xhigh 或 max；默认继承主会话"
+  },
   "gitlab": {
     "token": "可选；也可使用 GITLAB_PERSONAL_ACCESS_TOKEN",
     "baseUrl": "可选；默认从 origin 推导 https://host/api/v4"
@@ -133,7 +137,7 @@ TAPD Open API 索引见 [`../../docs/tapd-api.md`](../../docs/tapd-api.md)。
 - Bug 默认标签为 `二组`、`迭代bug(每日发布)`，状态更新为 `已解决`，负责人为 `沈瑞昀`。
 - 需求/任务默认标签为 `二组`、`迭代任务(随迭代发布)`。Ready MR 中，关联项是开发子需求或 TAPD 任务时更新为 `开发完成`；关联项是测试需求时，仅在处理人为当前 Token 用户时更新为 `已通过`；关联项是顶层功能需求时，仅更新当前用户负责的功能需求本身及其直属开发、测试需求。功能需求只更新状态：存在其他处理人的未完成直属开发或测试需求时更新为 `实现中`，否则更新为 `开发完成`；开发子需求更新为 `开发完成`，测试需求更新为 `已通过`。每个实际流转的 TAPD 任务、开发子需求和测试需求都会将完成工时同步为自身的有效预估工时；首次批量更新后会回读完成工时，仅在 TAPD 状态流转覆盖工时值时单独补写并再次校验。预估工时缺失、为零或无效时只更新状态，不写完成工时，也不阻断 MR。其他处理人的需求不会被修改，所有更新均不修改负责人。
 - 纯需求/任务的 `/tapd mr` 保持一次执行完成，不触发根因填写。
-- 含 Bug 的 Ready `/tapd mr` 在同一次执行中完成：只读子 Agent 根据 TAPD 描述、会话定位结论和当前修复 diff，用 `git blame` / `log` / `show` **自行定位引入 commit**，并预填【产生原因】、【引入commit】与【修复】（不提供候选列表或已确认 hash，无超时）。总结开始后自动打开与 `/subagents` 相同的只读过程 Overlay；该内部根因 Agent 固定 `keepOpen: false`，完成后 Overlay 自动关闭且不暴露 reusable handle。按 `Esc` 取消本次总结并回退为空模板，不取消整次 MR。此期间 slash 命令不可用，进度看 Overlay。子 Agent 会从 TAPD「根因大类」级联候选中选一行「大类 / 子项」；选不出或对不上候选时，再弹出大类、子类选择器。打开编辑器确认或修改（可改引入 commit，可留空）后直接创建或更新 MR 并回写 TAPD。流转时写入根因大类（`大类/子项`），以及当前 Token 用户为「开发人员」。子 Agent 失败、被取消或当前会话没有模型时回退为空模板（【引入commit】为未能定位），不阻断 MR，也不要求二次执行 `/tapd mr`。再次执行 Ready `/tapd mr` 会再次 POST 更新这两项。
+- 含 Bug 的 Ready `/tapd mr` 在同一次执行中完成：只读子 Agent 根据 TAPD 描述、会话定位结论和当前修复 diff，用 `git blame` / `log` / `show` **自行定位引入 commit**，并预填【根因分析（RCA）】、【影响范围】、【修复方案说明】与【引入commit】（不提供候选列表或已确认 hash，无超时）。子 Agent 模型优先用 `tapd.json` 的 `rootCause.model`（例如 `cursor/composer-2.5`），未配置时继承主会话；思考等级同样优先 `rootCause.thinkingLevel`，未配置时继承主会话。总结开始后自动打开与 `/subagents` 相同的只读过程 Overlay；该内部根因 Agent 固定 `keepOpen: false`，完成后 Overlay 自动关闭且不暴露 reusable handle。按 `Esc` 取消本次总结并回退为空模板，不取消整次 MR。此期间 slash 命令不可用，进度看 Overlay。打开编辑器确认或修改：【根因分析（RCA）】、【影响范围】、【修复方案说明】必填；可改引入 commit，可填未能定位。子 Agent 会从 TAPD「根因大类」级联候选中选一行「大类 / 子项」；选不出或对不上候选时，在 MR 预览确认前弹出大类、子类选择器，项目有该字段时必须选出一项。确认后创建或更新 MR 并回写 TAPD。流转时按中文 label 写入修复方案说明、根因分析（RCA）、影响范围、根因大类（`大类/子项`），以及当前 Token 用户为「开发人员」；项目没有对应字段时跳过该项且不阻断 MR。流转备注含【根因分析（RCA）】、【影响范围】、【修复方案说明】、【引入commit】、【commit信息】。子 Agent 失败、被取消或当前会话没有模型时回退为空模板（【引入commit】为未能定位），不阻断 MR，也不要求二次执行 `/tapd mr`。再次执行 Ready `/tapd mr` 会再次 POST 更新这些字段。
 - 若仓库 `.pi/tapd-root-cause/{bugId}.json` 已有与当前 `HEAD` 匹配的草稿，会直接复用并跳过填写；TAPD 流转成功后自动删除该草稿。未能定位引入 commit 时使用 TAPD 真实候选值 `其他(历史缺陷)`。
 - 引入 commit 经验证后，会拉取远端 tags，优先取直接指向 commit 的第一个 tag，否则取第一个包含该 commit 的 tag。
 - 合入版本从 TAPD `/bugs/get_fields_info` 的“合入版本”候选值中选择。普通版本精确匹配；`.0` 等存在多个迭代候选时，根据引入 commit 中 TAPD keyword 关联事项的迭代唯一匹配；关联事项没有迭代时会列出候选值让用户手动选择。

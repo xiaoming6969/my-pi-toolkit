@@ -14,6 +14,10 @@ import {
 import { collectRootCauseEvidence } from "./root-cause-evidence.js";
 import { parseGeneratedCauseAndFix } from "./root-cause-draft.js";
 import {
+	resolveRootCauseModel,
+	resolveRootCauseThinkingLevel,
+} from "./root-cause-model.js";
+import {
 	ROOT_CAUSE_SYSTEM_PROMPT,
 	buildRootCauseTask,
 } from "./root-cause-prompt.js";
@@ -25,12 +29,6 @@ const MODEL_EXTENSIONS = [
 	resolve(EXTENSION_DIR, "../../openai-compat-models/index.ts"),
 ].filter(existsSync);
 
-function currentModel(ctx: ExtensionCommandContext): string | undefined {
-	const model = ctx.model;
-	if (!model?.provider || !model.id) return undefined;
-	return `${model.provider}/${model.id}`;
-}
-
 export async function generateBugRootCauseSummary(options: {
 	ctx: ExtensionCommandContext;
 	config: TapdConfig;
@@ -40,15 +38,27 @@ export async function generateBugRootCauseSummary(options: {
 	signal?: AbortSignal;
 }): Promise<{
 	cause: string;
+	impact: string;
 	fix: string;
 	category?: string;
 	candidate?: IntroducedCommitCandidate;
 } | null> {
-	const { ctx, bug, cwd, targetBranch, signal } = options;
+	const { ctx, config, bug, cwd, targetBranch, signal } = options;
 	if (signal?.aborted) throw abortError();
-	const model = currentModel(ctx);
-	if (!model) {
-		ctx.ui.notify("当前会话没有可用模型，请手动填写产生原因和修复方式", "warning");
+	let model: string;
+	let thinkingLevel: string | undefined;
+	try {
+		model = resolveRootCauseModel(config, ctx.model);
+		thinkingLevel = thinkingLevelForModel(
+			model,
+			resolveRootCauseThinkingLevel(config, ctx.thinkingLevel),
+			ctx.modelRegistry,
+		);
+	} catch (error) {
+		ctx.ui.notify(
+			`${error instanceof Error ? error.message : String(error)}，请手动填写根因分析和修复方案`,
+			"warning",
+		);
 		return null;
 	}
 	const title = `TAPD Bug ${bug.shortId} 根因总结`;
@@ -65,11 +75,7 @@ export async function generateBugRootCauseSummary(options: {
 			cwd,
 			title,
 			model,
-			thinkingLevel: thinkingLevelForModel(
-				model,
-				ctx.thinkingLevel,
-				ctx.modelRegistry,
-			),
+			thinkingLevel,
 			task: buildRootCauseTask({
 				bugId: bug.shortId,
 				workspaceId: bug.workspaceId,
@@ -107,7 +113,7 @@ export async function generateBugRootCauseSummary(options: {
 		if (signal?.aborted) throw abortError();
 		if ((await overlay) === "aborted") {
 			ctx.ui.notify(
-				`Bug ${bug.shortId}: 已取消根因总结，请手动填写产生原因和修复方式`,
+				`Bug ${bug.shortId}: 已取消根因总结，请手动填写根因分析和修复方案`,
 				"warning",
 			);
 			return null;
@@ -115,7 +121,7 @@ export async function generateBugRootCauseSummary(options: {
 		const parsed = parseGeneratedCauseAndFix(result.output);
 		if (!parsed) {
 			ctx.ui.notify(
-				`Bug ${bug.shortId}: 子 Agent 未返回可用的产生原因/修复，请手动填写`,
+				`Bug ${bug.shortId}: 子 Agent 未返回可用的根因分析/修复方案，请手动填写`,
 				"warning",
 			);
 			return null;
@@ -140,7 +146,7 @@ export async function generateBugRootCauseSummary(options: {
 		if (signal?.aborted) throw abortError();
 		if (overlayReason === "aborted") {
 			ctx.ui.notify(
-				`Bug ${bug.shortId}: 已取消根因总结，请手动填写产生原因和修复方式`,
+				`Bug ${bug.shortId}: 已取消根因总结，请手动填写根因分析和修复方案`,
 				"warning",
 			);
 			return null;
