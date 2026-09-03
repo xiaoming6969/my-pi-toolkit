@@ -9,7 +9,6 @@ import {
 import {
 	fetchBugMrFields,
 	matchCategoryOption,
-	selectCategoryOption,
 	tapdUserChooser,
 } from "./bug-fields.js";
 import {
@@ -24,6 +23,21 @@ import {
 	updateTapdStatus,
 } from "./tapd-api.js";
 import type { TapdKeyword } from "./types.js";
+
+function writeTapdTextField(
+	extraFields: Record<string, string>,
+	updates: string[],
+	shortId: string,
+	fieldName: string | undefined,
+	label: string,
+	value: string,
+): void {
+	if (!fieldName) return;
+	const text = value.trim();
+	if (!text) throw new Error(`Bug ${shortId}: 缺少${label}`);
+	extraFields[fieldName] = text;
+	updates.push(`bug/${shortId}: 已写入${label}`);
+}
 
 function resolvedIntroducedCommit(draft: BugRootCauseDraft): string | null {
 	const value = draft.introducedCommit.trim();
@@ -106,37 +120,43 @@ export async function updateBugFromDraft(
 				`bug/${item.shortId}: 合入版本未修改 - ${historical.reason}`,
 			);
 	}
-	progress("正在匹配根因大类，并写入当前用户为开发人员...");
+	progress("正在写入根因分析、影响范围、修复方案、根因大类和开发人员...");
 	const fields = await fetchBugMrFields(config, item.workspaceId);
+	writeTapdTextField(
+		extraFields,
+		updates,
+		item.shortId,
+		fields.rcaFieldName,
+		"根因分析（RCA）",
+		draftData.cause,
+	);
+	writeTapdTextField(
+		extraFields,
+		updates,
+		item.shortId,
+		fields.impactFieldName,
+		"影响范围",
+		draftData.impact,
+	);
+	writeTapdTextField(
+		extraFields,
+		updates,
+		item.shortId,
+		fields.fixPlanFieldName,
+		"修复方案说明",
+		draftData.fix,
+	);
 	if (fields.category) {
-		let category = matchCategoryOption(
+		const category = matchCategoryOption(
 			draftData.category,
 			fields.category.leaves,
 		);
-		let skipReason: string | undefined;
-		if (!category) {
-			try {
-				category = await selectCategoryOption(
-					fields.category.leaves,
-					(title, options) => ctx.ui.select(title, options),
-					{
-						parent: `Bug ${item.shortId}: 请选择根因大类`,
-						child: `Bug ${item.shortId}: 请选择根因子类`,
-					},
-				);
-				if (!category) skipReason = "根因大类未修改";
-			} catch (error) {
-				skipReason = `根因大类未修改 - ${error instanceof Error ? error.message : String(error)}`;
-			}
-		}
-		if (category) {
-			extraFields[fields.category.fieldName] = category;
-			updates.push(`bug/${item.shortId}: 根因大类 ${category}`);
-		} else {
-			updates.push(
-				`bug/${item.shortId}: ${skipReason ?? "根因大类未修改"}`,
+		if (!category)
+			throw new Error(
+				`Bug ${item.shortId} 缺少根因大类，请重新执行 /tapd mr`,
 			);
-		}
+		extraFields[fields.category.fieldName] = category;
+		updates.push(`bug/${item.shortId}: 根因大类 ${category}`);
 	} else {
 		updates.push(
 			`bug/${item.shortId}: 根因大类未修改 - 未找到字段或没有候选值`,
@@ -154,7 +174,9 @@ export async function updateBugFromDraft(
 	} else {
 		updates.push(`bug/${item.shortId}: 开发人员未修改 - 未找到字段`);
 	}
-	progress(`正在同步状态 ${status}、负责人、合入版本、根因大类和开发人员...`);
+	progress(
+		`正在同步状态 ${status}、负责人、合入版本、RCA 字段和开发人员...`,
+	);
 	await updateTapdStatus(config, item, status, currentOwner, extraFields);
 	updates.push(`bug/${item.shortId} → ${status}`);
 	if (!item.author) {

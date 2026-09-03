@@ -16,11 +16,19 @@ export interface TapdReviewConfig {
 	presentation?: SubagentPresentation;
 }
 
+export interface TapdRootCauseConfig {
+	/** 根因总结子 Agent 模型，例如 cursor/composer-2.5。 */
+	model?: string;
+	/** 根因总结思考等级；off / minimal / low / medium / high / xhigh / max；默认继承主会话。 */
+	thinkingLevel?: string;
+}
+
 export interface TapdConfig {
 	token: string;
 	baseUrl?: string;
 	gitlab?: GitLabConfig;
 	review?: TapdReviewConfig;
+	rootCause?: TapdRootCauseConfig;
 }
 
 export interface TapdResponse<T> {
