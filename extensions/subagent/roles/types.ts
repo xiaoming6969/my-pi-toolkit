@@ -9,6 +9,13 @@ export type SubagentRoleSource = "builtin" | "user" | "project";
  */
 export type SubagentRoleResources = "lean" | "inherit";
 
+/** A file the role is expected to produce under the run's `outputs/` directory. */
+export interface SubagentRoleOutput {
+	name: string;
+	description: string;
+	required: boolean;
+}
+
 export interface SubagentRoleDefinition {
 	name: string;
 	description: string;
@@ -24,5 +31,7 @@ export interface SubagentRoleDefinition {
 	repoSearchGuard: boolean;
 	/** Whether the child reads AGENTS.md / context files (`--no-context-files` when false). */
 	contextFiles: boolean;
+	/** Declared output files; the parent receives their paths after the run. */
+	outputs: SubagentRoleOutput[];
 	source: SubagentRoleSource;
 }

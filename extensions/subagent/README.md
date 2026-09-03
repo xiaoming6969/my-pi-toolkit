@@ -8,13 +8,49 @@
 
 ```json
 {
-  "prompt": "完整任务描述，包含相关文件路径与期望的报告格式",
+  "prompt": "完整任务描述",
   "description": "3-8 个词的短标签",
   "role": "explore",
   "cwd": "可选，默认主 Agent 当前目录",
-  "background": false
+  "background": false,
+  "relevantFiles": ["src/auth/", "src/api/login.ts"],
+  "constraints": ["不要修改文件"],
+  "expectedOutput": "Markdown，含文件与行号证据",
+  "resumeFrom": "可选，已结束子 Agent 的 subagentId"
 }
 ```
+
+### 结构化 brief 与结果契约
+
+`relevantFiles`、`constraints`、`expectedOutput` 由共享层渲染为子 Agent 的首条 user message（`Relevant files:` / `Constraints:` / `Expected output:` 分节），主 Agent 不必把这些信息揉进 prose；不传时 prompt 保持原样。
+
+每次运行结束后，完整报告写入 `runDir/report.md`（`runDir` 位于系统临时目录的 `my-pi-toolkit-subagents/<subagentId>/`）。返回主 Agent 的文本仍受 50 KB / 2000 行截断，被截断时会附上 `Full report: <path>`，主 Agent 可用 `read` 直接读取。
+
+角色可以声明 `outputs` 文件契约：
+
+```json
+{
+  "capability": "read-only",
+  "prompt": "...",
+  "outputs": [
+    { "name": "plan.md", "description": "Ordered implementation steps", "required": true },
+    { "name": "risks.md", "description": "Open questions" }
+  ]
+}
+```
+
+启动前共享层创建 `runDir/outputs/`，并在 brief 中列出每个文件的精确路径；结束后工具结果附 `Output files:` 列表（存在的给路径，缺失的标 `missing`，必填项标 `(required)`），工具 `details.outputs` 保留结构化信息。这样 review → implement 等链式任务可以直接把上一步的产物路径交给下一步。
+
+### `resumeFrom`：以已完成子 Agent 为起点
+
+`resumeFrom` 传入本会话内已结束（completed / failed / cancelled）子 Agent 的 `subagentId`，新子 Agent 会用 Pi 的 `--fork` 复制其 session transcript 后再以**新的角色、system prompt 与工具白名单**继续，例如把 `explore` 的调研结果直接交给 `implement`，或让 `review` 基于 `implement` 的完整过程做独立审查。规则：
+
+- 来源必须属于当前主会话且已停止运行；仍在运行时报错，等待其结束后再调用。
+- 来源可以是 live 可复用子 Agent、后台任务，或仍在 `retainCompletedMinutes` 保留期内的运行目录。
+- `inline` 一次性子进程不保存 session，不能作为来源。
+- 带 `resumeFrom` 的子 Agent 始终走 managed RPC，忽略 `inline` / `split` / `tab` 配置。
+
+`resumeFrom` 与 `subagent_followup` 的区别：follow-up 在同一进程、同一 profile 上继续下一 turn；`resumeFrom` 是新进程、新角色，只继承对话记录。
 
 ### 后台运行与等待原语
 
@@ -78,7 +114,7 @@ contextFiles: true
 Review changes against docs/architecture.md ...
 ```
 
-字段：`capability`（`read-only` / `read-write` / `execute` / `all`，默认 `read-only`）、`resources`（`lean` / `inherit`，`all` 默认 `inherit`）、`prompt` / `promptFile` / 正文、`model`、`thinkingLevel`、`tools`（追加到能力基础集的额外工具）、`repoSearchGuard`、`contextFiles`。角色名只允许小写字母、数字与连字符。优先级：受信任项目 `.pi/agents/*.md` > 用户 `subagents.roles` > 内置角色；同名可覆盖内置角色。未受信任项目的角色文件不会读取。配置非法时 `spawn_subagent` 明确报错，不会静默回退。
+字段：`capability`（`read-only` / `read-write` / `execute` / `all`，默认 `read-only`）、`resources`（`lean` / `inherit`，`all` 默认 `inherit`）、`prompt` / `promptFile` / 正文、`model`、`thinkingLevel`、`tools`（追加到能力基础集的额外工具）、`repoSearchGuard`、`contextFiles`、`outputs`（文件契约，见上）。角色名只允许小写字母、数字与连字符。优先级：受信任项目 `.pi/agents/*.md` > 用户 `subagents.roles` > 内置角色；同名可覆盖内置角色。未受信任项目的角色文件不会读取。配置非法时 `spawn_subagent` 明确报错，不会静默回退。
 
 ## 共享运行时入口
 

@@ -40,6 +40,7 @@ export const BUILTIN_SUBAGENT_ROLES: readonly SubagentRoleDefinition[] = [
 		extraTools: [...REPO_SEARCH_PI_LENS_TOOLS],
 		repoSearchGuard: true,
 		contextFiles: false,
+		outputs: [],
 		source: "builtin",
 	},
 	{
@@ -52,6 +53,7 @@ export const BUILTIN_SUBAGENT_ROLES: readonly SubagentRoleDefinition[] = [
 		extraTools: [],
 		repoSearchGuard: false,
 		contextFiles: true,
+		outputs: [],
 		source: "builtin",
 	},
 	{
@@ -64,6 +66,7 @@ export const BUILTIN_SUBAGENT_ROLES: readonly SubagentRoleDefinition[] = [
 		extraTools: [],
 		repoSearchGuard: false,
 		contextFiles: true,
+		outputs: [],
 		source: "builtin",
 	},
 	{
@@ -76,6 +79,7 @@ export const BUILTIN_SUBAGENT_ROLES: readonly SubagentRoleDefinition[] = [
 		extraTools: [],
 		repoSearchGuard: false,
 		contextFiles: true,
+		outputs: [],
 		source: "builtin",
 	},
 ];

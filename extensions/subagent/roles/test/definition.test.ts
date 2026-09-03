@@ -93,6 +93,36 @@ test("buildRoleDefinition rejects invalid names, capabilities, resources and too
 	assert.throws(() => buildRoleDefinition({ ...base, fields: {} }), /prompt/);
 });
 
+test("outputs declare files the role must produce", () => {
+	const role = buildRoleDefinition({
+		...base,
+		fields: {
+			prompt: "x",
+			outputs: [
+				{ name: "plan.md", description: "The plan", required: true },
+				{ name: "notes.md" },
+			],
+		},
+	});
+	assert.deepEqual(role.outputs, [
+		{ name: "plan.md", description: "The plan", required: true },
+		{ name: "notes.md", description: "", required: false },
+	]);
+	assert.deepEqual(buildRoleDefinition({ ...base, fields: { prompt: "x" } }).outputs, []);
+	assert.throws(
+		() => buildRoleDefinition({ ...base, fields: { prompt: "x", outputs: "plan.md" } }),
+		/outputs 必须是数组/,
+	);
+	assert.throws(
+		() => buildRoleDefinition({ ...base, fields: { prompt: "x", outputs: ["plan.md"] } }),
+		/每一项必须是对象/,
+	);
+	assert.throws(
+		() => buildRoleDefinition({ ...base, fields: { prompt: "x", outputs: [{ name: "../x" }] } }),
+		/合法文件名/,
+	);
+});
+
 test("parseAgentMarkdown splits YAML frontmatter from the body", () => {
 	const parsed = parseAgentMarkdown(
 		"---\nname: tester\ncapability: execute\ntools:\n  - lsp_diagnostics\n---\nRun the tests.\n",

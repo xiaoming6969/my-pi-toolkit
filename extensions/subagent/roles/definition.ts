@@ -4,6 +4,7 @@ import { parse as parseYaml } from "yaml";
 import type { SubagentCapability } from "../../shared/subagent/capability.js";
 import type {
 	SubagentRoleDefinition,
+	SubagentRoleOutput,
 	SubagentRoleResources,
 	SubagentRoleSource,
 } from "./types.js";
@@ -56,6 +57,29 @@ function toolList(value: unknown, origin: string): string[] {
 	});
 }
 
+const OUTPUT_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+
+function outputList(value: unknown, origin: string): SubagentRoleOutput[] {
+	if (value === undefined || value === null) return [];
+	if (!Array.isArray(value))
+		throw new Error(`${origin}: outputs 必须是数组`);
+	return value.map((item) => {
+		if (!item || typeof item !== "object" || Array.isArray(item))
+			throw new Error(`${origin}: outputs 的每一项必须是对象`);
+		const record = item as Record<string, unknown>;
+		const name = optionalString(record, "name", `${origin} outputs`);
+		if (!name || !OUTPUT_NAME.test(name))
+			throw new Error(
+				`${origin}: outputs[].name 必须是合法文件名（字母、数字、点、下划线、连字符）`,
+			);
+		return {
+			name,
+			description: optionalString(record, "description", `${origin} outputs`) ?? "",
+			required: record.required === true,
+		};
+	});
+}
+
 function resolvePrompt(input: RoleFieldsInput): string {
 	const inline = optionalString(input.fields, "prompt", input.origin);
 	if (inline) return inline;
@@ -103,6 +127,7 @@ export function buildRoleDefinition(
 		extraTools: toolList(fields.tools, origin),
 		repoSearchGuard: fields.repoSearchGuard === true,
 		contextFiles: fields.contextFiles !== false,
+		outputs: outputList(fields.outputs, origin),
 		source: input.source,
 	};
 }

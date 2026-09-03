@@ -28,6 +28,7 @@ function buildPiArgs(
 		"--extension",
 		BRIDGE_EXTENSION,
 	];
+	if (options.forkSessionFile) args.push("--fork", options.forkSessionFile);
 	for (const extension of options.extensionPaths ?? [])
 		args.push("--extension", extension);
 	args.push("--no-skills", "--no-prompt-templates");

@@ -18,6 +18,19 @@ export interface SubagentRunOptions
 	extraTools?: readonly string[];
 }
 
+export interface SubagentOutputFile {
+	name: string;
+	path: string;
+	exists: boolean;
+	required: boolean;
+}
+
+/** Files a run left on disk for the parent: the full report and declared outputs. */
+export interface SubagentRunArtifacts {
+	reportFile?: string;
+	outputs?: SubagentOutputFile[];
+}
+
 export interface SubagentRunResult {
 	output: string;
 	model: string;
@@ -29,6 +42,7 @@ export interface SubagentRunResult {
 	runDir?: string;
 	exitCode: number;
 	stderr: string;
+	artifacts?: SubagentRunArtifacts;
 }
 
 /**
@@ -46,7 +60,13 @@ export async function runSubagent(
 		availableTools,
 		extraTools,
 	}).join(",");
-	const terminal = await runTerminalSubagent({ ...launch, tools });
+	// A forked transcript needs a persistent session, which only the managed
+	// RPC and terminal paths provide; the one-shot JSON child is sessionless.
+	const terminal = await runTerminalSubagent({
+		...launch,
+		tools,
+		presentation: launch.forkSessionFile ? "manual" : launch.presentation,
+	});
 	if (terminal)
 		return {
 			...terminal,

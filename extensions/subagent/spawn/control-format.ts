@@ -9,6 +9,7 @@ import {
 } from "../../shared/subagent/registry.js";
 import { assistantText } from "../../shared/subagent/rpc-protocol.js";
 import { previewToolCall } from "./render.js";
+import { describeRunResult } from "./result-text.js";
 
 const TRUNCATED_NOTICE =
 	"[子 Agent 输出已截断；完整输出保存在工具 details 中。]";
@@ -92,19 +93,13 @@ export function describeSubagentOutput(
 
 function describeJob(job: BackgroundSubagentJob): SubagentOutputView {
 	const base = { subagentId: job.id, title: job.title, status: job.status };
-	if (job.status === "completed" && job.result) {
-		const visible = truncateSubagentOutput(job.result.output, TRUNCATED_NOTICE);
-		const handle =
-			job.result.reusable && job.result.subagentId
-				? `\n\nReusable subagentId: ${job.result.subagentId} (turn ${job.result.turn}).`
-				: "";
+	if (job.status === "completed" && job.result)
 		return {
 			...base,
-			text: `${visible.content}${handle}`,
+			text: describeRunResult(job.result),
 			output: job.result.output,
-			truncated: visible.truncated,
+			truncated: truncateSubagentOutput(job.result.output, "").truncated,
 		};
-	}
 	if (job.status === "failed" || job.status === "cancelled")
 		return {
 			...base,

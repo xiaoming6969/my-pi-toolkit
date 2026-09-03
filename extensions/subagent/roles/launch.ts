@@ -35,6 +35,8 @@ export interface RoleLaunchOptions {
 	parentSessionId?: string;
 	/** Pre-assigned subagent id; generated when omitted. */
 	runId?: string;
+	/** Fork this session file so the child continues a prior transcript. */
+	forkSessionFile?: string;
 	artifactFiles?: string[];
 	env?: Record<string, string>;
 	signal?: AbortSignal;
@@ -82,6 +84,7 @@ export async function runRoleSubagent(
 		keepOpen: options.keepOpen,
 		parentSessionId: options.parentSessionId,
 		runId: options.runId,
+		forkSessionFile: options.forkSessionFile,
 		artifactFiles: options.artifactFiles,
 		env: options.env,
 		signal: options.signal,

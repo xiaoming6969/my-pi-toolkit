@@ -13,10 +13,8 @@ import type { SubagentToolCall } from "../../shared/subagent/registry.js";
 import { BUILTIN_SUBAGENT_ROLES } from "../roles/builtin.js";
 import { prepareSpawn, type PreparedSpawn } from "./prepare.js";
 import { previewToolCall, renderSpawnCall, renderSpawnResult } from "./render.js";
+import { describeRunResult } from "./result-text.js";
 import type { SpawnSubagentDetails, SpawnSubagentParams } from "./types.js";
-
-const TRUNCATED_NOTICE =
-	"[子 Agent 输出已截断；完整输出保存在工具 details 中。]";
 
 const ROLE_SUMMARY = BUILTIN_SUBAGENT_ROLES.map(
 	(role) => `${role.name}: ${role.description}`,
@@ -78,23 +76,21 @@ async function runForeground(
 			},
 		}),
 	);
-	const visible = truncateSubagentOutput(result.output, TRUNCATED_NOTICE);
-	const handle =
-		result.reusable && result.subagentId
-			? `\n\nReusable subagentId: ${result.subagentId} (turn ${result.turn}).`
-			: "";
 	return {
-		content: [{ type: "text" as const, text: `${visible.content}${handle}` }],
+		content: [{ type: "text" as const, text: describeRunResult(result) }],
 		details: {
 			...base,
 			running: false,
 			toolCalls: result.toolCalls,
 			output: result.output,
-			truncated: visible.truncated,
+			truncated: truncateSubagentOutput(result.output, "").truncated,
 			subagentId: result.subagentId,
 			reusable: result.reusable,
 			turn: result.turn,
 			runDir: result.runDir,
+			reportFile: result.artifacts?.reportFile,
+			outputs: result.artifacts?.outputs,
+			resumedFrom: prepared.resumedFrom,
 		} satisfies SpawnSubagentDetails,
 	};
 }
@@ -144,11 +140,12 @@ export function registerSpawnSubagentTool(pi: ExtensionAPI): void {
 	pi.registerTool({
 		name: "spawn_subagent",
 		label: "Spawn Subagent",
-		description: `Delegate one self-contained task to an isolated subagent with its own context window and a role-defined tool allowlist. Built-in roles — ${ROLE_SUMMARY} Projects and users can define additional roles. Set background=true to get a subagentId immediately and keep working; a completion follow-up is delivered automatically. Reusable children return a subagentId for subagent_followup.`,
+		description: `Delegate one self-contained task to an isolated subagent with its own context window and a role-defined tool allowlist. Built-in roles — ${ROLE_SUMMARY} Projects and users can define additional roles. Give the child a structured brief (relevantFiles, constraints, expectedOutput). Set background=true to get a subagentId immediately and keep working; a completion follow-up is delivered automatically. Use resumeFrom to fork a settled subagent's transcript into a new role (e.g. explore → implement). Reusable children return a subagentId for subagent_followup.`,
 		promptSnippet:
 			"Delegate a self-contained research, planning, implementation or review task to a role-defined subagent, optionally in the background",
 		promptGuidelines: [
-			"Use spawn_subagent when a task is self-contained, benefits from a separate context window, and can be described completely in the prompt; include relevant file paths and the expected output format.",
+			"Use spawn_subagent when a task is self-contained, benefits from a separate context window, and can be described completely in the prompt; pass relevantFiles, constraints and expectedOutput instead of burying them in prose.",
+			"Use resumeFrom to hand a finished research or plan transcript to an implement or review child instead of re-explaining the findings; the source must belong to this session and have stopped running.",
 			"Pick the least-privileged role that can finish the task: explore or plan for read-only work, review for independent verification, implement only when files must change.",
 			"Use background=true only when you have other independent work to do meanwhile; then do not poll, wait for the completion follow-up or call subagent_wait once.",
 			"Never ask the agent that produced a change or conclusion to review its own work; spawn a separate review subagent instead.",
@@ -179,6 +176,30 @@ export function registerSpawnSubagentTool(pi: ExtensionAPI): void {
 				Type.Boolean({
 					description:
 						"Return immediately with a subagentId and run in the background; defaults to false",
+				}),
+			),
+			relevantFiles: Type.Optional(
+				Type.Array(Type.String({ minLength: 1 }), {
+					maxItems: 50,
+					description: "Files or directories the child should start from",
+				}),
+			),
+			constraints: Type.Optional(
+				Type.Array(Type.String({ minLength: 1 }), {
+					maxItems: 20,
+					description: "Hard constraints the child must respect",
+				}),
+			),
+			expectedOutput: Type.Optional(
+				Type.String({
+					description: "Shape of the report you want back (sections, format, level of detail)",
+				}),
+			),
+			resumeFrom: Type.Optional(
+				Type.String({
+					minLength: 1,
+					description:
+						"subagentId of a settled subagent from this session; the child forks its transcript and continues with the new role and prompt",
 				}),
 			),
 		}),

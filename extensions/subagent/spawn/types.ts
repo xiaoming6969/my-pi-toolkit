@@ -1,4 +1,5 @@
 import type { SubagentToolCall } from "../../shared/subagent/registry.js";
+import type { SubagentOutputFile } from "../../shared/subagent/run.js";
 
 export interface SpawnSubagentParams {
 	prompt: string;
@@ -6,7 +7,14 @@ export interface SpawnSubagentParams {
 	role?: string;
 	cwd?: string;
 	background?: boolean;
+	relevantFiles?: string[];
+	constraints?: string[];
+	expectedOutput?: string;
+	/** Fork a settled subagent's transcript into this child. */
+	resumeFrom?: string;
 }
+
+export type SpawnOutputFile = SubagentOutputFile;
 
 export interface SpawnSubagentDetails {
 	running: boolean;
@@ -23,4 +31,8 @@ export interface SpawnSubagentDetails {
 	reusable: boolean;
 	turn: number;
 	runDir?: string;
+	/** Full report written to disk when the child finishes. */
+	reportFile?: string;
+	outputs?: SpawnOutputFile[];
+	resumedFrom?: string;
 }

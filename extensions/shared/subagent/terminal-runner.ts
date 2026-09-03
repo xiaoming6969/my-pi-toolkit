@@ -35,6 +35,8 @@ export interface TerminalSubagentOptions {
 	parentSessionId?: string;
 	/** Pre-assigned subagent id so callers can hand out a handle before launch. */
 	runId?: string;
+	/** Fork this session file so the child starts with a prior transcript. */
+	forkSessionFile?: string;
 	keepOpen?: boolean;
 	abortSettleTimeoutMs?: number;
 	env?: Record<string, string>;

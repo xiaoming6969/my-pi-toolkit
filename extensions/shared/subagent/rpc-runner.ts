@@ -21,6 +21,7 @@ function buildArgs(options: TerminalSubagentOptions, runDir: string): string[] {
 		"--name",
 		options.title,
 	];
+	if (options.forkSessionFile) args.push("--fork", options.forkSessionFile);
 	if (!options.loadDefaultResources) args.push("--no-extensions");
 	for (const extension of options.extensionPaths ?? [])
 		args.push("--extension", extension);
