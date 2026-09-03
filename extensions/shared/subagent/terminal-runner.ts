@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { copyFile, mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import { basename, join } from "node:path";
+import { join } from "node:path";
 import {
 	loadSubagentUiConfig,
 	resolvePresentation,
@@ -12,7 +12,7 @@ import type {
 	SubagentTurnUpdate,
 } from "./registry.js";
 import { runRpcSubagent } from "./rpc-runner.js";
-import { SUBAGENT_RUNS_ROOT } from "./run-paths.js";
+import { prepareTaskArtifacts, SUBAGENT_RUNS_ROOT } from "./run-paths.js";
 import { launchWindowsTerminal } from "./windows-terminal.js";
 
 export type TerminalSubagentUpdate = SubagentTurnUpdate;
@@ -76,23 +76,6 @@ async function cleanupOldRuns(retainMinutes: number): Promise<void> {
 	}
 }
 
-async function prepareTask(
-	runDir: string,
-	task: string,
-	artifactFiles: string[],
-): Promise<string> {
-	let prepared = task;
-	const artifactsDir = join(runDir, "artifacts");
-	await mkdir(artifactsDir, { recursive: true, mode: 0o700 });
-	for (let index = 0; index < artifactFiles.length; index += 1) {
-		const source = artifactFiles[index];
-		const destination = join(artifactsDir, `${index + 1}-${basename(source)}`);
-		await copyFile(source, destination);
-		prepared = prepared.split(source).join(destination);
-	}
-	return prepared;
-}
-
 function readEvents(path: string): RunEvent[] {
 	if (!existsSync(path)) return [];
 	return readFileSync(path, "utf8")
@@ -139,7 +122,7 @@ export async function runTerminalSubagent(
 	const subagentId = randomUUID();
 	const runDir = join(SUBAGENT_RUNS_ROOT, subagentId);
 	await mkdir(join(runDir, "sessions"), { recursive: true, mode: 0o700 });
-	const task = await prepareTask(
+	const task = await prepareTaskArtifacts(
 		runDir,
 		options.task,
 		options.artifactFiles ?? [],

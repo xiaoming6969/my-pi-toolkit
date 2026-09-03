@@ -2,6 +2,17 @@
 
 由 `ming-core` 注册的子 Agent 模块：只读 `repo_search`、按精确 ID 续接的 `subagent_followup`，以及 `/subagents` / `Alt+A` 只读 Overlay。RPC 运行时仍在 [`../shared/subagent/`](../shared/subagent/)；TAPD Review 与 Multi Task 继续作为调用方，不并入本目录。
 
+## 共享运行时入口
+
+所有子 Agent 调用方（Repo Search、TAPD Review、TAPD 根因总结、Multi Task worker）都通过 `shared/subagent/run.ts` 的 `runSubagent()` 启动，不再各自拼装 CLI 参数或复制一次性子进程逻辑：
+
+- `capability.ts`：能力模式 → 精确 `--tools` 白名单。`read-only` = `read, grep, find, ls`；`read-write` 追加 `edit, write`；`execute` 追加 `bash`；`all` 使用调用方提供的父 Agent 工具快照。可用 `extraTools` 追加角色专属工具（如 Repo Search 的 pi-lens 只读工具）。`repo_search` 与 `subagent_followup` 这类父进程控制工具在任何模式下都不会下发给子进程。
+- `run.ts`：按 `presentation` 分流到 managed RPC（`manual`）、Windows Terminal（`split` / `tab`），否则回退到 `json-runner.ts` 的一次性 `pi --mode json -p` 子进程。一次性子进程没有 `subagentId`，`reusable` 恒为 `false`。
+- `pi-invocation.ts`：统一决定如何拉起子 Pi（复用父进程入口脚本、PATH 上的 `pi` 或已编译二进制）。
+- `output-limit.ts`：统一 50 KB / 2000 行的返回文本截断；完整输出保留在工具 `details`。
+
+各调用方只声明 `capability`、system prompt、扩展路径与任务文本；工具白名单、扩展隔离与 presentation 回退由共享层保证一致。
+
 `repo_search` 专门探索当前本地代码库。主 Agent 判断本地仓库任务需要跨多个目录、多个文件或梳理分散调用关系时会自动调用；用户也可以通过 `/repo-search <检索任务>` 明确唤起。`multi_task` 的 `kind: "research"` 任务会直接复用同一个 runner，作为 Batch 内的平级只读 worker，而不是由通用 worker 再嵌套调用 `repo_search`。它不能联网，也不用于第三方库、外部 API、官方文档或 GitHub 项目调研；这类任务应优先使用 Context7 或可用的联网搜索工具。`@` 继续保留给文件引用，不作为子 Agent 前缀。
 
 ## 能力与安全边界

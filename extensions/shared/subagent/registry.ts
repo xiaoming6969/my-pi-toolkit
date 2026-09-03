@@ -8,7 +8,8 @@ export interface SubagentToolCall {
 export interface SubagentTurnUpdate {
 	status: string;
 	toolCalls: SubagentToolCall[];
-	subagentId: string;
+	/** Absent while a one-shot JSON child runs; it has no registry handle. */
+	subagentId?: string;
 	reusable: boolean;
 	turn: number;
 }

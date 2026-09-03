@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { resolveSubagentTools } from "../../../shared/subagent/capability.ts";
 import {
 	extractPiLensExtensionPaths,
 	extractRepoSearchExtensionPaths,
 	requestedPaths,
-	REPO_SEARCH_TOOLS,
+	REPO_SEARCH_PI_LENS_TOOLS,
 	resolveRepoSearchExtensionPaths,
 } from "../pi-lens.ts";
 
@@ -36,9 +37,12 @@ const FORBIDDEN_TOOLS = [
 ];
 
 test("Repo Search tool allowlist is exact and read-only", () => {
-	assert.deepEqual([...REPO_SEARCH_TOOLS], EXPECTED_TOOLS);
-	for (const forbidden of FORBIDDEN_TOOLS)
-		assert.ok(!REPO_SEARCH_TOOLS.includes(forbidden));
+	const tools = resolveSubagentTools({
+		capability: "read-only",
+		extraTools: REPO_SEARCH_PI_LENS_TOOLS,
+	});
+	assert.deepEqual(tools, EXPECTED_TOOLS);
+	for (const forbidden of FORBIDDEN_TOOLS) assert.ok(!tools.includes(forbidden));
 });
 
 test("extracts path and paths arrays for the gitignore guard", () => {

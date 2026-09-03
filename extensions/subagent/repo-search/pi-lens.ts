@@ -5,11 +5,8 @@ import {
 	type ResolvedResource,
 } from "@earendil-works/pi-coding-agent";
 
-export const REPO_SEARCH_TOOLS = [
-	"read",
-	"grep",
-	"find",
-	"ls",
+/** Read-only pi-lens tools appended to the `read-only` capability base set. */
+export const REPO_SEARCH_PI_LENS_TOOLS = [
 	"lens_diagnostics",
 	"lsp_diagnostics",
 	"symbol_search",

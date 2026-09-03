@@ -1,8 +1,8 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
-import { basename, dirname, join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { getPiInvocation } from "./pi-invocation.js";
 import {
 	appendThinkingCliArgs,
 	type TerminalSubagentOptions,
@@ -12,20 +12,6 @@ const BRIDGE_EXTENSION = resolve(
 	dirname(fileURLToPath(import.meta.url)),
 	"child-bridge.ts",
 );
-
-function getPiInvocation(): { command: string; args: string[] } {
-	const currentScript = process.argv[1];
-	if (
-		currentScript &&
-		!currentScript.startsWith("/$bunfs/root/") &&
-		existsSync(currentScript)
-	)
-		return { command: process.execPath, args: [currentScript] };
-	const executable = basename(process.execPath).toLowerCase();
-	return /^(node|bun)(\.exe)?$/.test(executable)
-		? { command: "pi", args: [] }
-		: { command: process.execPath, args: [] };
-}
 
 function buildPiArgs(
 	options: TerminalSubagentOptions,

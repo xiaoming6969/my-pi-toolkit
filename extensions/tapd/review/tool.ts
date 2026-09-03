@@ -188,7 +188,6 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 					model,
 					thinkingLevel,
 					task: buildReviewTask(reviewContext, params.instructions),
-					presentation: config.review?.presentation,
 					parentSessionId: ctx.sessionManager.getSessionId(),
 					artifactFiles: [reviewContext.contextFile],
 					signal,

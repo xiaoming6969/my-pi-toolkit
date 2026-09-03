@@ -42,6 +42,8 @@ const coverageExcludes = [
 	"**/gitignore-guard.ts",
 	"**/batch-store.ts",
 	"**/rpc-runner.ts",
+	"**/json-runner.ts",
+	"**/subagent/run.ts",
 	"**/terminal-runner.ts",
 	"**/windows-terminal.ts",
 	"**/child-bridge.ts",

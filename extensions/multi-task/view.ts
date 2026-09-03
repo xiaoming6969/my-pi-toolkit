@@ -1,8 +1,6 @@
-import {
-	truncateHead,
-	type Theme,
-} from "@earendil-works/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth } from "@earendil-works/pi-tui";
+import { truncateSubagentOutput } from "../shared/subagent/output-limit.js";
 import { formatModelWithThinking } from "../shared/tui/tool-format.js";
 import { statusGlyph } from "../shared/tui/visual-language.js";
 import type {
@@ -11,9 +9,6 @@ import type {
 	MultiTaskWorker,
 	MultiTaskWorkerView,
 } from "./types.js";
-
-const MAX_RESULT_BYTES = 50 * 1024;
-const MAX_RESULT_LINES = 2000;
 
 type ClipValue = (value: unknown, width?: number) => string;
 type ToolPreviewer = (args: Record<string, unknown>, clip: ClipValue) => string;
@@ -161,14 +156,10 @@ export function collectText(batch: MultiTaskBatchView): string {
 				]
 			: [],
 	);
-	const output = `${summarize(batch)}\n\n${reports.join("\n\n")}`;
-	const truncated = truncateHead(output, {
-		maxBytes: MAX_RESULT_BYTES,
-		maxLines: MAX_RESULT_LINES,
-	});
-	const visible = truncated.truncated
-		? `${truncated.content}\n\n[Multi Task 输出已截断；完整 worker 输出保存在工具 details 中。]`
-		: truncated.content;
+	const visible = truncateSubagentOutput(
+		`${summarize(batch)}\n\n${reports.join("\n\n")}`,
+		"[Multi Task 输出已截断；完整 worker 输出保存在工具 details 中。]",
+	).content;
 	return handles.length > 0
 		? `${visible}\n\nReusable workers:\n${handles.join("\n")}`
 		: visible;

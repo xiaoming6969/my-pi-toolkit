@@ -4,6 +4,7 @@
 
 ### 改进
 
+- 子 Agent 共享运行时收敛：新增 `shared/subagent/run.ts` 的 `runSubagent()` 统一入口与 `capability.ts` 能力模式（`read-only` / `read-write` / `execute` / `all`）→ 工具白名单映射；Repo Search、TAPD Review、TAPD 根因总结与 Multi Task worker 全部改用该入口，一次性 `--mode json` 回退、`pi` 拉起方式和 50 KB / 2000 行输出截断只保留一份实现。行为与工具白名单保持不变。
 - 将 `repo-search-subagent` 与 `subagent-console` 合并为 `extensions/subagent/`，由单一入口注册 `repo_search`、`subagent_followup` 与 `/subagents`。
 - 将 `model-manager`、Repo Search、子 Agent UI 的用户设置合并进 `~/.pi/agent/ming-core.json`。首次读取会从旧的独立 JSON 导入并归档为 `.migrated.bak`；项目级改为 `.pi/ming-core.json`，仍可读旧文件且不改写仓库。
 
