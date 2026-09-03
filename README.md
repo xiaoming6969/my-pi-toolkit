@@ -39,7 +39,7 @@
 | Context7 | 为 Agent 提供第三方库最新文档，减少对训练数据的依赖 |
 | 会话分支提醒 | 第一条用户消息后记录 Git 分支；恢复会话时若不一致，可选切回绑定分支或改绑到当前分支 |
 | 自动格式化 | 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 格式化本轮修改文件 |
-| 可复用子 Agent | `/subagents` 与 `Alt+A` 查看 queued/运行/idle 时间并管理过程；相关任务可凭 `subagentId` 在同一上下文中继续执行 |
+| 角色化子 Agent | `spawn_subagent` 按 explore / plan / implement / review 或自定义角色委派任务，支持后台运行（`subagent_wait` / `subagent_output` / `subagent_cancel`）、结构化 brief、`resumeFrom` 续接与 worktree 隔离；`/subagents` 与 `Alt+A` 查看 queued/运行/idle 并可向运行中的子 Agent 发送 steer 消息；相关任务可凭 `subagentId` 在同一上下文中继续执行 |
 | 启动面板与主题 | M-PI Dashboard；Footer 兼容第三方扩展状态；推荐主题 `grok-build-dark` |
 
 能力由三个扩展入口编排：`ming-core`、`tapd`、`context7`；Worktree 会话由 `ming-core` 加载。通用模块细节见 [`extensions/README.md`](extensions/README.md)。
@@ -127,7 +127,7 @@ pi --no-session
 | `/apply-worktree` | 应用：原项目切到 worktree 分支并迁回未提交改动，删除工作夹，会话切回原项目；原项目有未提交改动时拒绝。执行中显示 `apply worktree...` |
 | `/delete-worktree` | 放弃：删除工作夹，原项目分支不变；会话在工作夹时可直接放弃；dirty 时二次确认后强制删除。执行中显示 `delete working...` |
 | `/context7 <query>` | 查询第三方库文档 |
-| `/subagents` | 查看、取消或终止子 Agent；列表与详情显示 queued、运行时长、idle 剩余时间及可复用 ID/turn |
+| `/subagents` | 查看、取消、终止子 Agent 或向其发送消息（`S`）；列表与详情显示 queued、运行时长、idle 剩余时间及可复用 ID/turn |
 | `/settings` | 切换主题等设置 |
 | `/helps` | 打开 [my-pi-toolkit](https://github.com/xiaoming6969/my-pi-toolkit) 文档仓库 |
 | `/reload` | 修改扩展后重新加载运行时 |

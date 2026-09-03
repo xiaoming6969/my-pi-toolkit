@@ -37,6 +37,46 @@ test("spawn_subagent is allowed only for read-only roles", () => {
 		);
 	assert.equal(call(), undefined);
 	assert.equal(call("plan"), undefined);
+	assert.equal(call("  "), undefined);
+	assert.equal(
+		checkReadOnlySubagentCall(
+			{ toolName: "spawn_subagent", input: { role: 42 } },
+			"/repo",
+			true,
+			"Ask",
+			deps,
+		),
+		undefined,
+	);
+	assert.equal(
+		checkReadOnlySubagentCall({ toolName: "spawn_subagent", input: null }, "/repo", true, "Ask", deps),
+		undefined,
+	);
+	assert.equal(
+		checkReadOnlySubagentCall(
+			{ toolName: "subagent_followup", input: { subagentId: 7 } },
+			"/repo",
+			true,
+			"Ask",
+			deps,
+		),
+		undefined,
+	);
+	assert.match(
+		checkReadOnlySubagentCall(
+			{ toolName: "spawn_subagent", input: { role: "implement" } },
+			"/repo",
+			true,
+			"Ask",
+			{
+				...deps,
+				roleCapability: () => {
+					throw "string failure";
+				},
+			},
+		) ?? "",
+		/string failure/,
+	);
 	assert.match(call("review") ?? "", /only allows read-only subagent roles; "review" is execute/);
 	assert.match(call("implement") ?? "", /Ask mode/);
 	assert.match(call("ghost") ?? "", /未知的子 Agent 角色/);
