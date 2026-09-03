@@ -9,8 +9,20 @@ const READ_TOOLS = ["read", "grep", "find", "ls"] as const;
 const WRITE_TOOLS = ["edit", "write"] as const;
 const EXECUTE_TOOLS = ["bash"] as const;
 
-/** Parent-side subagent control tools; a child must never inherit them. */
-const PARENT_CONTROL_TOOLS = new Set(["repo_search", "subagent_followup"]);
+/**
+ * Tools that spawn or steer subagents from the parent. A child never inherits
+ * them, which keeps the agent tree at depth one.
+ */
+const PARENT_CONTROL_TOOLS = new Set([
+	"repo_search",
+	"spawn_subagent",
+	"subagent_followup",
+	"subagent_wait",
+	"subagent_output",
+	"subagent_cancel",
+	"multi_task",
+	"tapd_review",
+]);
 
 export interface SubagentToolsOptions {
 	capability: SubagentCapability;

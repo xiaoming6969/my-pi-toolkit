@@ -1,23 +1,13 @@
-import * as path from "node:path";
-import { fileURLToPath } from "node:url";
 import { truncateSubagentOutput } from "../../shared/subagent/output-limit.js";
-import { runSubagent } from "../../shared/subagent/run.js";
-import {
-	resolveRepoSearchExtensionPaths,
-	REPO_SEARCH_PI_LENS_TOOLS,
-} from "./pi-lens.js";
-import { REPO_SEARCH_PROMPT } from "./prompt.js";
+import { BUILTIN_SUBAGENT_ROLES } from "../roles/builtin.js";
+import { runRoleSubagent } from "../roles/launch.js";
 import type {
 	RepoSearchDetails,
 	RepoSearchRunConfig,
 	RepoSearchRunResult,
 } from "./types.js";
 
-const EXTENSION_DIR = path.dirname(fileURLToPath(import.meta.url));
-const GITIGNORE_GUARD_EXTENSION = path.resolve(
-	EXTENSION_DIR,
-	"gitignore-guard.ts",
-);
+const EXPLORE_ROLE = BUILTIN_SUBAGENT_ROLES.find((role) => role.name === "explore")!;
 const TRUNCATED_NOTICE =
 	"[Repo Search 子 Agent 输出已截断；完整输出保存在工具 details 中。]";
 
@@ -51,6 +41,7 @@ function makeDetails(options: {
 	};
 }
 
+/** `repo_search` is the built-in `explore` role with the Repo Search model config. */
 export async function runRepoSearchSubagent(options: {
 	cwd: string;
 	task: string;
@@ -60,22 +51,14 @@ export async function runRepoSearchSubagent(options: {
 	signal?: AbortSignal;
 	onUpdate?: (details: RepoSearchDetails) => void;
 }): Promise<RepoSearchRunResult> {
-	const optionalExtensions = await resolveRepoSearchExtensionPaths(
-		options.cwd,
-		options.config.projectTrusted ?? false,
-		options.config.model,
-	);
-	const result = await runSubagent({
+	const result = await runRoleSubagent({
+		role: EXPLORE_ROLE,
 		cwd: options.cwd,
 		title: "Repo Search Subagent",
 		model: options.config.model,
 		thinkingLevel: options.config.thinkingLevel,
 		task: `Repository search task: ${options.task}`,
-		systemPrompt: REPO_SEARCH_PROMPT,
-		capability: "read-only",
-		extraTools: REPO_SEARCH_PI_LENS_TOOLS,
-		extensionPaths: [GITIGNORE_GUARD_EXTENSION, ...optionalExtensions],
-		disableContextFiles: true,
+		projectTrusted: options.config.projectTrusted ?? false,
 		presentation: options.config.presentation,
 		keepOpen: options.keepOpen,
 		parentSessionId: options.parentSessionId,

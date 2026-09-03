@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { SUBAGENT_CHILD_ENV } from "./child-guard.js";
 import { getPiInvocation } from "./pi-invocation.js";
 import {
 	appendThinkingCliArgs,
@@ -79,6 +80,7 @@ export async function launchWindowsTerminal(
 			"$ErrorActionPreference = 'Stop'",
 			`$launch = Get-Content -LiteralPath '${launchPath.replace(/'/g, "''")}' -Raw | ConvertFrom-Json`,
 			"$env:PI_SUBAGENT_RUN_DIR = [string]$launch.runDir",
+			`$env:${SUBAGENT_CHILD_ENV} = '1'`,
 			"$env:PI_SUBAGENT_KEEP_OPEN = if ($launch.keepOpen) { '1' } else { '0' }",
 			"Set-Location -LiteralPath ([string]$launch.cwd)",
 			"$piArgs = @($launch.arguments | ForEach-Object { [string]$_ })",

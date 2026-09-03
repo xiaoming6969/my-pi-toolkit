@@ -14,7 +14,7 @@
 6. `auto-format` — 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 批量格式化本轮修改文件
 7. `agent-todos` — 任务清单工具与 UI
 8. `multi-task` — 独立文件任务的后台并行 worker 编排；所有 Batch 共享进程级固定 6 槽 FIFO 上限
-9. `subagent` — 只读 `repo_search`、`/subagents` / `Alt+A` Overlay 与 `subagent_followup`；显示 queued/运行/idle 时间并按精确 ID 复用相关 Agent
+9. `subagent` — 角色化 `spawn_subagent`（explore / plan / implement / review 及自定义角色）、只读 `repo_search`、`/subagents` / `Alt+A` Overlay 与 `subagent_followup`；显示 queued/运行/idle 时间并按精确 ID 复用相关 Agent
 10. `session-branch-guard` — 第一条用户消息后记录 Git 分支；resume 或新终端打开旧会话时若不一致，可选切回或改绑（`/session-branch`）
 11. `task-duration` — 在最终回复下方持久显示首次 `agent_start` 到最终 `agent_settled` 的任务耗时，不进入 LLM 上下文
 12. `worktree` — `/new-worktree`、`/apply-worktree`、`/delete-worktree`，实现位于本入口的 `worktree/` 子目录
@@ -45,12 +45,15 @@
   },
   "subagents": {
     "presentation": "manual",
-    "keepOpen": true
+    "keepOpen": true,
+    "roles": {
+      "tester": { "capability": "execute", "prompt": "Run the tests and explain failures." }
+    }
   }
 }
 ```
 
-受信任项目可用 `.pi/ming-core.json` 覆盖 `newConversation` 和 `repoSearch`。TAPD / Context7 凭证仍使用各自的独立文件。
+受信任项目可用 `.pi/ming-core.json` 覆盖 `newConversation` 和 `repoSearch`，并用 `.pi/agents/*.md` 定义或覆盖 `spawn_subagent` 角色。TAPD / Context7 凭证仍使用各自的独立文件。
 
 ## 独立加载路径
 

@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### 新增
+
+- 通用 `spawn_subagent` 工具：按角色把自包含任务委派给独立子 Agent。内置 `explore`（即 `repo_search` 的角色）、`plan`、`implement`、`review`；用户可在 `~/.pi/agent/ming-core.json` 的 `subagents.roles` 定义角色，受信任项目可用 `.pi/agents/*.md`（YAML frontmatter + Markdown prompt）定义或覆盖角色。角色决定能力模式、system prompt、资源加载方式与可选的模型 / 思考等级路由。
+- 子 Agent 嵌套深度限制为 1：所有子进程带 `PI_SUBAGENT_CHILD=1`，`repo_search`、`spawn_subagent`、`subagent_followup`、`multi_task`、`tapd_review` 等父进程控制工具不再下发给任何子 Agent（含 Multi Task implementation worker）。
+
 ### 改进
 
 - 子 Agent 共享运行时收敛：新增 `shared/subagent/run.ts` 的 `runSubagent()` 统一入口与 `capability.ts` 能力模式（`read-only` / `read-write` / `execute` / `all`）→ 工具白名单映射；Repo Search、TAPD Review、TAPD 根因总结与 Multi Task worker 全部改用该入口，一次性 `--mode json` 回退、`pi` 拉起方式和 50 KB / 2000 行输出截断只保留一份实现。行为与工具白名单保持不变。

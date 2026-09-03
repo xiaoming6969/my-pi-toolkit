@@ -64,6 +64,7 @@ export async function runSubagent(
 		systemPrompt: launch.systemPrompt,
 		tools,
 		extensionPaths: launch.extensionPaths,
+		loadDefaultResources: launch.loadDefaultResources,
 		disableContextFiles: launch.disableContextFiles,
 		signal: launch.signal,
 		onUpdate: ({ toolCalls }) =>

@@ -40,7 +40,18 @@ test("all uses the parent snapshot and strips parent control tools", () => {
 	assert.deepEqual(
 		resolveSubagentTools({
 			capability: "all",
-			availableTools: ["bash", "repo_search", "edit", "subagent_followup"],
+			availableTools: [
+				"bash",
+				"repo_search",
+				"edit",
+				"subagent_followup",
+				"spawn_subagent",
+				"subagent_wait",
+				"subagent_output",
+				"subagent_cancel",
+				"multi_task",
+				"tapd_review",
+			],
 		}),
 		["bash", "edit"],
 	);

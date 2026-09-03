@@ -103,11 +103,11 @@ research/research 可以重叠，因为两者都是只读；research 的 `paths`
 每个 worker 使用独立 RPC 子进程、会话和上下文，但按类型采用不同权限：
 
 ```text
-implementation: 主 Agent 当前启用的工具（repo_search 除外）
+implementation: 主 Agent 当前启用的工具（派生/操控子 Agent 的工具除外）
 research:       read, grep, find, ls（可选启用受限 pi-lens 只读工具）
 ```
 
-implementation worker 会继承主 Agent 启动时可发现的 extensions、skills、prompt templates，并使用创建 Batch 时的活跃工具快照；`repo_search` 与父进程控制工具 `subagent_followup` 始终从 allowlist 排除。它另外加载 `path-guard.ts`，在每次 `edit`、`write` 前规范化目标并阻止声明范围外的写入。正常资源加载可能包含 `ming-core`，这是为继承主 Agent 能力而对默认子 Agent 瘦加载规则作出的明确例外。
+implementation worker 会继承主 Agent 启动时可发现的 extensions、skills、prompt templates，并使用创建 Batch 时的活跃工具快照（共享层能力模式 `all`）；`repo_search`、`spawn_subagent`、`subagent_followup`、`subagent_wait` / `subagent_output` / `subagent_cancel`、`multi_task`、`tapd_review` 这些父进程控制工具始终从 allowlist 排除，子进程还带有 `PI_SUBAGENT_CHILD=1`，因此 worker 不能再嵌套派生子 Agent。它另外加载 `path-guard.ts`，在每次 `edit`、`write` 前规范化目标并阻止声明范围外的写入。正常资源加载可能包含 `ming-core`，这是为继承主 Agent 能力而对默认子 Agent 瘦加载规则作出的明确例外。
 
 `paths` 强制门禁只覆盖 `edit` 和 `write`。如果继承的工具包含 `bash` 或其他可产生文件副作用的扩展工具，这些副作用无法由当前路径守卫可靠识别；worker prompt 仍要求只修改声明路径，但这不是 OS 级沙箱。只应把 implementation 任务派给受信任模型，并避免在不信任项目中开放高风险工具。
 

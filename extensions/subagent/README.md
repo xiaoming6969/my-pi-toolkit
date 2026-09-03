@@ -1,12 +1,74 @@
 # Subagent
 
-由 `ming-core` 注册的子 Agent 模块：只读 `repo_search`、按精确 ID 续接的 `subagent_followup`，以及 `/subagents` / `Alt+A` 只读 Overlay。RPC 运行时仍在 [`../shared/subagent/`](../shared/subagent/)；TAPD Review 与 Multi Task 继续作为调用方，不并入本目录。
+由 `ming-core` 注册的子 Agent 模块：通用 `spawn_subagent`、只读 `repo_search`、按精确 ID 续接的 `subagent_followup`，以及 `/subagents` / `Alt+A` 只读 Overlay。RPC 运行时仍在 [`../shared/subagent/`](../shared/subagent/)；TAPD Review 与 Multi Task 继续作为调用方，不并入本目录。
+
+## `spawn_subagent` 与角色
+
+`spawn_subagent` 把一个自包含任务委派给独立上下文窗口中的子 Agent。参数：
+
+```json
+{
+  "prompt": "完整任务描述，包含相关文件路径与期望的报告格式",
+  "description": "3-8 个词的短标签",
+  "role": "explore",
+  "cwd": "可选，默认主 Agent 当前目录"
+}
+```
+
+`role` 决定子 Agent 的 system prompt、能力模式与资源加载方式。内置角色：
+
+| 角色 | 能力 | 资源 | 用途 |
+| --- | --- | --- | --- |
+| `explore`（默认） | `read-only` + pi-lens 只读工具 | lean，带 `.gitignore` 守卫，不读上下文文件 | 跨文件检索、调用关系与证据收集；即 `repo_search` 的角色 |
+| `plan` | `read-only` | lean | 只读探索并返回结构化实现计划 |
+| `implement` | `all`（父 Agent 工具快照） | inherit，加载父 Agent 的 extensions / skills | 执行一个独立实现任务并自检 |
+| `review` | `execute`（只读工具 + `bash` 跑 `git diff/log/show`） | lean | 独立审查，按严重级别返回问题；不得让产出方自审 |
+
+lean 角色以 `--no-extensions` 启动，只显式加载 `openai-compat-models`（自定义 provider）、选择 `cursor/*` 模型时的 `pi-cursor` provider，以及 `explore` 的 `.gitignore` 守卫与已启用的 pi-lens；inherit 角色加载父 Agent 的正常资源（可能包含 `ming-core`）。无论哪种模式，`repo_search`、`spawn_subagent`、`subagent_followup`、`subagent_wait` / `subagent_output` / `subagent_cancel`、`multi_task`、`tapd_review` 都不会下发给子进程，子进程还会带 `PI_SUBAGENT_CHILD=1`，因此子 Agent 不能再派生子 Agent（嵌套深度上限 1）。
+
+模型优先级：角色定义的 `model` → `explore` 沿用 `repoSearch` 的项目 / 用户配置 → 主 Agent 当前模型。思考等级取角色 `thinkingLevel` 或主会话当前值，并只在目标模型支持 reasoning 时传递。首轮完成后可复用的子 Agent 会返回 `Reusable subagentId`，用 `subagent_followup` 续接。
+
+### 自定义角色
+
+用户级：`~/.pi/agent/ming-core.json` 的 `subagents.roles`。
+
+```json
+{
+  "subagents": {
+    "roles": {
+      "tester": {
+        "description": "运行测试并解释失败",
+        "capability": "execute",
+        "prompt": "You run the project's tests and explain failures with file and line evidence.",
+        "model": "provider/model-id",
+        "thinkingLevel": "low",
+        "tools": ["lsp_diagnostics"]
+      }
+    }
+  }
+}
+```
+
+受信任项目：`.pi/agents/<name>.md`（从当前目录向上查找最近的 `.pi/agents/`），YAML frontmatter + Markdown 正文作为 system prompt：
+
+```markdown
+---
+description: Project-specific reviewer
+capability: read-only
+model: provider/model-id
+contextFiles: true
+---
+Review changes against docs/architecture.md ...
+```
+
+字段：`capability`（`read-only` / `read-write` / `execute` / `all`，默认 `read-only`）、`resources`（`lean` / `inherit`，`all` 默认 `inherit`）、`prompt` / `promptFile` / 正文、`model`、`thinkingLevel`、`tools`（追加到能力基础集的额外工具）、`repoSearchGuard`、`contextFiles`。角色名只允许小写字母、数字与连字符。优先级：受信任项目 `.pi/agents/*.md` > 用户 `subagents.roles` > 内置角色；同名可覆盖内置角色。未受信任项目的角色文件不会读取。配置非法时 `spawn_subagent` 明确报错，不会静默回退。
 
 ## 共享运行时入口
 
-所有子 Agent 调用方（Repo Search、TAPD Review、TAPD 根因总结、Multi Task worker）都通过 `shared/subagent/run.ts` 的 `runSubagent()` 启动，不再各自拼装 CLI 参数或复制一次性子进程逻辑：
+所有子 Agent 调用方（`spawn_subagent`、Repo Search、TAPD Review、TAPD 根因总结、Multi Task worker）都通过 `shared/subagent/run.ts` 的 `runSubagent()` 启动，不再各自拼装 CLI 参数或复制一次性子进程逻辑。角色定义与角色级启动（extension 路径、资源模式）在本模块的 `roles/`；`repo_search` 只是 `explore` 角色加 Repo Search 模型配置的薄封装。
 
-- `capability.ts`：能力模式 → 精确 `--tools` 白名单。`read-only` = `read, grep, find, ls`；`read-write` 追加 `edit, write`；`execute` 追加 `bash`；`all` 使用调用方提供的父 Agent 工具快照。可用 `extraTools` 追加角色专属工具（如 Repo Search 的 pi-lens 只读工具）。`repo_search` 与 `subagent_followup` 这类父进程控制工具在任何模式下都不会下发给子进程。
+- `capability.ts`：能力模式 → 精确 `--tools` 白名单。`read-only` = `read, grep, find, ls`；`read-write` 追加 `edit, write`；`execute` 追加 `bash`；`all` 使用调用方提供的父 Agent 工具快照。可用 `extraTools` 追加角色专属工具（如 Repo Search 的 pi-lens 只读工具）。所有会派生或操控子 Agent 的父进程控制工具在任何模式下都不会下发给子进程。
+- `child-guard.ts`：所有启动路径为子进程设置 `PI_SUBAGENT_CHILD=1`；`spawn_subagent` / `subagent_followup` 在子进程内直接拒绝执行。
 - `run.ts`：按 `presentation` 分流到 managed RPC（`manual`）、Windows Terminal（`split` / `tab`），否则回退到 `json-runner.ts` 的一次性 `pi --mode json -p` 子进程。一次性子进程没有 `subagentId`，`reusable` 恒为 `false`。
 - `pi-invocation.ts`：统一决定如何拉起子 Pi（复用父进程入口脚本、PATH 上的 `pi` 或已编译二进制）。
 - `output-limit.ts`：统一 50 KB / 2000 行的返回文本截断；完整输出保留在工具 `details`。

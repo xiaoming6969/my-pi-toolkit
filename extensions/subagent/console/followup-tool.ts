@@ -6,6 +6,7 @@ import type {
 	ToolRenderResultOptions,
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
+import { assertNotSubagentChild } from "../../shared/subagent/child-guard.js";
 import { truncateSubagentOutput } from "../../shared/subagent/output-limit.js";
 import {
 	getLiveSubagent,
@@ -95,6 +96,7 @@ export function registerSubagentFollowupTool(pi: ExtensionAPI): void {
 				| undefined,
 			ctx: ExtensionContext,
 		) {
+			assertNotSubagentChild("续接子 Agent");
 			const run = resolveFollowupRun(
 				params.subagentId,
 				ctx.sessionManager.getSessionId(),

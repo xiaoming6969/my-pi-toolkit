@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { SUBAGENT_CHILD_ENV } from "./child-guard.js";
 import { getPiInvocation } from "./pi-invocation.js";
 import type { SubagentToolCall } from "./registry.js";
 import { appendThinkingCliArgs } from "./terminal-runner.js";
@@ -12,6 +13,7 @@ export interface JsonSubagentOptions {
 	systemPrompt: string;
 	tools: string;
 	extensionPaths?: string[];
+	loadDefaultResources?: boolean;
 	disableContextFiles?: boolean;
 	signal?: AbortSignal;
 	onUpdate?: (update: { output: string; toolCalls: SubagentToolCall[] }) => void;
@@ -76,10 +78,12 @@ function finalAssistantText(messages: JsonMessage[]): string {
 }
 
 function buildArgs(options: JsonSubagentOptions): string[] {
-	const args = ["--mode", "json", "-p", "--no-session", "--no-extensions"];
+	const args = ["--mode", "json", "-p", "--no-session"];
+	if (!options.loadDefaultResources) args.push("--no-extensions");
 	for (const extension of options.extensionPaths ?? [])
 		args.push("--extension", extension);
-	args.push("--no-skills", "--no-prompt-templates");
+	if (!options.loadDefaultResources)
+		args.push("--no-skills", "--no-prompt-templates");
 	if (options.disableContextFiles) args.push("--no-context-files");
 	args.push(
 		"--tools",
@@ -116,6 +120,7 @@ export async function runJsonSubagent(
 		// nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
 		const child = spawn(invocation.command, invocation.args, {
 			cwd: options.cwd,
+			env: { ...process.env, [SUBAGENT_CHILD_ENV]: "1" },
 			shell: false,
 			stdio: ["ignore", "pipe", "pipe"],
 		});

@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
+import { SUBAGENT_CHILD_ENV } from "./child-guard.js";
 import { getPiInvocation } from "./pi-invocation.js";
 import { prepareTaskArtifacts, SUBAGENT_RUNS_ROOT } from "./run-paths.js";
 import { RpcSubagentSession } from "./rpc-session.js";
@@ -85,7 +86,7 @@ export async function runRpcSubagent(
 	// nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
 	const child = spawn(invocation.command, invocation.args, {
 		cwd: options.cwd,
-		env: { ...process.env, ...options.env },
+		env: { ...process.env, ...options.env, [SUBAGENT_CHILD_ENV]: "1" },
 		shell: false,
 		stdio: ["pipe", "pipe", "pipe"],
 	});
