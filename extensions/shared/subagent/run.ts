@@ -71,6 +71,7 @@ export async function runSubagent(
 			launch.onUpdate?.({
 				status: "running",
 				toolCalls,
+				subagentId: launch.runId,
 				reusable: false,
 				turn: 1,
 			}),
@@ -78,6 +79,7 @@ export async function runSubagent(
 	return {
 		...oneShot,
 		model: launch.model,
+		subagentId: launch.runId,
 		reusable: false,
 		turn: 1,
 	};

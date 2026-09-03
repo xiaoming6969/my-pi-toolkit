@@ -33,6 +33,8 @@ export interface RoleLaunchOptions {
 	presentation?: SubagentPresentation;
 	keepOpen?: boolean;
 	parentSessionId?: string;
+	/** Pre-assigned subagent id; generated when omitted. */
+	runId?: string;
 	artifactFiles?: string[];
 	env?: Record<string, string>;
 	signal?: AbortSignal;
@@ -79,6 +81,7 @@ export async function runRoleSubagent(
 		presentation: options.presentation,
 		keepOpen: options.keepOpen,
 		parentSessionId: options.parentSessionId,
+		runId: options.runId,
 		artifactFiles: options.artifactFiles,
 		env: options.env,
 		signal: options.signal,

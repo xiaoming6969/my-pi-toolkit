@@ -62,7 +62,7 @@
 { "action": "cancel", "batchId": "..." }
 ```
 
-`status` 适合用户明确要求查看或排错，不是后台进度通知机制。`model` 可选，控制 implementation worker，默认继承主 Agent 当前模型。目标 worker 模型支持 reasoning 时，思考等级继承主会话并显示在聚合卡片与 Subagent Overlay Header 中；不支持 reasoning 时不会显示或传递思考等级。research worker 沿用 Repo Search 的模型优先级：受信任项目配置、用户配置、当前主 Agent 模型。Batch 内 research 强制使用 managed RPC/manual 执行并在聚合卡片中更新，不采用 Repo Search 的 split/tab 展示配置。单批最多 8 个任务，并发数范围为 1–6，默认 3；两类 worker 共用 Batch 上限。所有 Batch 还共享当前 Pi 进程内固定 6 槽的 FIFO worker semaphore，因此多个 Batch 不会叠加突破 6 个 running worker；各 Batch 的较低 `maxConcurrency` 继续生效。
+`status` 适合用户明确要求查看或排错，不是后台进度通知机制。`model` 可选，控制 implementation worker，默认继承主 Agent 当前模型。目标 worker 模型支持 reasoning 时，思考等级继承主会话并显示在聚合卡片与 Subagent Overlay Header 中；不支持 reasoning 时不会显示或传递思考等级。research worker 沿用 Repo Search 的模型优先级：受信任项目配置、用户配置、当前主 Agent 模型。Batch 内 research 强制使用 managed RPC/manual 执行并在聚合卡片中更新，不采用 Repo Search 的 split/tab 展示配置。单批最多 8 个任务，并发数范围为 1–6，默认 3；两类 worker 共用 Batch 上限。所有 Batch 还与 `spawn_subagent`、`repo_search`、`tapd_review` 共享 `shared/subagent/slot-semaphore.ts` 的进程级固定 6 槽 FIFO 信号量，因此多个 Batch 或其它子 Agent 工具不会叠加突破 6 个并发启动的子进程；各 Batch 的较低 `maxConcurrency` 继续生效。
 
 ## 复用已完成 worker
 
@@ -119,7 +119,7 @@ research worker 由 Batch manager 直接调用 Repo Search runner，与 implemen
 
 - `run` 等待 worker 完成；进度只在当前工具调用仍运行时通过 partial result 更新，不产生 Agent 轮询。
 - `start` 不等待 worker 完成，因此不会阻塞主 Agent 后续工作；完成 follow-up 是后台模式的通知渠道。
-- 单 Batch 默认最多同时运行 3 个 worker；所有 Batch 进程级固定最多运行 6 个，等待者按 acquire 到达顺序 FIFO，且仍保持 `queued`。
+- 单 Batch 默认最多同时运行 3 个 worker；与其它子 Agent 工具共享的进程级信号量固定 6 槽，等待者按 acquire 到达顺序 FIFO，且仍保持 `queued`。
 - worker 成功、失败或取消都会在实际结束后释放全局槽；取消 Batch 或 session shutdown 会移除尚未运行的 waiter，并中止运行者后释放其槽。
 - 单个 worker 失败不会取消其他独立 worker；批次最终状态为 `failed`。
 - 主会话关闭、切换或 reload 时，该会话启动的运行中批次会被取消，已完成但保留的 reusable worker 也会终止。

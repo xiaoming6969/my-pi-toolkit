@@ -13,8 +13,8 @@
 5. `built-in-tool-style` — 可选 Grok 风格 Pi 内置工具时间线（`/grok-tools`）
 6. `auto-format` — 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 批量格式化本轮修改文件
 7. `agent-todos` — 任务清单工具与 UI
-8. `multi-task` — 独立文件任务的后台并行 worker 编排；所有 Batch 共享进程级固定 6 槽 FIFO 上限
-9. `subagent` — 角色化 `spawn_subagent`（explore / plan / implement / review 及自定义角色）、只读 `repo_search`、`/subagents` / `Alt+A` Overlay 与 `subagent_followup`；显示 queued/运行/idle 时间并按精确 ID 复用相关 Agent
+8. `multi-task` — 独立文件任务的后台并行 worker 编排；与其它子 Agent 工具共享进程级固定 6 槽 FIFO 上限
+9. `subagent` — 角色化 `spawn_subagent`（explore / plan / implement / review 及自定义角色，支持 `background` 与 `subagent_wait` / `subagent_output` / `subagent_cancel`）、只读 `repo_search`、`/subagents` / `Alt+A` Overlay 与 `subagent_followup`；显示 queued/运行/idle 时间并按精确 ID 复用相关 Agent
 10. `session-branch-guard` — 第一条用户消息后记录 Git 分支；resume 或新终端打开旧会话时若不一致，可选切回或改绑（`/session-branch`）
 11. `task-duration` — 在最终回复下方持久显示首次 `agent_start` 到最终 `agent_settled` 的任务耗时，不进入 LLM 上下文
 12. `worktree` — `/new-worktree`、`/apply-worktree`、`/delete-worktree`，实现位于本入口的 `worktree/` 子目录

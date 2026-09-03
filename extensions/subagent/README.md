@@ -11,9 +11,26 @@
   "prompt": "完整任务描述，包含相关文件路径与期望的报告格式",
   "description": "3-8 个词的短标签",
   "role": "explore",
-  "cwd": "可选，默认主 Agent 当前目录"
+  "cwd": "可选，默认主 Agent 当前目录",
+  "background": false
 }
 ```
+
+### 后台运行与等待原语
+
+`background: true` 时工具立即返回 `subagentId`，主 Agent 可以继续做其它独立工作；子 Agent 完成、失败或被取消后，扩展会向主会话排队一条 `subagent-complete` follow-up（与 `multi_task start` 相同机制），要求主 Agent 调用 `subagent_output` 读取报告。不要轮询。配套工具：
+
+| 工具 | 参数 | 作用 |
+| --- | --- | --- |
+| `subagent_wait` | `subagentIds[]`（≤ 20）、`mode: wait_all \| wait_any`（默认 `wait_all`）、`timeoutMs`（默认 30000，最大 600000） | 阻塞直到全部 / 任一后台子 Agent 结束或超时，返回每个 ID 的状态；超时不报错 |
+| `subagent_output` | `subagentId` | 已结束的后台任务返回报告（同样受 50 KB / 2000 行截断，可复用时附 `Reusable subagentId`）；运行中的任务或 live 可复用子 Agent 返回状态、最近工具调用与最新 assistant 文本 |
+| `subagent_cancel` | `subagentId` | 取消排队 / 运行中的后台任务，或终止 live 可复用子 Agent；已结束时返回成功并说明状态 |
+
+三者都只接受当前主会话创建的 ID。后台任务若使用 managed RPC，同样出现在 `/subagents` 与 `Alt+A` Overlay 中；主会话 shutdown / reload 会取消本会话所有排队和运行中的后台任务。
+
+### 并发上限
+
+所有启动路径（`spawn_subagent` 前台与后台、`repo_search`、`tapd_review`、Multi Task worker）共用 `shared/subagent/slot-semaphore.ts` 的进程级 6 槽 FIFO 信号量：超出时新任务保持 queued 等待，取消会移出等待队列。`subagent_followup` 续接已存在的子进程，不占用新槽位。
 
 `role` 决定子 Agent 的 system prompt、能力模式与资源加载方式。内置角色：
 
@@ -68,7 +85,9 @@ Review changes against docs/architecture.md ...
 所有子 Agent 调用方（`spawn_subagent`、Repo Search、TAPD Review、TAPD 根因总结、Multi Task worker）都通过 `shared/subagent/run.ts` 的 `runSubagent()` 启动，不再各自拼装 CLI 参数或复制一次性子进程逻辑。角色定义与角色级启动（extension 路径、资源模式）在本模块的 `roles/`；`repo_search` 只是 `explore` 角色加 Repo Search 模型配置的薄封装。
 
 - `capability.ts`：能力模式 → 精确 `--tools` 白名单。`read-only` = `read, grep, find, ls`；`read-write` 追加 `edit, write`；`execute` 追加 `bash`；`all` 使用调用方提供的父 Agent 工具快照。可用 `extraTools` 追加角色专属工具（如 Repo Search 的 pi-lens 只读工具）。所有会派生或操控子 Agent 的父进程控制工具在任何模式下都不会下发给子进程。
-- `child-guard.ts`：所有启动路径为子进程设置 `PI_SUBAGENT_CHILD=1`；`spawn_subagent` / `subagent_followup` 在子进程内直接拒绝执行。
+- `child-guard.ts`：所有启动路径为子进程设置 `PI_SUBAGENT_CHILD=1`；`spawn_subagent` / `subagent_followup` 等控制工具在子进程内直接拒绝执行。
+- `slot-semaphore.ts`：进程级 6 槽 FIFO 启动信号量。
+- `background.ts`：后台任务表（queued / running / completed / failed / cancelled）、`wait_any` / `wait_all` 等待与按会话取消；managed RPC 子进程仍由 `registry.ts` 记录。
 - `run.ts`：按 `presentation` 分流到 managed RPC（`manual`）、Windows Terminal（`split` / `tab`），否则回退到 `json-runner.ts` 的一次性 `pi --mode json -p` 子进程。一次性子进程没有 `subagentId`，`reusable` 恒为 `false`。
 - `pi-invocation.ts`：统一决定如何拉起子 Pi（复用父进程入口脚本、PATH 上的 `pi` 或已编译二进制）。
 - `output-limit.ts`：统一 50 KB / 2000 行的返回文本截断；完整输出保留在工具 `details`。

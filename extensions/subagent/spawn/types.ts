@@ -5,10 +5,13 @@ export interface SpawnSubagentParams {
 	description: string;
 	role?: string;
 	cwd?: string;
+	background?: boolean;
 }
 
 export interface SpawnSubagentDetails {
 	running: boolean;
+	/** True when the tool returned immediately after starting a background job. */
+	background?: boolean;
 	role: string;
 	description: string;
 	model: string;

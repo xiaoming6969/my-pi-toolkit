@@ -7,6 +7,7 @@ import type {
 	ExtensionContext,
 	SessionShutdownEvent,
 } from "@earendil-works/pi-coding-agent";
+import { cancelBackgroundSubagentsForSession } from "../../shared/subagent/background.js";
 import {
 	abortAllLiveSubagents,
 	activeSubagentCount,
@@ -264,6 +265,7 @@ export default function subagentConsole(pi: ExtensionAPI): void {
 			unsubscribeStatus?.();
 			unsubscribeStatus = undefined;
 			ctx.ui.setStatus("subagent", undefined);
+			cancelBackgroundSubagentsForSession(ctx.sessionManager.getSessionId());
 			abortAllLiveSubagents();
 		},
 	);

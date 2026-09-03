@@ -50,13 +50,9 @@ function currentModel(params: MultiTaskInput, ctx: ExtensionContext): string {
 	throw new Error("未指定 worker 模型，且主 Agent 当前没有可继承的模型");
 }
 
+/** Parent tool snapshot; the shared `all` capability strips subagent control tools. */
 function implementationTools(pi: ExtensionAPI): string[] {
-	return pi
-		.getActiveTools()
-		.filter(
-			(name: string) =>
-				name !== "repo_search" && name !== "subagent_followup",
-		);
+	return pi.getActiveTools();
 }
 
 interface MultiTaskExecutionOptions {

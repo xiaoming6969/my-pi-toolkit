@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { acquireWorkerSlot } from "../worker-semaphore.ts";
+import { acquireSubagentSlot, subagentSlotUsage } from "../subagent/slot-semaphore.ts";
 
 const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
 
-test("caps workers from multiple batches at six", async () => {
+test("caps concurrently launched subagents at six", async () => {
 	let active = 0;
 	let peak = 0;
 	const run = async () => {
-		const release = await acquireWorkerSlot(new AbortController().signal);
+		const release = await acquireSubagentSlot(new AbortController().signal);
 		active++;
 		peak = Math.max(peak, active);
 		await tick();
@@ -25,12 +25,12 @@ test("caps workers from multiple batches at six", async () => {
 test("grants queued slots in FIFO order and release is idempotent", async () => {
 	const holders = await Promise.all(
 		Array.from({ length: 6 }, () =>
-			acquireWorkerSlot(new AbortController().signal),
+			acquireSubagentSlot(new AbortController().signal),
 		),
 	);
 	const order: number[] = [];
 	const queued = [1, 2, 3].map(async (id) => {
-		const release = await acquireWorkerSlot(new AbortController().signal);
+		const release = await acquireSubagentSlot(new AbortController().signal);
 		order.push(id);
 		return release;
 	});
@@ -49,12 +49,12 @@ test("grants queued slots in FIFO order and release is idempotent", async () => 
 test("removes cancelled waiters and releases after failure", async () => {
 	const holders = await Promise.all(
 		Array.from({ length: 6 }, () =>
-			acquireWorkerSlot(new AbortController().signal),
+			acquireSubagentSlot(new AbortController().signal),
 		),
 	);
 	const cancelledController = new AbortController();
-	const cancelled = acquireWorkerSlot(cancelledController.signal);
-	const next = acquireWorkerSlot(new AbortController().signal);
+	const cancelled = acquireSubagentSlot(cancelledController.signal);
+	const next = acquireSubagentSlot(new AbortController().signal);
 	cancelledController.abort();
 	await assert.rejects(cancelled, /取消/);
 	holders[0]?.();
@@ -62,7 +62,7 @@ test("removes cancelled waiters and releases after failure", async () => {
 	releaseNext();
 	for (const release of holders.slice(1)) release();
 
-	const release = await acquireWorkerSlot(new AbortController().signal);
+	const release = await acquireSubagentSlot(new AbortController().signal);
 	try {
 		throw new Error("worker failed");
 	} catch (error) {
@@ -70,6 +70,8 @@ test("removes cancelled waiters and releases after failure", async () => {
 	} finally {
 		release();
 	}
-	const finalRelease = await acquireWorkerSlot(new AbortController().signal);
+	const finalRelease = await acquireSubagentSlot(new AbortController().signal);
+	assert.deepEqual(subagentSlotUsage(), { active: 1, queued: 0 });
 	finalRelease();
+	assert.deepEqual(subagentSlotUsage(), { active: 0, queued: 0 });
 });

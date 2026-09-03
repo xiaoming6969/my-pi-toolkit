@@ -5,6 +5,7 @@
 ### 新增
 
 - 通用 `spawn_subagent` 工具：按角色把自包含任务委派给独立子 Agent。内置 `explore`（即 `repo_search` 的角色）、`plan`、`implement`、`review`；用户可在 `~/.pi/agent/ming-core.json` 的 `subagents.roles` 定义角色，受信任项目可用 `.pi/agents/*.md`（YAML frontmatter + Markdown prompt）定义或覆盖角色。角色决定能力模式、system prompt、资源加载方式与可选的模型 / 思考等级路由。
+- 子 Agent 后台调度：`spawn_subagent` 支持 `background: true` 立即返回 `subagentId` 并在完成后投递 `subagent-complete` follow-up；新增 `subagent_wait`（`wait_any` / `wait_all` + 超时）、`subagent_output`、`subagent_cancel`。Multi Task 的 6 槽 worker 信号量下沉为 `shared/subagent/slot-semaphore.ts`，`spawn_subagent`、`repo_search`、`tapd_review` 与 Multi Task worker 共用同一进程级并发上限。
 - 子 Agent 嵌套深度限制为 1：所有子进程带 `PI_SUBAGENT_CHILD=1`，`repo_search`、`spawn_subagent`、`subagent_followup`、`multi_task`、`tapd_review` 等父进程控制工具不再下发给任何子 Agent（含 Multi Task implementation worker）。
 
 ### 改进

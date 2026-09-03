@@ -3,16 +3,16 @@ import type {
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
+import {
+	startBackgroundSubagent,
+	type BackgroundSubagentJob,
+} from "../../shared/subagent/background.js";
 import { assertNotSubagentChild } from "../../shared/subagent/child-guard.js";
-import { loadSubagentUiConfig } from "../../shared/subagent/config.js";
 import { truncateSubagentOutput } from "../../shared/subagent/output-limit.js";
 import type { SubagentToolCall } from "../../shared/subagent/registry.js";
-import { thinkingLevelForModel } from "../../shared/subagent/thinking-level.js";
 import { BUILTIN_SUBAGENT_ROLES } from "../roles/builtin.js";
-import { runRoleSubagent } from "../roles/launch.js";
-import { getSubagentRole } from "../roles/loader.js";
+import { prepareSpawn, type PreparedSpawn } from "./prepare.js";
 import { previewToolCall, renderSpawnCall, renderSpawnResult } from "./render.js";
-import { resolveSpawnCwd, resolveSpawnTarget } from "./resolve.js";
 import type { SpawnSubagentDetails, SpawnSubagentParams } from "./types.js";
 
 const TRUNCATED_NOTICE =
@@ -35,16 +35,122 @@ function runningText(
 	return [`子 Agent 运行中：${description}`, ...recent].join("\n");
 }
 
+function baseDetails(prepared: PreparedSpawn) {
+	return {
+		role: prepared.role,
+		description: prepared.description,
+		model: prepared.model,
+		thinkingLevel: prepared.thinkingLevel,
+	};
+}
+
+function completionNotice(job: BackgroundSubagentJob): string {
+	const outcome =
+		job.status === "completed"
+			? "finished successfully"
+			: job.status === "cancelled"
+				? "was cancelled"
+				: `failed: ${job.error ?? "unknown error"}`;
+	return `Background subagent ${job.id} (${job.title}) ${outcome}. Do not poll background subagents; call subagent_output with this id to read the report, then continue the main task.`;
+}
+
+async function runForeground(
+	prepared: PreparedSpawn,
+	signal: AbortSignal | undefined,
+	onUpdate: SpawnUpdate | undefined,
+) {
+	const base = baseDetails(prepared);
+	const result = await prepared.launch(signal, (update) =>
+		onUpdate?.({
+			content: [
+				{
+					type: "text",
+					text: runningText(prepared.description, update.toolCalls),
+				},
+			],
+			details: {
+				...base,
+				running: true,
+				toolCalls: update.toolCalls,
+				subagentId: update.subagentId,
+				reusable: update.reusable,
+				turn: update.turn,
+			},
+		}),
+	);
+	const visible = truncateSubagentOutput(result.output, TRUNCATED_NOTICE);
+	const handle =
+		result.reusable && result.subagentId
+			? `\n\nReusable subagentId: ${result.subagentId} (turn ${result.turn}).`
+			: "";
+	return {
+		content: [{ type: "text" as const, text: `${visible.content}${handle}` }],
+		details: {
+			...base,
+			running: false,
+			toolCalls: result.toolCalls,
+			output: result.output,
+			truncated: visible.truncated,
+			subagentId: result.subagentId,
+			reusable: result.reusable,
+			turn: result.turn,
+			runDir: result.runDir,
+		} satisfies SpawnSubagentDetails,
+	};
+}
+
+function startBackground(
+	prepared: PreparedSpawn,
+	ctx: ExtensionContext,
+	pi: ExtensionAPI,
+) {
+	const job = startBackgroundSubagent({
+		id: prepared.id,
+		title: prepared.title,
+		parentSessionId: ctx.sessionManager.getSessionId(),
+		run: (signal, onToolCalls) =>
+			prepared.launch(signal, (update) => onToolCalls(update.toolCalls)),
+		onSettled: (settled) =>
+			pi.sendMessage(
+				{
+					customType: "subagent-complete",
+					content: completionNotice(settled),
+					display: true,
+					details: { subagentId: settled.id, status: settled.status },
+				},
+				{ deliverAs: "followUp", triggerTurn: true },
+			),
+	});
+	return {
+		content: [
+			{
+				type: "text" as const,
+				text: `Background subagent started: ${job.id} (${job.title}). Continue with independent work; a completion follow-up will arrive. Use subagent_wait to block on it, subagent_output to read progress or the report, and subagent_cancel to stop it.`,
+			},
+		],
+		details: {
+			...baseDetails(prepared),
+			running: false,
+			background: true,
+			toolCalls: [],
+			subagentId: job.id,
+			reusable: false,
+			turn: 0,
+		} satisfies SpawnSubagentDetails,
+	};
+}
+
 export function registerSpawnSubagentTool(pi: ExtensionAPI): void {
 	pi.registerTool({
 		name: "spawn_subagent",
 		label: "Spawn Subagent",
-		description: `Delegate one self-contained task to an isolated subagent with its own context window and a role-defined tool allowlist. Built-in roles — ${ROLE_SUMMARY} Projects and users can define additional roles. The child reports a summary back; reusable children return a subagentId for subagent_followup.`,
+		description: `Delegate one self-contained task to an isolated subagent with its own context window and a role-defined tool allowlist. Built-in roles — ${ROLE_SUMMARY} Projects and users can define additional roles. Set background=true to get a subagentId immediately and keep working; a completion follow-up is delivered automatically. Reusable children return a subagentId for subagent_followup.`,
 		promptSnippet:
-			"Delegate a self-contained research, planning, implementation or review task to a role-defined subagent",
+			"Delegate a self-contained research, planning, implementation or review task to a role-defined subagent, optionally in the background",
 		promptGuidelines: [
 			"Use spawn_subagent when a task is self-contained, benefits from a separate context window, and can be described completely in the prompt; include relevant file paths and the expected output format.",
 			"Pick the least-privileged role that can finish the task: explore or plan for read-only work, review for independent verification, implement only when files must change.",
+			"Use background=true only when you have other independent work to do meanwhile; then do not poll, wait for the completion follow-up or call subagent_wait once.",
 			"Never ask the agent that produced a change or conclusion to review its own work; spawn a separate review subagent instead.",
 			"Do not use spawn_subagent for tasks the parent can finish with one or two direct tool calls, or for work that needs back-and-forth with the user.",
 		],
@@ -69,6 +175,12 @@ export function registerSpawnSubagentTool(pi: ExtensionAPI): void {
 					description: "Working directory for the child; defaults to the parent's cwd",
 				}),
 			),
+			background: Type.Optional(
+				Type.Boolean({
+					description:
+						"Return immediately with a subagentId and run in the background; defaults to false",
+				}),
+			),
 		}),
 
 		async execute(
@@ -79,80 +191,9 @@ export function registerSpawnSubagentTool(pi: ExtensionAPI): void {
 			ctx: ExtensionContext,
 		) {
 			assertNotSubagentChild("派生子 Agent");
-			const prompt = params.prompt.trim();
-			const description = params.description.trim();
-			if (!prompt) throw new Error("prompt 不能为空");
-			if (!description) throw new Error("description 不能为空");
-			const projectTrusted = ctx.isProjectTrusted();
-			const cwd = resolveSpawnCwd(ctx.cwd, params.cwd);
-			const role = getSubagentRole(params.role ?? "explore", {
-				cwd,
-				projectTrusted,
-			});
-			const target = resolveSpawnTarget({
-				role,
-				cwd,
-				projectTrusted,
-				currentModel: ctx.model,
-			});
-			const thinkingLevel = thinkingLevelForModel(
-				target.model,
-				role.thinkingLevel ?? ctx.thinkingLevel,
-				ctx.modelRegistry,
-			);
-			const base = {
-				role: role.name,
-				description,
-				model: target.model,
-				thinkingLevel,
-			};
-			const result = await runRoleSubagent({
-				role,
-				cwd,
-				title: `${role.name} · ${description}`,
-				task: prompt,
-				model: target.model,
-				thinkingLevel,
-				projectTrusted,
-				parentTools: pi.getActiveTools(),
-				presentation: target.presentation,
-				keepOpen: loadSubagentUiConfig().keepOpen,
-				parentSessionId: ctx.sessionManager.getSessionId(),
-				signal,
-				onUpdate: (update) =>
-					onUpdate?.({
-						content: [
-							{ type: "text", text: runningText(description, update.toolCalls) },
-						],
-						details: {
-							...base,
-							running: true,
-							toolCalls: update.toolCalls,
-							subagentId: update.subagentId,
-							reusable: update.reusable,
-							turn: update.turn,
-						},
-					}),
-			});
-			const visible = truncateSubagentOutput(result.output, TRUNCATED_NOTICE);
-			const handle =
-				result.reusable && result.subagentId
-					? `\n\nReusable subagentId: ${result.subagentId} (turn ${result.turn}).`
-					: "";
-			return {
-				content: [{ type: "text" as const, text: `${visible.content}${handle}` }],
-				details: {
-					...base,
-					running: false,
-					toolCalls: result.toolCalls,
-					output: result.output,
-					truncated: visible.truncated,
-					subagentId: result.subagentId,
-					reusable: result.reusable,
-					turn: result.turn,
-					runDir: result.runDir,
-				} satisfies SpawnSubagentDetails,
-			};
+			const prepared = prepareSpawn(params, ctx, pi);
+			if (params.background) return startBackground(prepared, ctx, pi);
+			return runForeground(prepared, signal, onUpdate);
 		},
 
 		renderCall: renderSpawnCall,

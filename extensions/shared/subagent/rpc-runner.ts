@@ -72,7 +72,7 @@ export async function runRpcSubagent(
 	options: TerminalSubagentOptions,
 ): Promise<TerminalSubagentResult> {
 	await mkdir(SUBAGENT_RUNS_ROOT, { recursive: true, mode: 0o700 });
-	const id = randomUUID();
+	const id = options.runId ?? randomUUID();
 	const runDir = join(SUBAGENT_RUNS_ROOT, id);
 	await mkdir(join(runDir, "sessions"), { recursive: true, mode: 0o700 });
 	const task = await prepareTaskArtifacts(

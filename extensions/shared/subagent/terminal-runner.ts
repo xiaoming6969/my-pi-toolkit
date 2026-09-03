@@ -33,6 +33,8 @@ export interface TerminalSubagentOptions {
 	artifactFiles?: string[];
 	presentation?: SubagentPresentation;
 	parentSessionId?: string;
+	/** Pre-assigned subagent id so callers can hand out a handle before launch. */
+	runId?: string;
 	keepOpen?: boolean;
 	abortSettleTimeoutMs?: number;
 	env?: Record<string, string>;
@@ -119,7 +121,7 @@ export async function runTerminalSubagent(
 		throw new Error("交互式子 Agent 当前只支持原生 Windows Terminal");
 	}
 	await cleanupOldRuns(config.retainCompletedMinutes);
-	const subagentId = randomUUID();
+	const subagentId = options.runId ?? randomUUID();
 	const runDir = join(SUBAGENT_RUNS_ROOT, subagentId);
 	await mkdir(join(runDir, "sessions"), { recursive: true, mode: 0o700 });
 	const task = await prepareTaskArtifacts(

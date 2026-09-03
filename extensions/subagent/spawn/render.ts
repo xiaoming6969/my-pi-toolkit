@@ -38,10 +38,11 @@ function summary(details: SpawnSubagentDetails): string {
 }
 
 export function renderSpawnCall(args: SpawnSubagentParams, theme: Theme) {
+	const mode = args.background ? " · background" : "";
 	return toolCall(
 		theme,
 		"spawn_subagent",
-		`${args.role ?? "explore"} · ${compactText(args.description ?? "...", 40)}`,
+		`${args.role ?? "explore"} · ${compactText(args.description ?? "...", 40)}${mode}`,
 		compactText(args.prompt ?? "...", 100),
 	);
 }
@@ -72,6 +73,13 @@ export function renderSpawnResult(
 			title: details.description,
 			summary: summary(details),
 			details: calls,
+		});
+	if (details.background)
+		return toolResult(theme, {
+			status: "success",
+			title: `${details.description} · background`,
+			summary: summary(details),
+			details: [`id ${details.subagentId ?? "?"} · completion follow-up pending`],
 		});
 	const output = details.output ?? "(no output)";
 	if (expanded)

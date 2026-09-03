@@ -8,6 +8,7 @@ import type {
 import { getMarkdownTheme } from "@earendil-works/pi-coding-agent";
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
+import { acquireSubagentSlot } from "../../shared/subagent/slot-semaphore.js";
 import { thinkingLevelForModel } from "../../shared/subagent/thinking-level.js";
 import {
 	compactText,
@@ -183,19 +184,27 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 				);
 				if (signal?.aborted) throw new Error("TAPD Review 已取消");
 				emit(`Review 子代理运行中：${model}`);
-				const result = await runReviewSubagent({
-					cwd: reviewContext.repositoryRoot,
-					model,
-					thinkingLevel,
-					task: buildReviewTask(reviewContext, params.instructions),
-					parentSessionId: ctx.sessionManager.getSessionId(),
-					artifactFiles: [reviewContext.contextFile],
-					signal,
-					onToolCall: (name, args) => {
-						toolCalls.push({ name, arguments: args });
-						emit("Review 子代理正在检查代码");
-					},
-				});
+				const releaseSlot = await acquireSubagentSlot(
+					signal ?? new AbortController().signal,
+				);
+				let result: Awaited<ReturnType<typeof runReviewSubagent>>;
+				try {
+					result = await runReviewSubagent({
+						cwd: reviewContext.repositoryRoot,
+						model,
+						thinkingLevel,
+						task: buildReviewTask(reviewContext, params.instructions),
+						parentSessionId: ctx.sessionManager.getSessionId(),
+						artifactFiles: [reviewContext.contextFile],
+						signal,
+						onToolCall: (name, args) => {
+							toolCalls.push({ name, arguments: args });
+							emit("Review 子代理正在检查代码");
+						},
+					});
+				} finally {
+					releaseSlot();
+				}
 				const metadata: TapdReviewMetadata = {
 					storyId: reviewContext.storyId,
 					scope: reviewContext.scope,
