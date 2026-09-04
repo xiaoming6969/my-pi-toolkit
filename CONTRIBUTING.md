@@ -6,7 +6,8 @@
 
 - Node.js `>= 22.19`
 - 仓库根目录执行 `npm install`
-- 本地加载：`pi install .`，改扩展后在 Pi 里 `/reload`
+- 本地加载：`pi install .`，改扩展后在 Pi 里 `/reload`。仓库 `package.json` 始终指向 TypeScript 入口，本地不必也不应编译 `dist/`。
+- 发布：`npm pack` / `npm publish` 经 `prepack` 编译三个入口；不要把 `dist/` 提交进 git，也不要加 `prepare` / `postinstall` 编译。
 
 ## 开发
 
@@ -35,4 +36,5 @@ npm run coverage:report
 
 - 使用默认 PR 模板中的测试清单。
 - 不要把 `extensions/**/test/**` 打进 npm 包（`package.json` 的 `files` 已排除）。
+- `dist/` 只出现在 npm tarball 里；提交前确认工作区 `pi.extensions` 仍是三个 `.ts` 路径。
 - 提交信息说明做了什么、为什么做。

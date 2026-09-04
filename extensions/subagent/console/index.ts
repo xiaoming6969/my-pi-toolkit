@@ -1,6 +1,3 @@
-import { existsSync, readFileSync } from "node:fs";
-import { readdir, rm, writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
 import type {
 	ExtensionAPI,
 	ExtensionCommandContext,
@@ -13,248 +10,10 @@ import {
 } from "../../shared/subagent/background.js";
 import {
 	abortAllLiveSubagents,
-	listLiveSubagents,
 	subscribeSubagentRegistry,
-	type LiveSubagentRun,
 } from "../../shared/subagent/registry.js";
-import { SUBAGENT_RUNS_ROOT } from "../../shared/subagent/run-paths.js";
-import type {
-	HistoricalSubagentView,
-	SubagentDetailItem,
-} from "./detail-navigation.js";
-import { openSubagentOverlay } from "./overlay.js";
-import { readHistoricalEntries } from "./history.js";
-import { selectSubagentAction } from "./picker.js";
 import { currentSubagentFooterStatus } from "./footer-status.js";
-import { formatRunLabel, type RunDisplayState } from "./run-label.js";
-import { promptSubagentMessage } from "./steer.js";
-
-interface RunSummary {
-	dir: string;
-	title: string;
-	model: string;
-	thinkingLevel?: string;
-	cwd: string;
-	state: RunDisplayState;
-	startedAt?: string;
-	parentSessionId?: string;
-	live?: LiveSubagentRun;
-}
-
-function readJson(path: string): Record<string, unknown> | undefined {
-	if (!existsSync(path)) return undefined;
-	try {
-		return JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
-	} catch {
-		return undefined;
-	}
-}
-
-function readHistoricalMarkdown(dir: string): string {
-	const result = readJson(join(dir, "result.json"));
-	if (typeof result?.output === "string") return result.output;
-
-	const transcriptPath = join(dir, "transcript.jsonl");
-	if (existsSync(transcriptPath)) {
-		const lines = readFileSync(transcriptPath, "utf8")
-			.split("\n")
-			.filter(Boolean)
-			.flatMap((record) => {
-				try {
-					const value = JSON.parse(record) as { line?: unknown };
-					return typeof value.line === "string" ? [value.line] : [];
-				} catch {
-					return [];
-				}
-			});
-		if (lines.length > 0) return lines.join("\n\n");
-	}
-	return "该子 Agent 已退出，且没有可用的过程或结果记录。";
-}
-
-function runState(completed: boolean, exited: boolean): RunSummary["state"] {
-	if (completed) return "completed";
-	if (exited) return "exited";
-	return "running";
-}
-
-async function listRuns(): Promise<RunSummary[]> {
-	const liveRuns = listLiveSubagents();
-	const liveIds = new Set(liveRuns.map((run) => run.id));
-	const liveSummaries: RunSummary[] = liveRuns.map((run) => ({
-		dir: join(SUBAGENT_RUNS_ROOT, run.id),
-		title: run.title,
-		model: run.model,
-		thinkingLevel: run.thinkingLevel,
-		cwd: run.cwd,
-		state: run.status,
-		startedAt: run.startedAt,
-		parentSessionId: run.parentSessionId,
-		live: run,
-	}));
-	if (!existsSync(SUBAGENT_RUNS_ROOT)) return liveSummaries;
-	let names: string[];
-	try {
-		names = await readdir(SUBAGENT_RUNS_ROOT);
-	} catch {
-		return liveSummaries;
-	}
-	const runs: RunSummary[] = [];
-	for (const name of names) {
-		if (liveIds.has(name)) continue;
-		const dir = join(SUBAGENT_RUNS_ROOT, name);
-		const launch = readJson(join(dir, "launch.json"));
-		if (!launch) continue;
-		const ready = readJson(join(dir, "ready.json"));
-		const completed = existsSync(join(dir, "result.json"));
-		const exited = existsSync(join(dir, "exited.json"));
-		runs.push({
-			dir,
-			title: typeof launch.title === "string" ? launch.title : basename(dir),
-			model: typeof launch.model === "string" ? launch.model : "unknown",
-			thinkingLevel:
-				typeof launch.thinkingLevel === "string" ? launch.thinkingLevel : undefined,
-			cwd: typeof launch.cwd === "string" ? launch.cwd : process.cwd(),
-			state: runState(completed, exited),
-			startedAt:
-				typeof ready?.startedAt === "string" ? ready.startedAt : undefined,
-			parentSessionId:
-				typeof launch.parentSessionId === "string"
-					? launch.parentSessionId
-					: undefined,
-		});
-	}
-	runs.push(...liveSummaries);
-	return runs.sort((left, right) =>
-		(right.startedAt ?? "").localeCompare(left.startedAt ?? ""),
-	);
-}
-
-function availableActions(run: RunSummary): string[] {
-	if (run.live) return ["进入子 Agent", "发送消息", "请求取消", "终止子 Agent"];
-	if (run.state === "running") return ["查看详情", "请求取消", "清理任务记录"];
-	return ["查看详情", "清理任务记录"];
-}
-
-function historicalView(run: RunSummary): HistoricalSubagentView {
-	const entries = readHistoricalEntries(run.dir);
-	return {
-		title: run.title,
-		model: run.model,
-		thinkingLevel: run.thinkingLevel,
-		cwd: run.cwd,
-		status: run.state,
-		entries,
-		markdown: entries.length === 0 ? readHistoricalMarkdown(run.dir) : undefined,
-	};
-}
-
-function detailItems(
-	runs: RunSummary[],
-	scope: "current" | "all",
-	currentSessionId: string,
-): SubagentDetailItem[] {
-	return runs.flatMap((run) =>
-		scope === "all" || run.parentSessionId === currentSessionId
-			? [{ id: run.dir, load: () => run.live ?? historicalView(run) }]
-			: [],
-	);
-}
-
-async function showSubagents(ctx: ExtensionContext): Promise<void> {
-	let pickerState: { id: string; scope: "current" | "all" } | undefined;
-	for (;;) {
-		const runs = await listRuns();
-		if (runs.length === 0) {
-			ctx.ui.notify("没有交互式子 Agent 记录", "info");
-			return;
-		}
-		const selection = await selectSubagentAction(
-			ctx,
-			runs.map((run) => ({
-				id: run.dir,
-				label: formatRunLabel(run),
-				parentSessionId: run.parentSessionId,
-				actions: availableActions(run),
-			})),
-			pickerState,
-		);
-		if (!selection) return;
-		pickerState = { id: selection.id, scope: selection.scope };
-		const run = runs.find((item) => item.dir === selection.id);
-		if (!run) continue;
-		const { action } = selection;
-		if (
-			(action === "进入子 Agent" && run.live) ||
-			action === "查看详情"
-		) {
-			const closeReason = await openSubagentOverlay(
-				ctx,
-				detailItems(
-					runs,
-					selection.scope,
-					ctx.sessionManager.getSessionId(),
-				),
-				run.dir,
-			);
-			if (closeReason === "yielded") return;
-			continue;
-		}
-		if (action === "请求取消") {
-			if (run.live) run.live.abort();
-			else await writeFile(join(run.dir, "cancel"), "cancel", "utf8");
-			ctx.ui.notify(`已请求取消 ${run.title}`, "warning");
-			continue;
-		}
-		if (action === "终止子 Agent" && run.live) {
-			run.live.dispose();
-			ctx.ui.notify(`已终止 ${run.title}`, "warning");
-			continue;
-		}
-		if (action === "发送消息" && run.live) {
-			await promptSubagentMessage(ctx, run.live);
-			continue;
-		}
-		if (action !== "清理任务记录") continue;
-		if (run.state === "running") {
-			const confirmed = await ctx.ui.confirm(
-				"取消运行中的子 Agent",
-				"运行中的任务必须先取消，退出后才能清理记录。继续吗？",
-			);
-			if (!confirmed) continue;
-			await writeFile(join(run.dir, "cancel"), "cancel", "utf8");
-			ctx.ui.notify("已请求取消；子 Agent 退出后可再次清理", "warning");
-			continue;
-		}
-		await rm(run.dir, { recursive: true, force: true });
-		ctx.ui.notify(`已清理 ${run.title}`, "info");
-	}
-}
-
-async function enterLatestSubagent(ctx: ExtensionContext): Promise<void> {
-	const sessionId = ctx.sessionManager.getSessionId();
-	const latest = listLiveSubagents().find(
-		(run) => run.parentSessionId === sessionId,
-	);
-	if (!latest) {
-		await showSubagents(ctx);
-		return;
-	}
-	await openSubagentOverlay(
-		ctx,
-		listLiveSubagents().flatMap((run) =>
-			run.parentSessionId === sessionId
-				? [
-						{
-							id: join(SUBAGENT_RUNS_ROOT, run.id),
-							load: () => run,
-						},
-					]
-				: [],
-		),
-		join(SUBAGENT_RUNS_ROOT, latest.id),
-	);
-}
+import { withWorking } from "../../shared/tui/working-cancel.js";
 
 export default function subagentConsole(pi: ExtensionAPI): void {
 	let unsubscribeStatus: (() => void) | undefined;
@@ -282,11 +41,32 @@ export default function subagentConsole(pi: ExtensionAPI): void {
 	);
 	pi.registerCommand("subagents", {
 		description: "查看、取消或清理交互式子 Agent",
-		handler: async (_args: string, ctx: ExtensionCommandContext) =>
-			showSubagents(ctx),
+		handler: async (_args: string, ctx: ExtensionCommandContext) => {
+			await withWorking(
+				ctx,
+				"subagents",
+				async (working) => {
+					working?.setMessage("Working... 正在加载子 Agent");
+					const { showSubagents } = await import("./panel.js");
+					await showSubagents(ctx, working);
+				},
+				{ message: "Working... 正在加载子 Agent", notifyAbort: true },
+			);
+		},
 	});
 	pi.registerShortcut("alt+a", {
 		description: "进入最近的交互式子 Agent",
-		handler: enterLatestSubagent,
+		handler: async (ctx: ExtensionContext) => {
+			await withWorking(
+				ctx,
+				"subagents",
+				async (working) => {
+					working?.setMessage("Working... 正在加载子 Agent");
+					const { enterLatestSubagent } = await import("./panel.js");
+					await enterLatestSubagent(ctx, working);
+				},
+				{ message: "Working... 正在加载子 Agent", notifyAbort: true },
+			);
+		},
 	});
 }

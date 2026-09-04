@@ -13,6 +13,9 @@
 
 ### 改进
 
+- 启动加速：Markdown / 语法高亮 / Mermaid 以及 TAPD、Subagent Console、Plan、Dashboard 的重实现改为首次命令、工具或 Overlay 时再加载，缩短本地源码冷启动。
+- 首次 `/tapd`、`/review`、`/annotate`、`/plan review`、`/subagents` 等会立刻显示 Working 行，不再在 jiti 编译重模块时无反馈干等；`/tapd` 按子命令再加载实现，打开待办不再先编译 Git 工作流。
+- npm 包经 `prepack` 把三个扩展入口编译为 `dist/*.js`；仓库与 `pi install .` / git 安装仍加载 TypeScript。要最快冷启动请用 npm 安装。
 - 子 Agent 共享运行时收敛：新增 `shared/subagent/run.ts` 的 `runSubagent()` 统一入口与 `capability.ts` 能力模式（`read-only` / `read-write` / `execute` / `all`）→ 工具白名单映射；Repo Search、TAPD Review、TAPD 根因总结与 Multi Task worker 全部改用该入口，一次性 `--mode json` 回退、`pi` 拉起方式和 50 KB / 2000 行输出截断只保留一份实现。行为与工具白名单保持不变。
 - 将 `repo-search-subagent` 与 `subagent-console` 合并为 `extensions/subagent/`，由单一入口注册 `repo_search`、`subagent_followup` 与 `/subagents`。
 - 将 `model-manager`、Repo Search、子 Agent UI 的用户设置合并进 `~/.pi/agent/ming-core.json`。首次读取会从旧的独立 JSON 导入并归档为 `.migrated.bak`；项目级改为 `.pi/ming-core.json`，仍可读旧文件且不改写仓库。
