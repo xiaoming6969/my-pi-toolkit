@@ -4,8 +4,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import type { AutocompleteItem } from "@earendil-works/pi-tui";
 import type { BrowserReviewManager } from "../browser-review/server.js";
-import { textReviewSource } from "../browser-review/sources.js";
-import { showPlanDialog } from "./plan-dialog.js";
+import { withWorking } from "../shared/tui/working-cancel.js";
 import { readPlanFile, type SessionPlanFile } from "./plan-file.js";
 import type { ChatMode } from "./state.js";
 
@@ -39,16 +38,42 @@ async function reviewPlan(
 		ctx.ui.notify("当前 session 尚无可查看的 Plan。", "warning");
 		return;
 	}
-	const result = await reviews.open(
-		textReviewSource("document", "PLAN REVIEW", content, plan.absolutePath),
+	const result = await withWorking(
+		ctx,
+		"plan-review",
+		async (working) => {
+			working?.setMessage("Working... 正在准备 Plan 审阅");
+			const { textReviewSource } = await import("../browser-review/sources.js");
+			const source = await textReviewSource(
+				"document",
+				"PLAN REVIEW",
+				content,
+				plan.absolutePath,
+			);
+			working?.throwIfAborted();
+			working?.dispose();
+			return reviews.open(source);
+		},
+		{ message: "Working... 正在准备 Plan 审阅", notifyAbort: true },
 	);
+	if (!result) return;
 	if (result.status === "feedback") {
 		const prompt = `请按以下用户浏览器批注继续修改本 session 的 Plan：${plan.absolutePath}\n\n${result.feedback}`;
 		if (ctx.isIdle()) pi.sendUserMessage(prompt);
 		else pi.sendUserMessage(prompt, { deliverAs: "followUp" });
 	} else if (result.status === "unavailable") {
 		ctx.ui.notify(`浏览器审阅不可用，已回退终端：${result.error}`, "warning");
-		await showPlanDialog(ctx, plan.absolutePath, content);
+		await withWorking(
+			ctx,
+			"plan-review",
+			async (working) => {
+				working?.setMessage("Working... 正在打开终端审批");
+				const { showPlanDialog } = await import("./plan-dialog.js");
+				working?.dispose();
+				await showPlanDialog(ctx, plan.absolutePath, content);
+			},
+			{ message: "Working... 正在打开终端审批", notifyAbort: true },
+		);
 	}
 }
 

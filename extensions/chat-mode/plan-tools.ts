@@ -8,10 +8,6 @@ import type {
 	ToolRenderResultOptions,
 } from "@earendil-works/pi-coding-agent";
 import {
-	requestPlanApproval,
-	requestTerminalPlanApproval,
-} from "./plan-approval.js";
-import {
 	ENTER_PLAN_TOOL,
 	EXIT_PLAN_TOOL,
 	readPlanFile,
@@ -238,6 +234,10 @@ export function registerPlanTools(
 			}
 
 			const planContent = await readPlanFile(plan);
+			const {
+				requestPlanApproval,
+				requestTerminalPlanApproval,
+			} = await import("./plan-approval.js");
 			const approval = actions.isBrowserReviewEnabled()
 				? await requestPlanApproval(
 						ctx,

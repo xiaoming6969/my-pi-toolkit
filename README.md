@@ -74,13 +74,17 @@
 
 ## Install
 
-### 从 npm（推荐）
+### 从 npm（推荐，冷启动最快）
+
+发布包的 `pi.extensions` 指向预编译的 `dist/*.js`，启动时不再用 jiti 转译整棵 TypeScript 图。
 
 ```bash
 pi install npm:@xiaoming6969/my-pi-toolkit
 ```
 
 ### 从源码
+
+本地与 Cloud Agent 走 TypeScript 入口，改 `.ts` 后 `/reload` 立刻生效。不要为了开发去生成 `dist/`。
 
 ```bash
 git clone https://github.com/xiaoming6969/my-pi-toolkit.git
@@ -91,7 +95,7 @@ pi install .
 
 ### 从 git
 
-可钉分支 / commit：
+可钉分支 / commit。git 安装没有 `dist/`，仍由 Pi 转译源码（第一层懒加载会加快启动，但不如 npm 安装快）。
 
 ```bash
 pi install git:github.com/xiaoming6969/my-pi-toolkit@main
@@ -198,7 +202,7 @@ pi install git:github.com/xiaoming6969/my-pi-toolkit@main
 
 ## Development
 
-修改扩展后，在 Pi 中执行 `/reload`。依赖变更后于仓库根目录执行 `npm install`。
+修改扩展后，在 Pi 中执行 `/reload`。依赖变更后于仓库根目录执行 `npm install`。开发无需 `npm run build:extensions`；该脚本只给发布 / 检查 tarball 用。
 
 ```bash
 npm test

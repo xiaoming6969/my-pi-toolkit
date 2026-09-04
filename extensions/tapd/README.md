@@ -13,7 +13,7 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 | `/tapd preview [understanding\|design\|collaboration]` | 在浏览器批阅当前需求的本地 Markdown 文档并把意见交给 Agent；不带参数时先选择文档，且不需要 TAPD Token |
 | `/tapd review [--base origin/dev] [补充要求]` | 选择“仅未提交”或“当前分支全部修改”后，启动只读子代理审核实现与过度设计，并将分级报告返回主 Agent |
 | `/tapd sub-task` | 根据 `design.md` 创建或同步设计、开发子需求 |
-| `/tapd bug` | 根据当前会话已有缺陷描述启动定位；定位提示显示在对话中，不二次拉取 TAPD；结果只输出原因、带具体代码的因果链与置信度，不写长篇分析报告 |
+| `/tapd bug [补充要求]` | 根据当前会话已有缺陷描述启动定位；定位提示显示在对话中，不二次拉取 TAPD；结果只输出原因、带具体代码的因果链与置信度，不写长篇分析报告 |
 | `/tapd bug-reject` | 单页 Overlay 拒绝当前 Bug：评价原因多行预览，Enter 进 Overlay 用 Pi Editor 编辑（Enter 确认 / Ctrl+Enter 换行）；解决方法/开发人员同样 Enter 打开 Overlay；FAQ 默认否 |
 | `/tapd git-status` | 直接执行 TAPD Git 工作流，并用对话区工具风格卡片显示关联事项、分支、upstream 与工作区状态 |
 | `/tapd branch [--base origin/dev]` | 直接获取 TAPD keyword；本地关联分支已存在时切换，否则从指定基础分支创建；结果显示为对话区工具风格卡片 |
@@ -26,6 +26,7 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 
 ```text
 /tapd design @docs/api.md 重点考虑旧接口兼容
+/tapd bug 重点看登录页 @src/login.ts
 ```
 
 `/tapd bug-reject` 在 Bug 会话中直接打开单页 Overlay（不经 Agent）：状态固定为「已拒绝」；评价原因默认取最近一次定位报告的 `## 原因`，主表多行预览，Enter 打开 Overlay 并嵌入 Pi 官方 `Editor`（Enter 确认、Ctrl+Enter 换行）；解决方法、开发人员同样按 Enter 打开 Overlay 选择/输入；是否需要写 FAQ 默认「否」（←→ 切换）；确认后处理人设为该缺陷的测试人员（`te`），开发人员默认为当前用户；评价原因同时写入「缺陷原因说明」字段，并以流转备注（`bug_remark`）追加评论。确认后按字段中文 label 解析并 `POST /bugs` 回写。
@@ -137,7 +138,7 @@ TAPD Open API 索引见 [`../../docs/tapd-api.md`](../../docs/tapd-api.md)。
 - Bug 默认标签为 `二组`、`迭代bug(每日发布)`，状态更新为 `已解决`，负责人为 `沈瑞昀`。
 - 需求/任务默认标签为 `二组`、`迭代任务(随迭代发布)`。Ready MR 中，关联项是开发子需求或 TAPD 任务时更新为 `开发完成`；关联项是测试需求时，仅在处理人为当前 Token 用户时更新为 `已通过`；关联项是顶层功能需求时，仅更新当前用户负责的功能需求本身及其直属开发、测试需求。功能需求只更新状态：存在其他处理人的未完成直属开发或测试需求时更新为 `实现中`，否则更新为 `开发完成`；开发子需求更新为 `开发完成`，测试需求更新为 `已通过`。每个实际流转的 TAPD 任务、开发子需求和测试需求都会将完成工时同步为自身的有效预估工时；首次批量更新后会回读完成工时，仅在 TAPD 状态流转覆盖工时值时单独补写并再次校验。预估工时缺失、为零或无效时只更新状态，不写完成工时，也不阻断 MR。其他处理人的需求不会被修改，所有更新均不修改负责人。
 - 纯需求/任务的 `/tapd mr` 保持一次执行完成，不触发根因填写。
-- 含 Bug 的 Ready `/tapd mr` 在同一次执行中完成：只读子 Agent 根据 TAPD 描述、会话定位结论和当前修复 diff，用 `git blame` / `log` / `show` **自行定位引入 commit**，并预填【根因分析（RCA）】、【影响范围】、【修复方案说明】与【引入commit】（不提供候选列表或已确认 hash，无超时）。子 Agent 模型优先用 `tapd.json` 的 `rootCause.model`（例如 `cursor/composer-2.5`），未配置时继承主会话；思考等级同样优先 `rootCause.thinkingLevel`，未配置时继承主会话。总结开始后自动打开与 `/subagents` 相同的只读过程 Overlay；该内部根因 Agent 固定 `keepOpen: false`，完成后 Overlay 自动关闭且不暴露 reusable handle。按 `Esc` 取消本次总结并回退为空模板，不取消整次 MR。此期间 slash 命令不可用，进度看 Overlay。打开编辑器确认或修改：【根因分析（RCA）】、【影响范围】、【修复方案说明】必填；可改引入 commit，可填未能定位。子 Agent 会从 TAPD「根因大类」级联候选中选一行「大类 / 子项」；选不出或对不上候选时，在 MR 预览确认前弹出大类、子类选择器，项目有该字段时必须选出一项。确认后创建或更新 MR 并回写 TAPD。流转时按中文 label 写入修复方案说明、根因分析（RCA）、影响范围、根因大类（`大类/子项`），以及当前 Token 用户为「开发人员」；项目没有对应字段时跳过该项且不阻断 MR。流转备注含【根因分析（RCA）】、【影响范围】、【修复方案说明】、【引入commit】、【commit信息】。子 Agent 失败、被取消或当前会话没有模型时回退为空模板（【引入commit】为未能定位），不阻断 MR，也不要求二次执行 `/tapd mr`。再次执行 Ready `/tapd mr` 会再次 POST 更新这些字段。
+- 含 Bug 的 Ready `/tapd mr` 在同一次执行中完成：只读子 Agent 根据 TAPD 描述、会话定位结论和当前修复 diff，用 `git blame` / `log` / `show` **自行定位引入 commit**，并预填【根因分析（RCA）】、【影响范围】、【修复方案说明】与【引入commit】（不提供候选列表或已确认 hash，无超时）。子 Agent 模型优先用 `tapd.json` 的 `rootCause.model`（例如 `cursor/composer-2.5`），未配置时继承主会话；思考等级同样优先 `rootCause.thinkingLevel`，未配置时继承主会话。lean 子进程以 `--no-extensions` 启动，会加载本 toolkit 的 `openai-compat-models`，模型为 `cursor/*` 时还会加载已启用的 `npm:@rahularya01/pi-cursor`。总结开始后自动打开与 `/subagents` 相同的只读过程 Overlay；该内部根因 Agent 固定 `keepOpen: false`，完成后 Overlay 自动关闭且不暴露 reusable handle。按 `Esc` 取消本次总结并回退为空模板，不取消整次 MR。此期间 slash 命令不可用，进度看 Overlay。打开编辑器确认或修改：【根因分析（RCA）】、【影响范围】、【修复方案说明】必填；可改引入 commit，可填未能定位。子 Agent 会从 TAPD「根因大类」级联候选中选一行「大类 / 子项」；选不出或对不上候选时，在 MR 预览确认前弹出大类、子类选择器，项目有该字段时必须选出一项。确认后创建或更新 MR 并回写 TAPD。流转时按中文 label 写入修复方案说明、根因分析（RCA）、影响范围、根因大类（`大类/子项`），以及当前 Token 用户为「开发人员」；项目没有对应字段时跳过该项且不阻断 MR。流转备注含【根因分析（RCA）】、【影响范围】、【修复方案说明】、【引入commit】、【commit信息】。子 Agent 失败、被取消或当前会话没有模型时回退为空模板（【引入commit】为未能定位），不阻断 MR，也不要求二次执行 `/tapd mr`。再次执行 Ready `/tapd mr` 会再次 POST 更新这些字段。
 - 若仓库 `.pi/tapd-root-cause/{bugId}.json` 已有与当前 `HEAD` 匹配的草稿，会直接复用并跳过填写；TAPD 流转成功后自动删除该草稿。未能定位引入 commit 时使用 TAPD 真实候选值 `其他(历史缺陷)`。
 - 引入 commit 经验证后，会拉取远端 tags，优先取直接指向 commit 的第一个 tag，否则取第一个包含该 commit 的 tag。
 - 合入版本从 TAPD `/bugs/get_fields_info` 的“合入版本”候选值中选择。普通版本精确匹配；`.0` 等存在多个迭代候选时，根据引入 commit 中 TAPD keyword 关联事项的迭代唯一匹配；关联事项没有迭代时会列出候选值让用户手动选择。
@@ -148,7 +149,7 @@ TAPD Open API 索引见 [`../../docs/tapd-api.md`](../../docs/tapd-api.md)。
 
 | 目录/文件 | 职责 |
 | --- | --- |
-| `index.ts` / `types.ts` | 扩展组装入口与跨领域共享类型 |
+| `index.ts` / `types.ts` / `lean-extensions.ts` | 扩展组装入口、跨领域共享类型，以及 lean 子 Agent 的 OpenAI-compat / `pi-cursor` provider 路径 |
 | `core/` | 配置、HTTP 客户端、基础 TAPD API |
 | `sessions/` | TAPD 会话 custom entry 状态、事项→会话目录（catalog）、按目标目录创建/切换会话（`spawn.ts`）、项目路径历史与会话文件删除 |
 | `documents/` | analyze、design、collaboration、Bug 定位与 `/tapd bug-reject` 拒绝流转，以及 Design 关键决策提问工具 |

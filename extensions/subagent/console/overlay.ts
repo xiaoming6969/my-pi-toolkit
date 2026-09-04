@@ -8,8 +8,9 @@ import {
 } from "@earendil-works/pi-tui";
 import type { LiveSubagentRun } from "../../shared/subagent/registry.js";
 import { SUBAGENT_RUNS_ROOT } from "../../shared/subagent/run-paths.js";
-import { createSharedMarkdownRendering } from "../../shared/tui/markdown.js";
+import { createSharedMarkdownRendering, preloadSharedMermaid } from "../../shared/tui/markdown.js";
 import { STANDARD_OVERLAY_OPTIONS } from "../../shared/tui/overlay-shell.js";
+import { withWorking } from "../../shared/tui/working-cancel.js";
 import type { SubagentDetailItem } from "./detail-navigation.js";
 import { createSubagentOverlay } from "./overlay-panel.js";
 
@@ -37,6 +38,22 @@ async function showOverlay(
 		return { consume: true };
 	});
 	try {
+		const ready = await withWorking(
+			ctx,
+			"subagents-overlay",
+			async (working) => {
+				working?.setMessage("Working... 正在准备子 Agent 视图");
+				await preloadSharedMermaid();
+				working?.throwIfAborted();
+				working?.dispose();
+				return true;
+			},
+			{
+				message: "Working... 正在准备子 Agent 视图",
+				notifyAbort: true,
+			},
+		);
+		if (!ready) return "closed";
 		return await ctx.ui.custom<SubagentOverlayCloseReason>(
 			(
 				tui: TUI,

@@ -1,8 +1,6 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { formatReviewFeedback } from "../browser-review/feedback.js";
 import type { BrowserReviewManager } from "../browser-review/server.js";
-import { textReviewSource } from "../browser-review/sources.js";
-import { showPlanDialog } from "./plan-dialog.js";
 
 export type PlanApprovalDecision =
 	| "implement"
@@ -22,6 +20,7 @@ export async function requestTerminalPlanApproval(
 	planContent: string | undefined,
 ): Promise<PlanApprovalResult> {
 	if (!ctx.hasUI) return { decision: "implement" };
+	const { showPlanDialog } = await import("./plan-dialog.js");
 	await showPlanDialog(ctx, planPath, planContent);
 	const choice = await ctx.ui.select(`PLAN APPROVAL · ${planPath}`, [
 		"批准并实现",
@@ -45,7 +44,8 @@ export async function requestPlanApproval(
 	planContent: string | undefined,
 ): Promise<PlanApprovalResult> {
 	if (!ctx.hasUI) return { decision: "implement" };
-	const source = textReviewSource(
+	const { textReviewSource } = await import("../browser-review/sources.js");
+	const source = await textReviewSource(
 		"plan",
 		"PLAN REVIEW",
 		planContent ?? "",

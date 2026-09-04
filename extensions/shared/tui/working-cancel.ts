@@ -122,5 +122,43 @@ export class WorkingCancel {
 	}
 }
 
+export interface WithWorkingOptions {
+	cancellable?: boolean;
+	message?: string;
+	notifyAbort?: boolean;
+}
+
+/**
+ * 立刻显示 Working 行再执行 `run`（含首次 `import()`）。
+ * 无 UI 时不建 widget。`notifyAbort` 时 Esc/AbortError 通知「已取消」并返回 undefined。
+ */
+export async function withWorking<T>(
+	ctx: ExtensionContext,
+	key: string,
+	run: (working: WorkingCancel | undefined) => Promise<T>,
+	options?: WithWorkingOptions,
+): Promise<T | undefined> {
+	const working = ctx.hasUI
+		? new WorkingCancel(ctx, key, {
+				cancellable: options?.cancellable,
+				message: options?.message,
+			})
+		: undefined;
+	try {
+		return await run(working);
+	} catch (error) {
+		if (
+			options?.notifyAbort &&
+			(isAbortError(error) || working?.signal.aborted)
+		) {
+			ctx.ui.notify("已取消", "info");
+			return undefined;
+		}
+		throw error;
+	} finally {
+		working?.dispose();
+	}
+}
+
 /** 兼容旧 Git 模块命名。 */
 export { WorkingCancel as GitWorkingCancel };
