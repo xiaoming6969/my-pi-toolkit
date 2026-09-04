@@ -185,6 +185,25 @@ test("locateTapdBug sends a visible prompt from session context", async () => {
 	assert.equal(userMessages.length, 1);
 	assert.match(String(userMessages[0]), /根据上文 TAPD 缺陷信息/);
 	assert.match(String(userMessages[0]), /## 定位要求/);
+	assert.doesNotMatch(String(userMessages[0]), /用户补充要求/);
+
+	const extra = createFakePi();
+	await locateTapdBug(
+		extra.pi,
+		createFakeContext({
+			entries: [
+				{
+					type: "custom",
+					customType: TAPD_SESSION_STATE_TYPE,
+					data: { ...state, kind: "bug", itemName: "崩溃" },
+				},
+			],
+		}) as never,
+		"重点看登录页 @src/login.ts",
+	);
+	assert.match(String(extra.userMessages[0]), /## 用户补充要求与参考资料/);
+	assert.match(String(extra.userMessages[0]), /重点看登录页 @src\/login\.ts/);
+	assert.match(String(extra.userMessages[0]), /## 定位要求/);
 
 	const idle = createFakePi();
 	const busyCtx = createFakeContext({ isIdle: false });

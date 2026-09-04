@@ -47,7 +47,7 @@ export async function handleTapdCommand(
 	if (sub === "bug") {
 		const { locateTapdBug } = await import("./documents/workflows.js");
 		working?.dispose();
-		await locateTapdBug(pi, ctx);
+		await locateTapdBug(pi, ctx, additionalInstructions);
 		return;
 	}
 	if (sub === "bug-reject") {

@@ -4,7 +4,7 @@ const COMMANDS: AutocompleteItem[] = [
 	{
 		value: "bug",
 		label: "bug",
-		description: "根据会话已有缺陷描述定位代码原因",
+		description: "根据会话已有缺陷描述定位代码原因，可附补充要求",
 	},
 	{
 		value: "bug-reject",

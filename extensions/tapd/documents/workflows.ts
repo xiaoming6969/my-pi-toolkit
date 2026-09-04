@@ -13,6 +13,12 @@ const DOCS_WORKFLOW_MODE_RULES = [
 	"只将文档写入上文指定的 .pi/docs 路径（及同目录约定文档）；不要修改业务代码。",
 ].join("\n");
 
+function withAdditionalInstructions(body: string, extra?: string): string {
+	const trimmed = extra?.trim();
+	if (!trimmed) return body;
+	return `${body}\n\n## 用户补充要求与参考资料\n\n${trimmed}\n\n请将以上补充要求和 @ 引用文件一并纳入本次任务。`;
+}
+
 export async function sendTapdWorkflowPrompt(
 	pi: ExtensionAPI,
 	ctx: ExtensionCommandContext,
@@ -36,12 +42,11 @@ export async function sendTapdWorkflowPrompt(
 	// This command is registered by the extension instance bound to the current
 	// session, so use its current pi. Never retain the ReplacedSessionContext
 	// from the newSession() callback for a later command invocation.
-	const extra = additionalInstructions?.trim();
-	const body = `${prompt}${DOCS_WORKFLOW_MODE_RULES}`;
 	pi.sendUserMessage(
-		extra
-			? `${body}\n\n## 用户补充要求与参考资料\n\n${extra}\n\n请将以上补充要求和 @ 引用文件一并纳入本次任务。`
-			: body,
+		withAdditionalInstructions(
+			`${prompt}${DOCS_WORKFLOW_MODE_RULES}`,
+			additionalInstructions,
+		),
 	);
 	return true;
 }
@@ -49,6 +54,7 @@ export async function sendTapdWorkflowPrompt(
 export async function locateTapdBug(
 	pi: ExtensionAPI,
 	ctx: ExtensionCommandContext,
+	additionalInstructions?: string,
 ): Promise<void> {
 	if (!ctx.isIdle()) {
 		ctx.ui.notify("Agent 正在执行，请稍后再试", "warning");
@@ -68,5 +74,7 @@ export async function locateTapdBug(
 	}
 
 	// Use this command's factory pi, not a ctx captured across newSession/switchSession.
-	pi.sendUserMessage(buildBugLocatePrompt());
+	pi.sendUserMessage(
+		withAdditionalInstructions(buildBugLocatePrompt(), additionalInstructions),
+	);
 }

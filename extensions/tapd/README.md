@@ -13,7 +13,7 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 | `/tapd preview [understanding\|design\|collaboration]` | 在浏览器批阅当前需求的本地 Markdown 文档并把意见交给 Agent；不带参数时先选择文档，且不需要 TAPD Token |
 | `/tapd review [--base origin/dev] [补充要求]` | 选择“仅未提交”或“当前分支全部修改”后，启动只读子代理审核实现与过度设计，并将分级报告返回主 Agent |
 | `/tapd sub-task` | 根据 `design.md` 创建或同步设计、开发子需求 |
-| `/tapd bug` | 根据当前会话已有缺陷描述启动定位；定位提示显示在对话中，不二次拉取 TAPD；结果只输出原因、带具体代码的因果链与置信度，不写长篇分析报告 |
+| `/tapd bug [补充要求]` | 根据当前会话已有缺陷描述启动定位；定位提示显示在对话中，不二次拉取 TAPD；结果只输出原因、带具体代码的因果链与置信度，不写长篇分析报告 |
 | `/tapd bug-reject` | 单页 Overlay 拒绝当前 Bug：评价原因多行预览，Enter 进 Overlay 用 Pi Editor 编辑（Enter 确认 / Ctrl+Enter 换行）；解决方法/开发人员同样 Enter 打开 Overlay；FAQ 默认否 |
 | `/tapd git-status` | 直接执行 TAPD Git 工作流，并用对话区工具风格卡片显示关联事项、分支、upstream 与工作区状态 |
 | `/tapd branch [--base origin/dev]` | 直接获取 TAPD keyword；本地关联分支已存在时切换，否则从指定基础分支创建；结果显示为对话区工具风格卡片 |
@@ -26,6 +26,7 @@ TAPD 需求与缺陷工作流扩展。提供待办列表、会话关联、需求
 
 ```text
 /tapd design @docs/api.md 重点考虑旧接口兼容
+/tapd bug 重点看登录页 @src/login.ts
 ```
 
 `/tapd bug-reject` 在 Bug 会话中直接打开单页 Overlay（不经 Agent）：状态固定为「已拒绝」；评价原因默认取最近一次定位报告的 `## 原因`，主表多行预览，Enter 打开 Overlay 并嵌入 Pi 官方 `Editor`（Enter 确认、Ctrl+Enter 换行）；解决方法、开发人员同样按 Enter 打开 Overlay 选择/输入；是否需要写 FAQ 默认「否」（←→ 切换）；确认后处理人设为该缺陷的测试人员（`te`），开发人员默认为当前用户；评价原因同时写入「缺陷原因说明」字段，并以流转备注（`bug_remark`）追加评论。确认后按字段中文 label 解析并 `POST /bugs` 回写。

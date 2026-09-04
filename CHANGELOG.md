@@ -13,6 +13,7 @@
 
 ### 改进
 
+- `/tapd bug` 支持在命令后附加补充要求与 `@文件`，与 `analyze`/`design` 相同，会并入定位 prompt。
 - 启动加速：Markdown / 语法高亮 / Mermaid 以及 TAPD、Subagent Console、Plan、Dashboard 的重实现改为首次命令、工具或 Overlay 时再加载，缩短本地源码冷启动。
 - 首次 `/tapd`、`/review`、`/annotate`、`/plan review`、`/subagents` 等会立刻显示 Working 行，不再在 jiti 编译重模块时无反馈干等；`/tapd` 按子命令再加载实现，打开待办不再先编译 Git 工作流。
 - npm 包经 `prepack` 把三个扩展入口编译为 `dist/*.js`；仓库与 `pi install .` / git 安装仍加载 TypeScript。要最快冷启动请用 npm 安装。
