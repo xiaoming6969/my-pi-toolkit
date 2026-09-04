@@ -20,7 +20,6 @@ import type {
 	MultiTaskWorker,
 	NormalizedMultiTaskTask,
 } from "./types.js";
-import { executeWorker } from "./worker-runner.js";
 import { acquireSubagentSlot } from "../shared/subagent/slot-semaphore.js";
 
 const WORKER_IDLE_TIMEOUT_MS = 2 * 60_000;
@@ -93,6 +92,7 @@ async function executeBatch(options: {
 		try {
 			const release = await acquireSubagentSlot(worker.controller.signal);
 			try {
+				const { executeWorker } = await import("./worker-runner.js");
 				await executeWorker({
 					batch,
 					worker,

@@ -1,6 +1,5 @@
 /// <reference path="../types/grok-mermaid.d.ts" />
 
-import { render as renderMermaid } from "grok-mermaid";
 import {
 	getAgentDir,
 	SettingsManager,
@@ -24,6 +23,24 @@ export interface SharedMarkdownRendering {
 
 const markdownParser = new Marked();
 
+interface MermaidArt {
+	width: number;
+	warnings: string[];
+	styled: Array<Array<{ cls: string; text: string }>>;
+}
+
+type MermaidRender = (source: string) => MermaidArt | null;
+
+let renderMermaid: MermaidRender | undefined;
+let mermaidLoad: Promise<void> | undefined;
+
+export function preloadSharedMermaid(): Promise<void> {
+	mermaidLoad ??= import("grok-mermaid").then((mod) => {
+		renderMermaid = mod.render;
+	});
+	return mermaidLoad;
+}
+
 export function createSharedMarkdownRendering(
 	ctx: ExtensionContext,
 	theme: Theme,
@@ -32,6 +49,7 @@ export function createSharedMarkdownRendering(
 		projectTrusted: ctx.isProjectTrusted(),
 	});
 	const mermaidMode = settings.getMermaidRenderingMode();
+	if (mermaidMode !== "off") void preloadSharedMermaid();
 	const transformers = [createMermaidTransformer(mermaidMode, theme)];
 	return {
 		mermaidMode,
@@ -78,6 +96,10 @@ function createMermaidTransformer(
 }
 
 function renderMermaidToFit(source: string, availableWidth: number) {
+	if (!renderMermaid) {
+		void preloadSharedMermaid();
+		return undefined;
+	}
 	const art = renderMermaid(source);
 	if (!art || art.width <= availableWidth) return art;
 

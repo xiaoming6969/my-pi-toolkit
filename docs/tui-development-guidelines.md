@@ -110,6 +110,12 @@ viewportHeight = Math.max(1, panelHeight - chromeRows);
 - 不得在普通组件中直接发送 enable/disable 序列，避免多个组件或扩展与宿主互相关闭捕获。
 - 扩展层没有稳定的绝对布局 rect；未修改 Pi 核心前不得宣称支持通用点击命中。
 
+### 4.4 Slash 命令 Working
+
+- Slash 命令和快捷键在首次 `import()` 重模块、打开 Overlay 或拉起浏览器审阅之前，必须立刻显示 `WorkingCancel`（`withWorking`），不得无反馈干等。
+- `select`、Overlay 或系统对话框期间必须 `suspend` 或 `dispose` Working，避免与 Esc 冲突。
+- Pi 的 `setWorkingVisible` 仅在 streaming 时生效，不得用来替代命令期 Working 行。
+
 ## 5. 工具调用展示
 
 Toolkit 注册的新工具必须实现 `renderCall` 和 `renderResult`，并优先使用共享 helper：

@@ -18,6 +18,7 @@ import {
 } from "./mouse.js";
 import {
 	createSharedMarkdownRendering,
+	preloadSharedMermaid,
 	type SharedMarkdownRendering,
 } from "./markdown.js";
 import {
@@ -157,6 +158,7 @@ export async function showMarkdownPreview(
 ): Promise<void> {
 	if (ctx.mode !== "tui") return;
 
+	await preloadSharedMermaid();
 	await ctx.ui.custom<void>(
 		(
 			tui: TUI,

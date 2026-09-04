@@ -7,9 +7,11 @@ import type {
 	Theme,
 } from "@earendil-works/pi-coding-agent";
 import type { TUI } from "@earendil-works/pi-tui";
-import { discoverDashboardData, type DashboardData } from "./discovery.js";
-import { createFooterSnapshot, renderFooter } from "./footer.js";
-import { renderDashboard } from "./layout.js";
+import type { DashboardData } from "./discovery.js";
+
+type DashboardLayout = typeof import("./layout.js");
+type DashboardFooter = typeof import("./footer.js");
+type DashboardDiscovery = typeof import("./discovery.js");
 
 export default function startupDashboard(pi: ExtensionAPI) {
 	let data: DashboardData = {
@@ -22,12 +24,28 @@ export default function startupDashboard(pi: ExtensionAPI) {
 	let footerEnabled = true;
 	let sessionTitle: string | undefined;
 	let requestFooterRender: (() => void) | undefined;
+	let layout: DashboardLayout | undefined;
+	let footer: DashboardFooter | undefined;
+	let discovery: DashboardDiscovery | undefined;
+
+	async function loadDashboardModules(): Promise<{
+		layout: DashboardLayout;
+		footer: DashboardFooter;
+		discovery: DashboardDiscovery;
+	}> {
+		layout ??= await import("./layout.js");
+		footer ??= await import("./footer.js");
+		discovery ??= await import("./discovery.js");
+		return { layout, footer, discovery };
+	}
 
 	const installHeader = (ctx: ExtensionContext): void => {
 		if (!headerEnabled) {
 			ctx.ui.setHeader(undefined);
 			return;
 		}
+		const renderDashboard = layout?.renderDashboard;
+		if (!renderDashboard) return;
 		ctx.ui.setHeader((_tui: TUI, theme: Theme) => {
 			return {
 				render: (width: number) => renderDashboard(width, data, theme),
@@ -42,6 +60,9 @@ export default function startupDashboard(pi: ExtensionAPI) {
 			requestFooterRender = undefined;
 			return;
 		}
+		const renderFooter = footer?.renderFooter;
+		const createFooterSnapshot = footer?.createFooterSnapshot;
+		if (!renderFooter || !createFooterSnapshot) return;
 		ctx.ui.setFooter(
 			(tui: TUI, theme: Theme, footerData: ReadonlyFooterDataProvider) => {
 				const requestRender = () => tui.requestRender();
@@ -74,7 +95,11 @@ export default function startupDashboard(pi: ExtensionAPI) {
 	pi.on("session_start", async (_event: unknown, ctx: ExtensionContext) => {
 		if (ctx.mode !== "tui") return;
 		sessionTitle = pi.getSessionName();
-		data = await discoverDashboardData(ctx.cwd, ctx.isProjectTrusted());
+		const modules = await loadDashboardModules();
+		data = await modules.discovery.discoverDashboardData(
+			ctx.cwd,
+			ctx.isProjectTrusted(),
+		);
 		installHeader(ctx);
 		installFooter(ctx);
 	});
@@ -119,8 +144,12 @@ export default function startupDashboard(pi: ExtensionAPI) {
 		handler: async (_args: string, ctx: ExtensionCommandContext) => {
 			if (ctx.mode !== "tui") return;
 			headerEnabled = !headerEnabled;
+			const modules = await loadDashboardModules();
 			if (headerEnabled) {
-				data = await discoverDashboardData(ctx.cwd, ctx.isProjectTrusted());
+				data = await modules.discovery.discoverDashboardData(
+					ctx.cwd,
+					ctx.isProjectTrusted(),
+				);
 			}
 			installHeader(ctx);
 			ctx.ui.notify(
@@ -135,6 +164,7 @@ export default function startupDashboard(pi: ExtensionAPI) {
 		handler: async (_args: string, ctx: ExtensionCommandContext) => {
 			if (ctx.mode !== "tui") return;
 			footerEnabled = !footerEnabled;
+			await loadDashboardModules();
 			installFooter(ctx);
 			ctx.ui.notify(
 				`Dashboard footer ${footerEnabled ? "enabled" : "disabled"}`,

@@ -25,9 +25,14 @@
     "test": "node scripts/run-tests.mjs",
     "test:watch": "node scripts/run-tests.mjs --watch",
     "test:coverage": "node scripts/run-tests.mjs --coverage",
-    "coverage:report": "node scripts/coverage-report.mjs"
+    "coverage:report": "node scripts/coverage-report.mjs",
+    "build:extensions": "node scripts/build-extensions.mjs",
+    "prepack": "node scripts/prepack.mjs",
+    "postpack": "node scripts/postpack.mjs",
+    "pack:verify": "node scripts/verify-pack.mjs"
   },
   "files": [
+    "dist/",
     "extensions/",
     "!extensions/**/test/**",
     "skills/",
@@ -68,6 +73,7 @@
     ]
   },
   "devDependencies": {
+    "esbuild": "^0.25.10",
     "tsx": "^4.23.12"
   }
 }

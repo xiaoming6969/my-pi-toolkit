@@ -13,7 +13,6 @@ import { previewLines, resultText, formatModelWithThinking } from "../../shared/
 import { toolCall, toolResult } from "../../shared/tui/tool-render.js";
 import { registerRepoSearchCommand } from "./command.js";
 import { resolveRepoSearchConfig } from "./config.js";
-import { runRepoSearchSubagent } from "./runner.js";
 import type { RepoSearchDetails } from "./types.js";
 
 function previewToolCall(name: string, args: Record<string, unknown>): string {
@@ -86,6 +85,7 @@ export default function repoSearchSubagentExtension(pi: ExtensionAPI) {
 				signal ?? new AbortController().signal,
 			);
 			try {
+				const { runRepoSearchSubagent } = await import("./runner.js");
 				const result = await runRepoSearchSubagent({
 					cwd: ctx.cwd,
 					task: params.task,

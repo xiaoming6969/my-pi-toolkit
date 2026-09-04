@@ -1,12 +1,9 @@
 import type {
 	ExtensionAPI,
 	ExtensionCommandContext,
-	MessageRenderOptions,
-	Theme,
 } from "@earendil-works/pi-coding-agent";
 import type { TapdConfig } from "../types.js";
 import {
-	buildGitCard,
 	publishCard,
 	truncateDisplayResult,
 	type TapdGitMessageDetails,
@@ -43,28 +40,6 @@ function recentRuns(): Map<string, number> {
 function optionValue(args: string[], name: string): string | undefined {
 	const index = args.indexOf(name);
 	return index >= 0 ? args[index + 1] : undefined;
-}
-
-interface TapdGitCustomMessage {
-	content: unknown;
-	details?: TapdGitMessageDetails;
-}
-
-export function registerTapdGitMessageRenderer(pi: ExtensionAPI): void {
-	pi.registerMessageRenderer<TapdGitMessageDetails>(
-		MESSAGE_TYPE,
-		(
-			message: TapdGitCustomMessage,
-			options: MessageRenderOptions,
-			theme: Theme,
-		) =>
-			buildGitCard(
-				message.details,
-				typeof message.content === "string" ? message.content : "",
-				options.expanded,
-				theme,
-			),
-	);
 }
 
 function startCard(
@@ -125,6 +100,7 @@ export async function runTapdGitCommand(
 	args: string[],
 	ctx: ExtensionCommandContext,
 	config: TapdConfig,
+	working?: GitWorkingCancel,
 ): Promise<boolean> {
 	if (!GIT_COMMANDS.has(subcommand as GitCommandKind)) return false;
 	const command = subcommand as GitCommandKind;
@@ -135,9 +111,10 @@ export async function runTapdGitCommand(
 	runs.set(runKey, now);
 	const card = startCard(pi, command);
 	publishCard(card);
-	const cancel = ctx.hasUI
-		? new GitWorkingCancel(ctx, `tapd-git-${command}`)
-		: undefined;
+	const ownsWorking = working === undefined;
+	const cancel =
+		working ??
+		(ctx.hasUI ? new GitWorkingCancel(ctx, `tapd-git-${command}`) : undefined);
 	const reportProgress = (progress: GitCommandProgress) => {
 		card.progress = progress;
 		const text = `${progress.step}/${progress.total} ${progress.message}`;
@@ -195,7 +172,7 @@ export async function runTapdGitCommand(
 			);
 		}
 	} finally {
-		cancel?.dispose();
+		if (ownsWorking) cancel?.dispose();
 	}
 	return true;
 }

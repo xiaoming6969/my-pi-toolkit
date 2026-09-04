@@ -28,8 +28,14 @@ test("skills and themes listed in package.json exist", () => {
 });
 
 test("published files include extensions and exclude per-module test folders", () => {
+	assert.ok(pkg.files.includes("dist/"));
 	assert.ok(pkg.files.includes("extensions/"));
 	assert.ok(pkg.files.includes("!extensions/**/test/**"));
 	assert.equal(pkg.scripts.test, "node scripts/run-tests.mjs");
+	assert.equal(pkg.scripts.prepack, "node scripts/prepack.mjs");
+	assert.equal(pkg.scripts.postpack, "node scripts/postpack.mjs");
+	assert.equal(pkg.scripts["pack:verify"], "node scripts/verify-pack.mjs");
+	assert.equal(pkg.scripts.prepare, undefined);
+	assert.equal(pkg.scripts.postinstall, undefined);
 	assert.match(pkg.engines.node, /22\.19/);
 });

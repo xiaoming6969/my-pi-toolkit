@@ -56,5 +56,5 @@ jobs:
         continue-on-error: true
         run: node scripts/post-pr-coverage-comment.mjs
 
-      - name: 校验发包文件列表
-        run: npm pack --dry-run
+      - name: 校验发包产物
+        run: npm run pack:verify

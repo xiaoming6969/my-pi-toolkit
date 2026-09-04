@@ -11,9 +11,9 @@ import { assertNotSubagentChild } from "../../shared/subagent/child-guard.js";
 import { truncateSubagentOutput } from "../../shared/subagent/output-limit.js";
 import type { SubagentToolCall } from "../../shared/subagent/registry.js";
 import { BUILTIN_SUBAGENT_ROLES } from "../roles/builtin.js";
-import { prepareSpawn, type PreparedSpawn } from "./prepare.js";
 import { previewToolCall, renderSpawnCall, renderSpawnResult } from "./render.js";
 import { describeRunResult } from "./result-text.js";
+import type { PreparedSpawn } from "./prepare.js";
 import type { SpawnSubagentDetails, SpawnSubagentParams } from "./types.js";
 
 const ROLE_SUMMARY = BUILTIN_SUBAGENT_ROLES.map(
@@ -228,6 +228,7 @@ export function registerSpawnSubagentTool(pi: ExtensionAPI): void {
 			ctx: ExtensionContext,
 		) {
 			assertNotSubagentChild("派生子 Agent");
+			const { prepareSpawn } = await import("./prepare.js");
 			const prepared = await prepareSpawn(params, ctx, pi);
 			if (params.background) return startBackground(prepared, ctx, pi);
 			return runForeground(prepared, signal, onUpdate);

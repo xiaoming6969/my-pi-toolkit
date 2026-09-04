@@ -1,6 +1,8 @@
 # 测试
 
-本仓库是 Pi 扩展包，没有独立编译步骤。测试用 Node 内置 `node:test`，通过 `tsx` 加载 TypeScript（解析 `.js` → `.ts`，并支持构造函数参数属性）。运行时 Pi 仍用 jiti 加载扩展；两者都能跑同一套源码。
+本仓库**开发时没有编译步骤**。测试用 Node 内置 `node:test`，通过 `tsx` 加载 TypeScript（解析 `.js` → `.ts`，并支持构造函数参数属性）。本地 / Cloud / `pi install .` / git 安装时，Pi 用 jiti 直接加载 `package.json` 里的 `.ts` 入口。
+
+只有 `npm pack` / `npm publish` 会经 `prepack` 用 esbuild 打出 `dist/*.js`，并把 **tarball 内** 的 `pi.extensions` 改成这三个 JS 入口；`postpack` 再把工作区 `package.json` 恢复成 TypeScript。不要加 `prepare` / `postinstall` 编译，以免本地 `npm install` 生成 `dist` 和 `/reload` 抢源码。
 
 ## 布局
 
@@ -15,7 +17,7 @@ test/*.test.mjs
 | --- | --- |
 | `extensions/chat-mode/test/` | 该模块的单元 / 集成测试 |
 | `extensions/shared/test/` | 共享 TUI / RPC 测试；辅助文件如 `rpc-session-harness.ts` 也放这里 |
-| `test/` | 包清单、入口文件是否存在等仓库级断言 |
+| `test/` | 包清单、启动 import 图、入口文件是否存在等仓库级断言 |
 
 不要把 `*.test.*` 和源码并排放。新增模块时同时建 `extensions/<新模块>/test/`。
 
@@ -32,7 +34,7 @@ npm run test:coverage
 npm run coverage:report
 ```
 
-需要 Node `>= 22.19`。CI 用 Node 22 跑一次：测试、覆盖率报告和发包清单校验。
+需要 Node `>= 22.19`。CI 用 Node 22 跑一次：测试、覆盖率报告和 `npm run pack:verify`（真实 `npm pack`，断言 tarball 入口为 `dist/*.js` 后删掉 tgz）。
 
 `npm run coverage:report` 读取 `coverage/lcov.info`，写出 `coverage/report.md`。行 / 分支 / 函数任一低于 95% 时退出码为 1。
 
@@ -44,8 +46,11 @@ npm run coverage:report
 2. **进程内集成测试**  
    用临时目录 / Fake child process 覆盖 Git worktree、RPC 会话、Debug HTTP。  
    不启动完整 Pi TUI，不调用 TAPD / GitLab / Context7 真接口。
-3. **包完整性**  
-   `test/package-integrity.test.mjs` 检查 `pi.extensions` 入口存在，且发包白名单排除 `test/`。CI 另跑 `npm pack --dry-run`。
+3. **包完整性与启动图**
+   - `test/package-integrity.test.mjs` 检查仓库 `pi.extensions` 仍为三个 `.ts` 入口，且 `files` 含 `dist/`、排除 `test/`。
+   - `test/startup-import-graph.test.mjs` 从三个入口做静态相对 import 闭包，禁止把 `highlight.js` / mermaid / markdown-preview 拉回启动图。
+   - `test/extension-entries.test.mjs` 覆盖 `prepack` 对 `pi.extensions` 的文本改写。
+   - **不要**在并行 `npm test` 里跑会改 `package.json` 的 `npm pack`。CI 在测试之后跑 `npm run pack:verify`。
 4. **手工 TUI**  
    Overlay / Footer / 快捷键按 [`docs/tui-development-guidelines.md`](tui-development-guidelines.md) 人工核对。不把终端视觉回归塞进 `npm test`。
 
@@ -77,11 +82,11 @@ npm run coverage:report
 - `npm run test:coverage`（写 `coverage/lcov.info`，**行 / 分支 / 函数均需 ≥ 95%**）
 - `node scripts/coverage-report.mjs` 生成 Markdown 测试报告；低于 95% 时该步骤失败，检查 `测试` 为红
 - 报告写入 Job Summary，上传 `coverage/report.md` 与 `lcov.info`，并在 PR 上发布（或更新）同一条覆盖率评论
-- `npm pack --dry-run`
+- `npm run pack:verify`（`prepack` 编译三个入口，断言 tarball 的 `pi.extensions` 指向 `dist/*.js`，`postpack` 恢复仓库入口）
 
 请把检查名 `测试` 设为合入 `main` 的 required status check，否则 GitHub 仍允许在红灯时点合入。仓库规则集需要管理员权限，CI 工作流无法代为打开。
 
-发布工作流在 `npm publish` 前同样跑 `npm test`。
+发布工作流在 `npm publish` 前同样跑 `npm test` 和 `npm run pack:verify`；`npm publish` 自身也会触发 `prepack`。
 
 覆盖率只统计有必要单测的源码。`scripts/run-tests.mjs` 会排除：
 

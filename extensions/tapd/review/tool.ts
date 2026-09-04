@@ -1,13 +1,11 @@
 import type {
 	AgentToolResult,
-	ExtensionAPI,
 	ExtensionContext,
 	Theme,
 	ToolRenderResultOptions,
 } from "@earendil-works/pi-coding-agent";
 import { getMarkdownTheme } from "@earendil-works/pi-coding-agent";
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
-import { Type } from "typebox";
 import { acquireSubagentSlot } from "../../shared/subagent/slot-semaphore.js";
 import { thinkingLevelForModel } from "../../shared/subagent/thinking-level.js";
 import {
@@ -33,7 +31,7 @@ import type {
 	TapdReviewToolDetails,
 } from "./types.js";
 
-interface ReviewToolParams {
+export interface ReviewToolParams {
 	scope?: TapdReviewScope;
 	baseRef?: string;
 	instructions?: string;
@@ -58,49 +56,18 @@ function reviewHandle(details: TapdReviewToolDetails): string {
 		: "";
 }
 
-export function registerTapdReviewTool(pi: ExtensionAPI): void {
-	pi.registerTool({
-		name: "tapd_review",
-		label: "TAPD Code Review",
-		description:
-			"Use an isolated read-only reviewer subagent to compare the current TAPD story implementation with understanding.md and design.md, including a dedicated over-engineering pass. Can review only uncommitted changes or all branch and working-tree changes, and returns a severity-ranked report.",
-		promptSnippet:
-			"Review the current TAPD story implementation against its requirement and design, including over-engineering",
-		promptGuidelines: [
-			"Use tapd_review when the user runs /tapd review or explicitly asks for the TAPD requirement implementation to be reviewed.",
-			"After tapd_review returns, summarize the highest-severity findings and wait for confirmation before modifying code.",
-		],
-		parameters: Type.Object({
-			scope: Type.Optional(
-				Type.Unsafe<TapdReviewScope>({
-					type: "string",
-					enum: ["uncommitted", "branch"],
-					description:
-						"Review uncommitted changes only, or all changes since the base branch. Defaults to branch.",
-				}),
-			),
-			baseRef: Type.Optional(
-				Type.String({
-					description: "Git base ref. Defaults to origin/dev.",
-				}),
-			),
-			instructions: Type.Optional(
-				Type.String({ description: "Additional review focus from the user" }),
-			),
-		}),
-
-		async execute(
-			_toolCallId: string,
-			params: ReviewToolParams,
-			signal: AbortSignal | undefined,
-			onUpdate:
-				| ((partial: {
-						content: Array<{ type: "text"; text: string }>;
-						details: TapdReviewToolDetails;
-				  }) => void)
-				| undefined,
-			ctx: ExtensionContext,
-		) {
+export async function executeTapdReview(
+	_toolCallId: string,
+	params: ReviewToolParams,
+	signal: AbortSignal | undefined,
+	onUpdate:
+		| ((partial: {
+				content: Array<{ type: "text"; text: string }>;
+				details: TapdReviewToolDetails;
+		  }) => void)
+		| undefined,
+	ctx: ExtensionContext,
+) {
 			const config = loadConfig();
 			if (!config) throw new Error("请先配置 ~/.pi/agent/tapd.json");
 			const model = resolveReviewModel(config, ctx.model);
@@ -200,70 +167,68 @@ export function registerTapdReviewTool(pi: ExtensionAPI): void {
 			} finally {
 				await reviewContext?.cleanup();
 			}
-		},
+}
 
-		renderCall(args: ReviewToolParams, theme: Theme) {
-			const range =
-				args.scope === "uncommitted"
-					? "未提交修改"
-					: args.baseRef || DEFAULT_GIT_WORKFLOW_POLICY.baseRef;
-			return toolCall(theme, "tapd_review", range);
-		},
+export function renderTapdReviewCall(args: ReviewToolParams, theme: Theme) {
+	const range =
+		args.scope === "uncommitted"
+			? "未提交修改"
+			: args.baseRef || DEFAULT_GIT_WORKFLOW_POLICY.baseRef;
+	return toolCall(theme, "tapd_review", range);
+}
 
-		renderResult(
-			result: AgentToolResult<TapdReviewToolDetails>,
-			{ expanded }: ToolRenderResultOptions,
-			theme: Theme,
-			context: { isError: boolean },
-		) {
-			const details = result.details as TapdReviewToolDetails | undefined;
-			if (context.isError || !details) {
-				const error = resultText(result.content, "Review failed");
-				return toolResult(theme, {
-					status: "error",
-					title: "TAPD review",
-					summary: compactText(error, 100),
-					body: expanded ? error : undefined,
-					hint: error.length > 100 ? "Ctrl+O to expand error" : undefined,
-				});
-			}
-			if (details.running) {
-				const visibleCalls = expanded
-					? details.toolCalls
-					: details.toolCalls.slice(-6);
-				const calls = visibleCalls.map(
-					(call) => `→ ${previewToolCall(call.name, call.arguments)}`,
-				);
-				return toolResult(theme, {
-					status: "active",
-					title: "reviewing",
-					summary: formatModelWithThinking(
-						details.model,
-						details.thinkingLevel,
-					),
-					details: [details.phase],
-					body: calls.length > 0 ? calls.join("\n") : undefined,
-				});
-			}
-			const report = details.report ?? "(no report)";
-			const view = {
-				status: "success" as const,
-				title: "TAPD review",
-				summary: `risk:${reportRisk(report)} · ${formatModelWithThinking(details.model, details.thinkingLevel)}${reviewHandle(details)}`,
-			};
-			if (!expanded) {
-				const preview = previewLines(report, 14);
-				return toolResult(theme, {
-					...view,
-					body: preview.text,
-					hint: preview.truncated ? "Ctrl+O to expand full report" : undefined,
-				});
-			}
-			const container = new Container();
-			container.addChild(new Text(toolHeader(theme, view), 0, 0));
-			container.addChild(new Spacer(1));
-			container.addChild(new Markdown(report, 0, 0, getMarkdownTheme()));
-			return container;
-		},
-	});
+export function renderTapdReviewResult(
+	result: AgentToolResult<TapdReviewToolDetails>,
+	{ expanded }: ToolRenderResultOptions,
+	theme: Theme,
+	context: { isError: boolean },
+) {
+	const details = result.details as TapdReviewToolDetails | undefined;
+	if (context.isError || !details) {
+		const error = resultText(result.content, "Review failed");
+		return toolResult(theme, {
+			status: "error",
+			title: "TAPD review",
+			summary: compactText(error, 100),
+			body: expanded ? error : undefined,
+			hint: error.length > 100 ? "Ctrl+O to expand error" : undefined,
+		});
+	}
+	if (details.running) {
+		const visibleCalls = expanded
+			? details.toolCalls
+			: details.toolCalls.slice(-6);
+		const calls = visibleCalls.map(
+			(call) => `→ ${previewToolCall(call.name, call.arguments)}`,
+		);
+		return toolResult(theme, {
+			status: "active",
+			title: "reviewing",
+			summary: formatModelWithThinking(
+				details.model,
+				details.thinkingLevel,
+			),
+			details: [details.phase],
+			body: calls.length > 0 ? calls.join("\n") : undefined,
+		});
+	}
+	const report = details.report ?? "(no report)";
+	const view = {
+		status: "success" as const,
+		title: "TAPD review",
+		summary: `risk:${reportRisk(report)} · ${formatModelWithThinking(details.model, details.thinkingLevel)}${reviewHandle(details)}`,
+	};
+	if (!expanded) {
+		const preview = previewLines(report, 14);
+		return toolResult(theme, {
+			...view,
+			body: preview.text,
+			hint: preview.truncated ? "Ctrl+O to expand full report" : undefined,
+		});
+	}
+	const container = new Container();
+	container.addChild(new Text(toolHeader(theme, view), 0, 0));
+	container.addChild(new Spacer(1));
+	container.addChild(new Markdown(report, 0, 0, getMarkdownTheme()));
+	return container;
 }
