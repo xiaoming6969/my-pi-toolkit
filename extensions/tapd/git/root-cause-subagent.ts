@@ -1,11 +1,9 @@
-import { existsSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { waitForLiveSubagent } from "../../shared/subagent/registry.js";
 import { runSubagent } from "../../shared/subagent/run.js";
 import { thinkingLevelForModel } from "../../shared/subagent/thinking-level.js";
 import { watchLiveSubagentOverlay } from "../../subagent/console/overlay.js";
+import { resolveTapdLeanExtensionPaths } from "../lean-extensions.js";
 import type { TapdConfig } from "../types.js";
 import {
 	resolveIntroducedCommit,
@@ -23,11 +21,6 @@ import {
 } from "./root-cause-prompt.js";
 import type { TapdKeyword } from "./types.js";
 import { abortError } from "./working-cancel.js";
-
-const EXTENSION_DIR = dirname(fileURLToPath(import.meta.url));
-const MODEL_EXTENSIONS = [
-	resolve(EXTENSION_DIR, "../../openai-compat-models/index.ts"),
-].filter(existsSync);
 
 export async function generateBugRootCauseSummary(options: {
 	ctx: ExtensionCommandContext;
@@ -85,7 +78,11 @@ export async function generateBugRootCauseSummary(options: {
 			systemPrompt: ROOT_CAUSE_SYSTEM_PROMPT,
 			// Read-only inspection plus `bash` for git history lookups; no edit/write.
 			capability: "execute",
-			extensionPaths: MODEL_EXTENSIONS,
+			extensionPaths: await resolveTapdLeanExtensionPaths(
+				cwd,
+				ctx.isProjectTrusted(),
+				model,
+			),
 			artifactFiles: [evidence.evidenceFile],
 			disableContextFiles: true,
 			keepOpen: false,
