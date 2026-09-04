@@ -121,6 +121,7 @@ export async function executeTapdReview(
 						model,
 						thinkingLevel,
 						task: buildReviewTask(reviewContext, params.instructions),
+						projectTrusted: ctx.isProjectTrusted(),
 						parentSessionId: ctx.sessionManager.getSessionId(),
 						artifactFiles: [reviewContext.contextFile],
 						signal,

@@ -84,6 +84,14 @@ test("loads the cursor provider only for cursor models", () => {
 		extractRepoSearchExtensionPaths(RESOURCES, "openai/gpt-5"),
 		["/lens/index.ts", "/lens/versioned.ts"],
 	);
+	assert.deepEqual(
+		extractRepoSearchExtensionPaths(RESOURCES, "cursor/composer-2.5", false),
+		["/cursor/index.js"],
+	);
+	assert.deepEqual(
+		extractRepoSearchExtensionPaths(RESOURCES, "openai/gpt-5", false),
+		[],
+	);
 });
 
 test("resolveRepoSearchExtensionPaths degrades when package resolution fails", async () => {
