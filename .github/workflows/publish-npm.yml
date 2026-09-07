@@ -3,6 +3,12 @@ name: 发布 npm 包
 on:
   release:
     types: [published]
+  workflow_call:
+    inputs:
+      tag_name:
+        description: 要发布的 Git tag（例如 v1.4.0）
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -12,10 +18,12 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      TAG_NAME: ${{ github.event_name == 'workflow_call' && inputs.tag_name || github.event.release.tag_name }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.event_name == 'workflow_call' && inputs.tag_name || github.event.release.tag_name }}
 
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
@@ -27,7 +35,7 @@ jobs:
         id: package
         run: |
           version=$(node -p "require('./package.json').version")
-          test "v$version" = "${{ github.event.release.tag_name }}"
+          test "v$version" = "$TAG_NAME"
           name=$(node -p "require('./package.json').name")
           npm view "$name@$version" version >/dev/null 2>&1 && echo "exists=true" >> "$GITHUB_OUTPUT" || true
 

@@ -210,7 +210,7 @@ npm run test:coverage
 npm run coverage:report
 ```
 
-每个模块的测试放在 `extensions/<module>/test/`，仓库级检查放在 `test/`。约定见 [`docs/testing.md`](docs/testing.md) 与 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
+每个模块的测试放在 `extensions/<module>/test/`，仓库级检查放在 `test/`。约定见 [`docs/testing.md`](docs/testing.md) 与 [`CONTRIBUTING.md`](CONTRIBUTING.md)。发版走 Release Please：功能 PR 用 conventional commit 标题合入 `main` 只更新发版 PR；合入发版 PR 才会打 tag 并发布 npm。
 
 扩展入口与依赖版本统一维护在 [`package.json`](package.json)。
 

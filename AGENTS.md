@@ -10,6 +10,30 @@
 ## Documentation
 
 - After completing each functional change, review whether the related README files, usage instructions, configuration examples, command references, or architecture documentation need to be updated, and update them in the same change when necessary.
+- Do not bump `package.json` version or edit `CHANGELOG.md` in feature PRs. Changelog and version come from the standing Release Please PR (see Commits and releases).
+
+## Commits and releases
+
+Use Conventional Commits. If the PR is squash-merged, the **PR title** is the changelog line on `main`.
+
+```text
+<type>(<scope>): <中文主语，用户能看懂>
+
+feat(subagent): 增加 spawn_subagent 后台等待与取消
+fix(tapd): cursor 模型下 lean 子 Agent 加载 pi-cursor
+```
+
+| type | changelog | version |
+| --- | --- | --- |
+| `feat` | 新增 | minor |
+| `fix` | 修复 | patch |
+| `perf` | 改进 | patch（用户可见的体验/性能改进） |
+| `docs` / `test` / `chore` / `ci` / `refactor` / `style` / `build` | hidden | no bump |
+| `BREAKING CHANGE:` footer or `feat!:` | 新增 | major |
+
+Optional scopes (lowercase): `tapd`, `subagent`, `tui`, `core`, `ci`.
+
+Merging a feature PR onto `main` only updates the standing **release PR** (`chore(main): release x.y.z`). It does not tag or publish. To ship: review or edit that PR's changelog, then merge it. Release Please tags `vX.Y.Z`, creates the GitHub Release, and the same workflow publishes npm. Do not merge the release PR until the batch is ready.
 
 ## TUI development standard
 
