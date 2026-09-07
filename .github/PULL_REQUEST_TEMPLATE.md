@@ -6,7 +6,8 @@
 
 - [ ] `npm test` 通过
 - [ ] 新增或修改的纯逻辑 / 策略 / 解析已补充 `*.test.ts`（或 `.mjs` / `.js`）
-- [ ] 行为变化时已更新相关 README / `docs/` / `CHANGELOG.md`
+- [ ] 行为变化时已更新相关 README / `docs/`（不要在本 PR 改版本号或手写 `CHANGELOG.md`）
+- [ ] 标题符合 conventional commit（`feat` / `fix` / `perf` / `chore` / …，Squash 后作为 changelog 条目）
 - [ ] CI 覆盖率报告：行 / 分支 / 函数均 ≥ 95%
 
 ## 检查

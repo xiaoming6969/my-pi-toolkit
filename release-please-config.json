@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "include-component-in-tag": false,
+  "include-v-in-tag": true,
+  "changelog-path": "CHANGELOG.md",
+  "pull-request-header": ":robot: 这是发版 PR，不是功能 PR。不合入就不会打 tag、创建 GitHub Release 或发布 npm。日常 feat/fix 合入只会更新本 PR。时机合适时请审阅 changelog（可直接在本 PR 里改），再合入。",
+  "changelog-sections": [
+    { "type": "feat", "section": "新增" },
+    { "type": "fix", "section": "修复" },
+    { "type": "perf", "section": "改进" },
+    { "type": "revert", "section": "回滚" },
+    { "type": "chore", "section": "杂项", "hidden": true },
+    { "type": "docs", "section": "文档", "hidden": true },
+    { "type": "style", "section": "样式", "hidden": true },
+    { "type": "refactor", "section": "重构", "hidden": true },
+    { "type": "test", "section": "测试", "hidden": true },
+    { "type": "build", "section": "构建", "hidden": true },
+    { "type": "ci", "section": "CI", "hidden": true }
+  ],
+  "packages": {
+    ".": {
+      "release-type": "node"
+    }
+  }
+}
