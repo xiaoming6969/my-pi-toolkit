@@ -114,6 +114,10 @@ function copySafeAttributes(source, target) {
   if (["td", "th"].includes(target.localName) && source.hasAttribute("align")) {
     target.setAttribute("align", source.getAttribute("align"));
   }
+  if (target.localName === "ol" && source.hasAttribute("start")) {
+    const start = source.getAttribute("start") || "";
+    if (/^\d+$/.test(start)) target.setAttribute("start", start);
+  }
   if (target.localName === "a") {
     const href = source.getAttribute("href") || "";
     if (/^(https?:|mailto:|#)/i.test(href)) target.setAttribute("href", href);
