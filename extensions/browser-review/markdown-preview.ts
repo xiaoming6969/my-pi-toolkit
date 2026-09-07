@@ -106,6 +106,45 @@ function singleTokenList(token: Token, links: TokensList["links"]): TokensList {
 	return list;
 }
 
+function parseTokenHtml(
+	token: Token,
+	links: TokensList["links"],
+	renderer: Renderer,
+): string {
+	return marked.parser(singleTokenList(token, links), {
+		...MARKED_OPTIONS,
+		renderer,
+	});
+}
+
+function listItemStart(list: Tokens.List, index: number): Tokens.List["start"] {
+	if (!list.ordered || typeof list.start !== "number") return list.start;
+	return list.start + index;
+}
+
+function listItemBlocks(
+	markdown: string,
+	list: Tokens.List,
+	cursor: number,
+	links: TokensList["links"],
+	renderer: Renderer,
+): MarkdownReviewBlock[] {
+	const blocks: MarkdownReviewBlock[] = [];
+	let itemCursor = cursor;
+	list.items.forEach((item, index) => {
+		const range = tokenRange(markdown, item.raw, itemCursor);
+		itemCursor = range.nextCursor;
+		const html = parseTokenHtml(
+			{ ...list, items: [item], start: listItemStart(list, index), raw: item.raw },
+			links,
+			renderer,
+		);
+		if (!html.trim()) return;
+		blocks.push({ startLine: range.startLine, endLine: range.endLine, html });
+	});
+	return blocks;
+}
+
 export function renderMarkdownBlocks(markdown: string): MarkdownReviewBlock[] {
 	const tokens = marked.lexer(markdown, MARKED_OPTIONS);
 	const renderer = createSafeRenderer();
@@ -113,14 +152,28 @@ export function renderMarkdownBlocks(markdown: string): MarkdownReviewBlock[] {
 	let cursor = 0;
 	for (const token of tokens) {
 		const range = tokenRange(markdown, token.raw, cursor);
+		if (token.type === "space" || token.type === "def") {
+			cursor = range.nextCursor;
+			continue;
+		}
+		if (token.type === "list") {
+			const listStart = markdown.indexOf(token.raw, cursor);
+			blocks.push(
+				...listItemBlocks(
+					markdown,
+					token,
+					listStart >= 0 ? listStart : cursor,
+					tokens.links,
+					renderer,
+				),
+			);
+			cursor = range.nextCursor;
+			continue;
+		}
 		cursor = range.nextCursor;
-		if (token.type === "space" || token.type === "def") continue;
-		const html = marked.parser(singleTokenList(token, tokens.links), {
-			...MARKED_OPTIONS,
-			renderer,
-		});
+		const html = parseTokenHtml(token, tokens.links, renderer);
 		if (!html.trim()) continue;
-		blocks.push({ ...range, html });
+		blocks.push({ startLine: range.startLine, endLine: range.endLine, html });
 	}
 	return blocks;
 }

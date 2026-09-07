@@ -28,13 +28,14 @@ test("renders GFM blocks with source line ranges", () => {
 	assert.match(blocks[0].html, /<h1>设计方案<\/h1>/);
 	assert.deepEqual(
 		blocks.map(({ startLine, endLine }) => [startLine, endLine]),
-		[[0, 0], [2, 2], [4, 5], [7, 9], [11, 11], [13, 15]],
+		[[0, 0], [2, 2], [4, 4], [5, 5], [7, 9], [11, 11], [13, 15]],
 	);
 	assert.match(blocks[2].html, /<ul>/);
-	assert.match(blocks[3].html, /<table>/);
-	assert.match(blocks[5].html, /language-ts/);
-	assert.match(blocks[5].html, /<span class="hljs-keyword">const<\/span>/);
-	assert.match(blocks[5].html, /<span class="hljs-literal">true<\/span>/);
+	assert.match(blocks[3].html, /<ul>/);
+	assert.match(blocks[4].html, /<table>/);
+	assert.match(blocks[6].html, /language-ts/);
+	assert.match(blocks[6].html, /<span class="hljs-keyword">const<\/span>/);
+	assert.match(blocks[6].html, /<span class="hljs-literal">true<\/span>/);
 });
 
 test("unknown fenced languages remain escaped plain text", () => {
@@ -92,4 +93,46 @@ test("escapes raw HTML and blocks unsafe links and images", () => {
 	assert.match(html, /rel="noreferrer noopener"/);
 	assert.doesNotMatch(html, /<img/i);
 	assert.match(html, /\[图片: remote\]/);
+});
+
+test("splits ordered list items into separately selectable blocks", () => {
+	const blocks = renderMarkdownBlocks([
+		"1. 第一项",
+		"2. 第二项",
+		"3. 第三项",
+	].join("\n"));
+	assert.deepEqual(
+		blocks.map(({ startLine, endLine }) => [startLine, endLine]),
+		[[0, 0], [1, 1], [2, 2]],
+	);
+	assert.match(blocks[0].html, /<ol>\n<li>第一项<\/li>\n<\/ol>/);
+	assert.match(blocks[1].html, /<ol start="2">\n<li>第二项<\/li>\n<\/ol>/);
+	assert.match(blocks[2].html, /<ol start="3">\n<li>第三项<\/li>\n<\/ol>/);
+});
+
+test("preserves ordered list numbering when the list does not start at 1", () => {
+	const blocks = renderMarkdownBlocks(["3. foo", "4. bar"].join("\n"));
+	assert.equal(blocks.length, 2);
+	assert.match(blocks[0].html, /<ol start="3">\n<li>foo<\/li>\n<\/ol>/);
+	assert.match(blocks[1].html, /<ol start="4">\n<li>bar<\/li>\n<\/ol>/);
+});
+
+test("keeps nested lists inside the parent item block", () => {
+	const blocks = renderMarkdownBlocks([
+		"1. 父项",
+		"   - 子项甲",
+		"   - 子项乙",
+		"2. 另一项",
+	].join("\n"));
+	assert.equal(blocks.length, 2);
+	assert.deepEqual(
+		[blocks[0].startLine, blocks[0].endLine],
+		[0, 2],
+	);
+	assert.match(blocks[0].html, /父项/);
+	assert.match(blocks[0].html, /子项甲/);
+	assert.match(blocks[0].html, /子项乙/);
+	assert.match(blocks[0].html, /<ul>/);
+	assert.doesNotMatch(blocks[1].html, /子项/);
+	assert.match(blocks[1].html, /<ol start="2">\n<li>另一项<\/li>\n<\/ol>/);
 });
