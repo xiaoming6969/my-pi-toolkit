@@ -24,6 +24,7 @@
 ### 修复
 
 - TAPD 根因总结与 Review 的 lean 子 Agent 在使用 `cursor/*` 模型时加载已启用的 `pi-cursor` provider，避免 `/tapd mr` 报 `Model "cursor/composer-2.5" not found`。
+- 后台子 Agent 在主会话已经 `subagent_output` 读过结束报告后，不再于回合结束时补发 `subagent-complete` follow-up。
 
 ## [1.3.0] - 2026-09-01
 

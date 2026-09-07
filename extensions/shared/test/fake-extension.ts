@@ -145,6 +145,7 @@ export interface FakeContextOptions {
 	isIdle?: boolean;
 	trusted?: boolean;
 	mode?: string;
+	sessionId?: string;
 	entries?: unknown[];
 	sessionFile?: string;
 	sessionDir?: string;
@@ -173,7 +174,7 @@ export function createFakeContext(options: FakeContextOptions = {}) {
 			getBranch: () => options.entries ?? [],
 			getSessionFile: () => options.sessionFile,
 			getSessionDir: () => options.sessionDir,
-			getSessionId: () => "test-session",
+			getSessionId: () => options.sessionId ?? "test-session",
 		},
 		ui: {
 			notify(message: string, level?: string) {

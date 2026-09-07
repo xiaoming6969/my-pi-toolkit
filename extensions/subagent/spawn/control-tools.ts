@@ -16,6 +16,7 @@ import { assertNotSubagentChild } from "../../shared/subagent/child-guard.js";
 import { getLiveSubagent } from "../../shared/subagent/registry.js";
 import { compactText, previewLines, resultText } from "../../shared/tui/tool-format.js";
 import { toolCall, toolResult } from "../../shared/tui/tool-render.js";
+import { markBackgroundCompletionConsumed } from "./complete-notice.js";
 import {
 	describeSubagentOutput,
 	jobStatusLine,
@@ -146,6 +147,7 @@ function registerOutput(pi: ExtensionAPI): void {
 				params.subagentId,
 				ctx.sessionManager.getSessionId(),
 			);
+			markBackgroundCompletionConsumed(params.subagentId.trim());
 			return {
 				content: [{ type: "text" as const, text: view.text }],
 				details: view satisfies SubagentOutputView,

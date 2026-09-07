@@ -3,14 +3,12 @@ import type {
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import {
-	startBackgroundSubagent,
-	type BackgroundSubagentJob,
-} from "../../shared/subagent/background.js";
+import { startBackgroundSubagent } from "../../shared/subagent/background.js";
 import { assertNotSubagentChild } from "../../shared/subagent/child-guard.js";
 import { truncateSubagentOutput } from "../../shared/subagent/output-limit.js";
 import type { SubagentToolCall } from "../../shared/subagent/registry.js";
 import { BUILTIN_SUBAGENT_ROLES } from "../roles/builtin.js";
+import { enqueueBackgroundCompletionNotice } from "./complete-notice.js";
 import { previewToolCall, renderSpawnCall, renderSpawnResult } from "./render.js";
 import { describeRunResult } from "./result-text.js";
 import type { PreparedSpawn } from "./prepare.js";
@@ -41,16 +39,6 @@ function baseDetails(prepared: PreparedSpawn) {
 		thinkingLevel: prepared.thinkingLevel,
 		startedAt: new Date().toISOString(),
 	};
-}
-
-function completionNotice(job: BackgroundSubagentJob): string {
-	const outcome =
-		job.status === "completed"
-			? "finished successfully"
-			: job.status === "cancelled"
-				? "was cancelled"
-				: `failed: ${job.error ?? "unknown error"}`;
-	return `Background subagent ${job.id} (${job.title}) ${outcome}. Do not poll background subagents; call subagent_output with this id to read the report, then continue the main task.`;
 }
 
 async function runForeground(
@@ -108,16 +96,7 @@ function startBackground(
 		parentSessionId: ctx.sessionManager.getSessionId(),
 		run: (signal, onToolCalls) =>
 			prepared.launch(signal, (update) => onToolCalls(update.toolCalls)),
-		onSettled: (settled) =>
-			pi.sendMessage(
-				{
-					customType: "subagent-complete",
-					content: completionNotice(settled),
-					display: true,
-					details: { subagentId: settled.id, status: settled.status },
-				},
-				{ deliverAs: "followUp", triggerTurn: true },
-			),
+		onSettled: (settled) => enqueueBackgroundCompletionNotice(settled, pi),
 	});
 	const worktree = prepared.worktree
 		? ` It works in worktree ${prepared.worktree.path} (branch ${prepared.worktree.branch}).`

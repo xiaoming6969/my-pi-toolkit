@@ -89,7 +89,7 @@ Discard with:   git -C <root> worktree remove --force <path> && git -C <root> br
 
 ### 后台运行与等待原语
 
-`background: true` 时工具立即返回 `subagentId`，主 Agent 可以继续做其它独立工作；子 Agent 完成、失败或被取消后，扩展会向主会话排队一条 `subagent-complete` follow-up（与 `multi_task start` 相同机制），要求主 Agent 调用 `subagent_output` 读取报告。不要轮询。配套工具：
+`background: true` 时工具立即返回 `subagentId`，主 Agent 可以继续做其它独立工作。子 Agent 完成、失败或被取消后：若这一回合里已经用 `subagent_output` 读过该份已结束报告，则不再通知；否则在主会话空闲时投递一条 `subagent-complete` follow-up（与 `multi_task start` 相同机制），要求主 Agent 调用 `subagent_output` 读取报告。不要轮询。配套工具：
 
 | 工具 | 参数 | 作用 |
 | --- | --- | --- |
