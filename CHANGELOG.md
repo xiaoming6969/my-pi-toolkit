@@ -1,5 +1,27 @@
 # 更新日志
 
+## [1.4.0](https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.3.0...v1.4.0) (2026-09-08)
+
+
+### 新增
+
+* **tapd:** enhance `/tapd bug` command to accept additional instructions ([6362c9c](https://github.com/xiaoming6969/my-pi-toolkit/commit/6362c9c4a7d438fb9889d2dc3172904e5c0b6082))
+* **tapd:** let the root-cause subagent locate the introducing commit ([fd554b1](https://github.com/xiaoming6969/my-pi-toolkit/commit/fd554b1226d85ac6494f10f20c22e69343423154))
+* **tapd:** write required RCA fields on bug MR transitions ([11a302b](https://github.com/xiaoming6969/my-pi-toolkit/commit/11a302bb4e7984b43167584762a9e4591574890c))
+
+
+### 修复
+
+* **browser-review:** annotate individual list items in markdown preview ([957876f](https://github.com/xiaoming6969/my-pi-toolkit/commit/957876fd8bb8254f7b80f87b855087c2c4184981))
+* **subagent:** skip completion follow-up after the report was read ([f689432](https://github.com/xiaoming6969/my-pi-toolkit/commit/f689432358336d3ae3780cdb6ab820e587bd78a5))
+* **tapd:** locate bugs from session context instead of dumping TAPD JSON ([8e723ac](https://github.com/xiaoming6969/my-pi-toolkit/commit/8e723acf45b1d64f2fbd9c14fc65a916ef714766))
+* **tapd:** resolve cursor model loading issue in lean subagent ([c18986f](https://github.com/xiaoming6969/my-pi-toolkit/commit/c18986faa458dab5a6a3018ac7b8c2c2df61deaa))
+
+
+### 改进
+
+* lazy-load command graphs and show Working on first use ([7977c35](https://github.com/xiaoming6969/my-pi-toolkit/commit/7977c359fe131108e8eacba17b64222f14ee10fa))
+
 ## [Unreleased]
 
 ### 新增
