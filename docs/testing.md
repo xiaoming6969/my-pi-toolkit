@@ -86,7 +86,7 @@ npm run coverage:report
 
 请把检查名 `测试` 设为合入 `main` 的 required status check，否则 GitHub 仍允许在红灯时点合入。仓库规则集需要管理员权限，CI 工作流无法代为打开。
 
-发布工作流在 `npm publish` 前同样跑 `npm test` 和 `npm run pack:verify`；`npm publish` 自身也会触发 `prepack`。合入发版 PR 时由 [`.github/workflows/release-please.yml`](../.github/workflows/release-please.yml) 在同一 run 里调用该工作流（`GITHUB_TOKEN` 创建的 GitHub Release 不会再触发其它 workflow）；在网页上手动 Publish Release 仍走 `on: release`。
+发布工作流在 `npm publish` 前同样跑 `npm test` 和 `npm run pack:verify`；`npm publish` 自身也会触发 `prepack`。合入发版 PR 时由 [`.github/workflows/release-please.yml`](../.github/workflows/release-please.yml) 在同一 run 里调用该工作流（`GITHUB_TOKEN` 创建的 GitHub Release 不会再触发其它 workflow）。被调用时 `github.event_name` 仍是调用方的 `push`，tag 必须用 `inputs.tag_name`。网页上手动 Publish Release 走 `on: release`；漏发时可在 Actions 里 `workflow_dispatch` 并填 tag（例如 `v1.4.0`）。
 
 覆盖率只统计有必要单测的源码。`scripts/run-tests.mjs` 会排除：
 
