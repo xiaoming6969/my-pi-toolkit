@@ -1,28 +1,6 @@
 # 更新日志
 
-## [1.4.0](https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.3.0...v1.4.0) (2026-09-08)
-
-
-### 新增
-
-* **tapd:** enhance `/tapd bug` command to accept additional instructions ([6362c9c](https://github.com/xiaoming6969/my-pi-toolkit/commit/6362c9c4a7d438fb9889d2dc3172904e5c0b6082))
-* **tapd:** let the root-cause subagent locate the introducing commit ([fd554b1](https://github.com/xiaoming6969/my-pi-toolkit/commit/fd554b1226d85ac6494f10f20c22e69343423154))
-* **tapd:** write required RCA fields on bug MR transitions ([11a302b](https://github.com/xiaoming6969/my-pi-toolkit/commit/11a302bb4e7984b43167584762a9e4591574890c))
-
-
-### 修复
-
-* **browser-review:** annotate individual list items in markdown preview ([957876f](https://github.com/xiaoming6969/my-pi-toolkit/commit/957876fd8bb8254f7b80f87b855087c2c4184981))
-* **subagent:** skip completion follow-up after the report was read ([f689432](https://github.com/xiaoming6969/my-pi-toolkit/commit/f689432358336d3ae3780cdb6ab820e587bd78a5))
-* **tapd:** locate bugs from session context instead of dumping TAPD JSON ([8e723ac](https://github.com/xiaoming6969/my-pi-toolkit/commit/8e723acf45b1d64f2fbd9c14fc65a916ef714766))
-* **tapd:** resolve cursor model loading issue in lean subagent ([c18986f](https://github.com/xiaoming6969/my-pi-toolkit/commit/c18986faa458dab5a6a3018ac7b8c2c2df61deaa))
-
-
-### 改进
-
-* lazy-load command graphs and show Working on first use ([7977c35](https://github.com/xiaoming6969/my-pi-toolkit/commit/7977c359fe131108e8eacba17b64222f14ee10fa))
-
-## [Unreleased]
+## [1.4.0] - 2026-09-08
 
 ### 新增
 
@@ -32,6 +10,8 @@
 - 子 Agent 隔离与模块集成：`spawn_subagent` 新增 `isolation: "worktree"`（复用 `ming-core/worktree` 在 `subagent/<id>` 分支的独立 worktree 中运行，结果给出 diff / merge / 丢弃命令）；`subagents.roleModels` 为任意角色路由模型；Ask / Plan 模式按能力放行只读角色的 `spawn_subagent` 与只读 live 子 Agent 的 `subagent_followup`，观察类控制工具始终可用；`agent_todo_write` 条目可带 `subagentId`，关联子 Agent 成功完成时自动置为 completed 并持久化；任务耗时行追加子 Agent 运行时间与并行峰值。
 - 子 Agent TUI 与可观测：Footer 改为 `subagent N run · N queued · N idle` 分组状态；`spawn_subagent` 工具卡运行时显示 `now: <最近工具调用> · <已运行时长>`；`/subagents` 列表新增 `S` 向 live 子 Agent 发送消息（运行中走 Pi RPC `steer` 插入当前 turn，空闲时排队新一轮）；新增基于假 `pi` 子进程的一次性 json 运行时集成测试，以及多 session branch、后台任务、等待原语等用例。
 - 子 Agent 嵌套深度限制为 1：所有子进程带 `PI_SUBAGENT_CHILD=1`，`repo_search`、`spawn_subagent`、`subagent_followup`、`multi_task`、`tapd_review` 等父进程控制工具不再下发给任何子 Agent（含 Multi Task implementation worker）。
+- TAPD 根因子 Agent 可定位引入该 bug 的 commit。
+- bug MR 流转时写入必填 RCA 字段。
 
 ### 改进
 
@@ -48,6 +28,7 @@
 - 浏览器 Markdown 预览批注按顶层列表项分别选择，不再一点选中整份有序/无序列表。
 - TAPD 根因总结与 Review 的 lean 子 Agent 在使用 `cursor/*` 模型时加载已启用的 `pi-cursor` provider，避免 `/tapd mr` 报 `Model "cursor/composer-2.5" not found`。
 - 后台子 Agent 在主会话已经 `subagent_output` 读过结束报告后，不再于回合结束时补发 `subagent-complete` follow-up。
+- `/tapd bug` 从会话上下文定位缺陷，不再整段 dump TAPD JSON。
 
 ## [1.3.0] - 2026-09-01
 
