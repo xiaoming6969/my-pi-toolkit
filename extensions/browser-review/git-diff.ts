@@ -5,7 +5,7 @@ import {
 	readRepositoryRoot,
 	refExists,
 } from "../tapd/git/repository.js";
-import { parseUnifiedDiff } from "./diff-parser.js";
+import { codeReviewSource } from "./sources.js";
 import type { BrowserReviewSource } from "./types.js";
 
 export type BrowserDiffScope = "uncommitted" | "branch";
@@ -67,10 +67,9 @@ export async function collectBrowserDiff(
 	if (Buffer.byteLength(patch) > MAX_DIFF_BYTES) {
 		throw new Error("代码 diff 超过 5 MiB，请缩小审核范围");
 	}
-	return {
-		kind: "code",
-		title: "CODE REVIEW",
-		subtitle: `${root} · ${scope}${scope === "branch" ? ` · base ${baseRef}` : ""}`,
-		lines: parseUnifiedDiff(patch),
-	};
+	return codeReviewSource(
+		"CODE REVIEW",
+		patch,
+		`${root} · ${scope}${scope === "branch" ? ` · base ${baseRef}` : ""}`,
+	);
 }

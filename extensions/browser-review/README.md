@@ -10,7 +10,7 @@
 | `/annotate <markdown-path>` | 批注当前可信项目内的 Markdown/MDX 文件 |
 | `/annotate-last` | 批注当前 session 最近一条 Assistant 文本消息 |
 
-`uncommitted` 包含 staged、unstaged 和 untracked；`branch` 使用 base 与 `HEAD` 的 merge-base，并叠加工作区修改。未跟踪二进制和超过 256 KiB 的单文件只显示占位；总 diff 超过 5 MiB 时要求缩小范围。
+`uncommitted` 包含 staged、unstaged 和 untracked；`branch` 使用 base 与 `HEAD` 的 merge-base，并叠加工作区修改。未跟踪二进制和超过 256 KiB 的单文件只显示占位；总 diff 超过 5 MiB 时要求缩小范围。`/turn-diff`（由 `turn-diff` 模块注册）复用同一套 `kind: "code"` 页面查看本轮 Agent `edit` / `write` 的合并 diff，不是 Git 工作区范围。
 
 ## Feedback loop
 
