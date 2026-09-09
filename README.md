@@ -39,6 +39,7 @@
 | Context7 | 为 Agent 提供第三方库最新文档，减少对训练数据的依赖 |
 | 会话分支提醒 | 第一条用户消息后记录 Git 分支；恢复会话时若不一致，可选切回绑定分支或改绑到当前分支 |
 | 自动格式化 | 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 格式化本轮修改文件 |
+| 本轮改文件 | 回合结束后显示 `edit` / `write` 文件摘要，`/turn-diff` 在浏览器中打开合并 diff |
 | 角色化子 Agent | `spawn_subagent` 按 explore / plan / implement / review 或自定义角色委派任务，支持后台运行（`subagent_wait` / `subagent_output` / `subagent_cancel`）、结构化 brief、`resumeFrom` 续接与 worktree 隔离；`/subagents` 与 `Alt+A` 查看 queued/运行/idle 并可向运行中的子 Agent 发送 steer 消息；相关任务可凭 `subagentId` 在同一上下文中继续执行 |
 | 启动面板与主题 | M-PI Dashboard；Footer 兼容第三方扩展状态；推荐主题 `grok-build-dark` |
 
@@ -124,6 +125,7 @@ pi --no-session
 | --- | --- |
 | `Shift+Tab` | 循环 Build → Plan → Ask → Debug → Build |
 | `/review [uncommitted\|branch]` | 在本地浏览器逐行审阅 Git 修改并把批注交给 Agent |
+| `/turn-diff` | 在浏览器中查看本轮 Agent `edit` / `write` 的合并 diff |
 | `/annotate <path>` / `/annotate-last` | 批注项目 Markdown 或最近一条 Assistant 消息 |
 | `/debuglog` | 进入 Debug；已在 Debug 时重新打开实时日志面板（`/debug` 为 Pi 内置诊断日志命令） |
 | `/tapd` | 打开 TAPD 待办（需配置） |
@@ -155,7 +157,7 @@ pi --no-session
 
 | 扩展 | 简介 | 文档 |
 | --- | --- | --- |
-| ming-core | 通用能力编排：模型、浏览器审阅、Plan / Debug、自动格式化、会话分支提醒、可复用子 Agent、Worktree、Dashboard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
+| ming-core | 通用能力编排：模型、浏览器审阅、Plan / Debug、自动格式化、本轮 diff、会话分支提醒、可复用子 Agent、Worktree、Dashboard 等 | [`extensions/ming-core/README.md`](extensions/ming-core/README.md) |
 | TAPD | 待办、需求分析、选项确认式技术设计、协作评审、三文档预览、Bug 定位与子需求同步 | [`extensions/tapd/README.md`](extensions/tapd/README.md) |
 | Context7 | 第三方库最新文档查询 | [`extensions/context7/README.md`](extensions/context7/README.md) |
 

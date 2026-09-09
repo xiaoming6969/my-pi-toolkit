@@ -17,6 +17,7 @@ import { sessionBranchGuard } from "../session-branch-guard/index.js";
 import startupDashboard from "../startup-dashboard/index.js";
 import subagent from "../subagent/index.js";
 import taskDuration from "../task-duration/index.js";
+import turnDiff from "../turn-diff/index.js";
 import worktree from "./worktree/index.js";
 
 export default function mingCore(pi: ExtensionAPI): void {
@@ -26,6 +27,7 @@ export default function mingCore(pi: ExtensionAPI): void {
 	chatMode(pi);
 	builtInToolStyle(pi);
 	autoFormat(pi);
+	turnDiff(pi);
 	agentTodos(pi);
 	multiTask(pi);
 	subagent(pi);

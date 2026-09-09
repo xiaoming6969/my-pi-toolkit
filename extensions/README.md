@@ -25,6 +25,7 @@
 | Chat Mode | 使用 `Shift+Tab` 循环 Build/Plan/Ask/Debug；Plan 提供默认浏览器、可用 `/browser off` 切回终端的 session `plan.md` 审批，Debug 提供完整工具、`/debuglog` 实时日志面板与 `finish_debug_cleanup` 清理闭环 | [`chat-mode/README.md`](chat-mode/README.md) |
 | Built-in Tool Style | 通过官方 tool factory 为 Pi 七个内置工具提供可选 Grok 时间线；`/grok-tools` 配置 | [`built-in-tool-style/README.md`](built-in-tool-style/README.md) |
 | Auto Format | 每轮 Agent 结束后，使用项目本地 ESLint / Prettier 格式化主会话本轮修改文件 | [`auto-format/README.md`](auto-format/README.md) |
+| Turn Diff | 每轮结束后显示本轮 `edit` / `write` 文件摘要，`/turn-diff` 在浏览器中打开合并 diff | [`turn-diff/README.md`](turn-diff/README.md) |
 | OpenAI Compat Models | 对 `models.json` 中未手写 `models` 的 OpenAI 兼容 provider 在 `/model` 时拉取 `/models` | [`openai-compat-models/README.md`](openai-compat-models/README.md) |
 | Model Manager | 为新对话应用可配置的默认模型和思考等级 | [`model-manager/README.md`](model-manager/README.md) |
 | M-PI Dashboard | M-PI 响应式启动面板、自定义 Header 与模型 Footer；兼容第三方扩展 `setStatus()` 状态 | [`startup-dashboard/README.md`](startup-dashboard/README.md) |
