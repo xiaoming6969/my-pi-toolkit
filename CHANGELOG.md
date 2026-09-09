@@ -1,5 +1,12 @@
 # 更新日志
 
+## [1.5.0](https://github.com/xiaoming6969/my-pi-toolkit/compare/v1.4.0...v1.5.0) (2026-09-09)
+
+
+### 新增
+
+* **core:** 增加本轮改文件摘要与浏览器 diff ([8358c08](https://github.com/xiaoming6969/my-pi-toolkit/commit/8358c08086f08e5493b168f0e6b5ec5d25f32862))
+
 ## [1.4.0] - 2026-09-08
 
 ### 新增
