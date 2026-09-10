@@ -39,7 +39,7 @@ button {
 }
 button:hover { background: #026ec1; }
 button:active { background: #005a9e; }
-button:focus-visible, textarea:focus-visible, .line-select:focus-visible, .markdown-block:focus-visible {
+button:focus-visible, textarea:focus-visible, .line-select:focus-visible, .markdown-block:focus-visible, .diff-file:focus-visible, [data-source-index]:focus-visible {
   outline: 1px solid var(--accent-bright);
   outline-offset: 1px;
 }
@@ -69,7 +69,34 @@ h1 { margin: 0; overflow: hidden; color: var(--text-bright); font-size: 12px; fo
 .editor { display: flex; min-width: 0; min-height: 0; flex-direction: column; background: var(--editor); }
 .editor-tabs { display: flex; justify-content: space-between; height: 36px; border-bottom: 1px solid var(--border); background: var(--canvas); }
 .editor-tab { display: flex; align-items: center; min-width: 130px; padding: 0 14px; border-top: 1px solid var(--accent); border-right: 1px solid var(--border); background: var(--editor); color: var(--text-bright); }
-.editor-content { min-height: 0; flex: 1; overflow: auto; scrollbar-color: #424242 transparent; scrollbar-width: thin; }
+.editor-content { min-height: 0; flex: 1; display: flex; overflow: hidden; scrollbar-color: #424242 transparent; scrollbar-width: thin; }
+.diff-pane { min-width: 0; min-height: 0; flex: 1; overflow: auto; }
+.diff-files {
+  flex: 0 0 196px;
+  overflow: auto;
+  padding: 6px 0;
+  border-right: 1px solid var(--border);
+  background: var(--canvas);
+}
+.diff-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 4px 10px;
+  border: 0;
+  border-left: 2px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font-weight: 400;
+  text-align: left;
+}
+.diff-file:hover { background: var(--hover); }
+.diff-file[aria-current="true"] { border-left-color: var(--accent-bright); background: var(--active); color: var(--text-bright); }
+.diff-file-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diff-file-stats { margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .view-toggle { display: flex; align-items: center; gap: 2px; padding: 4px 8px; }
 .view-toggle button { min-height: 24px; padding: 2px 9px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 400; }
 .view-toggle button:hover { background: var(--hover); color: var(--text); }
@@ -122,6 +149,28 @@ h1 { margin: 0; overflow: hidden; color: var(--text-bright); font-size: 12px; fo
 .line-select[aria-pressed="true"] { background: var(--accent); color: #fff; }
 .line code { padding: 1px 12px 1px 5px; white-space: pre; }
 
+.d2h-pane { padding: 0 0 48px; }
+.d2h-wrapper { background: var(--editor); color: var(--text); }
+.d2h-file-wrapper { margin: 0 0 12px; border-color: var(--border); }
+.d2h-file-header { background: #242424; color: var(--text-bright); }
+.d2h-file-collapse { display: none; }
+.d2h-code-wrapper { background: var(--editor); }
+.d2h-fallback {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  background: var(--canvas);
+  color: var(--muted);
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 13px;
+  font-style: italic;
+  white-space: pre-wrap;
+  cursor: pointer;
+}
+.d2h-pane [data-source-index] { cursor: pointer; }
+.d2h-pane [data-source-index].selected td,
+.d2h-pane [data-source-index].selected { outline: 1px solid var(--accent-bright); background: #25364d; }
+
 .hljs-comment, .hljs-quote { color: #6a9955; }
 .hljs-keyword, .hljs-literal, .hljs-selector-tag { color: #569cd6; }
 .hljs-string, .hljs-attr, .hljs-symbol, .hljs-bullet { color: #ce9178; }
@@ -169,5 +218,17 @@ textarea::placeholder { color: #8a8a8a; }
   .sidebar-content { overflow: visible; }
   .markdown-preview { padding: 20px 10px 40px; }
   .markdown-block { padding: 4px 7px; }
+  .editor-content.code-layout { flex-direction: column; }
+  .diff-files {
+    display: flex;
+    flex: 0 0 auto;
+    width: 100%;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .diff-file { width: auto; flex: 0 0 auto; }
   .actions { position: sticky; bottom: 0; }
 }

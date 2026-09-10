@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Browser Review</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="d2h.css">
 </head>
 <body>
   <header class="titlebar">
@@ -19,14 +20,20 @@
     <section class="editor" aria-label="审阅内容">
       <div class="editor-tabs">
         <span class="editor-tab" aria-hidden="true">审阅内容</span>
-        <div id="view-toggle" class="view-toggle" role="group" aria-label="Markdown 视图" hidden>
+        <div id="view-toggle" class="view-toggle" role="group" aria-label="视图" hidden>
           <button id="preview-tab" type="button" aria-pressed="true">预览</button>
           <button id="source-tab" type="button" aria-pressed="false">源码</button>
+          <button id="split-tab" type="button" aria-pressed="false" hidden>并排</button>
+          <button id="inline-tab" type="button" aria-pressed="false" hidden>内联</button>
         </div>
       </div>
-      <div class="editor-content">
-        <article id="preview" class="markdown-preview" aria-label="Markdown 预览" hidden></article>
-        <div id="lines" class="lines" role="list"></div>
+      <div class="editor-content" id="editor-content">
+        <nav id="diff-files" class="diff-files" hidden></nav>
+        <div id="diff-pane" class="diff-pane">
+          <article id="preview" class="markdown-preview" aria-label="Markdown 预览" hidden></article>
+          <div id="d2h" class="d2h-pane" hidden></div>
+          <div id="lines" class="lines" role="list"></div>
+        </div>
       </div>
     </section>
     <aside class="sidebar" aria-label="批注编辑器">
@@ -47,6 +54,6 @@
       </div>
     </aside>
   </main>
-  <script src="review.js" defer></script>
+  <script type="module" src="review.js"></script>
 </body>
 </html>

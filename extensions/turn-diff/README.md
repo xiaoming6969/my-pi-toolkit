@@ -1,6 +1,6 @@
 # Turn Diff
 
-每轮主会话 Agent 结束后，在最终回复下方留下本轮 `edit` / `write` 的文件摘要；用 `/turn-diff` 在浏览器中查看合并后的 unified diff。本模块由 [`ming-core`](../ming-core/README.md) 编排加载，复用 [browser-review](../browser-review/README.md) 的 localhost 代码审阅页。
+每轮主会话 Agent 结束后，在最终回复下方留下本轮 `edit` / `write` 的文件摘要；用 `/turn-diff` 在浏览器中查看合并后的 diff（中间区 diff2html，默认左右并排，可切回内联）。本模块由 [`ming-core`](../ming-core/README.md) 编排加载，复用 [browser-review](../browser-review/README.md) 的 localhost 代码审阅页。
 
 ## 展示
 
@@ -8,7 +8,7 @@
 本轮修改 3 个文件  +42 −18  · /turn-diff
 ```
 
-摘要是不进入 LLM 上下文的 custom entry，恢复会话或 `/reload` 后仍可显示。`Ctrl+O` 展开只列出路径和 `+n −m`（或 `omitted`）；完整 diff 只在浏览器里。
+摘要是不进入 LLM 上下文的 custom entry，恢复会话或 `/reload` 后仍可显示。`Ctrl+O` 展开只列出路径和 `+n −m`（或 `omitted`）；完整 diff 只在浏览器里，由 diff2html 渲染，默认左右对照，可切回内联。
 
 ## 命令
 
@@ -27,6 +27,7 @@
 - 只跟踪主会话成功路径上的 `edit` / `write`；不含 `bash`、子 Agent、worktree，也不把 Git 工作区混进来（那是 `/review`）。
 - 跳过项目外路径和 `node_modules`。单文件超过 256 KiB 或含空字节时只留占位。
 - 仅交互式 TUI 记录。Print / JSON / RPC 以及瘦加载子 Agent 不写 entry。
+- 修改文件按行生成 unified hunk（含上下文），同一文件多处改动不会把中间未改行整段标成删除再新增。
 
 ## 已知限制
 
