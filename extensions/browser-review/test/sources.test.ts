@@ -22,6 +22,33 @@ test("codeReviewSource parses git unified diffs", () => {
 	assert.equal(source.lines[0]?.file, "src/a.ts");
 	assert.equal(source.lines.at(-1)?.style, "addition");
 	assert.equal(source.lines.at(-1)?.text, "+new");
+	assert.equal(source.lines.at(-1)?.html, undefined);
+	assert.deepEqual(source.files, [{ path: "src/a.ts", added: 1, removed: 1 }]);
+	assert.match(source.diffHtml ?? "", /d2h-file-side-diff/);
+	assert.match(source.diffHtmlInline ?? "", /d2h-ins/);
+	assert.match(source.diffHtml ?? "", /src\/a\.ts/);
+});
+
+test("codeReviewSource lists stats for multiple files", () => {
+	const source = codeReviewSource(
+		"TURN DIFF",
+		[
+			"diff --git a/a.ts b/a.ts",
+			"+++ b/a.ts",
+			"@@ -1 +1,2 @@",
+			"-old",
+			"+new",
+			"+extra",
+			"diff --git a/b.ts b/b.ts",
+			"+++ b/b.ts",
+			"@@ -1 +0,0 @@",
+			"-gone",
+		].join("\n"),
+	);
+	assert.deepEqual(source.files, [
+		{ path: "a.ts", added: 2, removed: 1 },
+		{ path: "b.ts", added: 0, removed: 1 },
+	]);
 });
 
 test("textReviewSource splits lines and attaches markdown blocks", async () => {

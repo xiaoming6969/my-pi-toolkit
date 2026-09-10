@@ -41,6 +41,43 @@ test("gitUnifiedPatch keeps context around an in-place edit", () => {
 	});
 });
 
+test("gitUnifiedPatch keeps unchanged middle lines as context, not delete-then-add", () => {
+	const oldLines = Array.from({ length: 40 }, (_, i) => `line ${i + 1}`);
+	const newLines = [...oldLines];
+	newLines[4] = "line 5 changed";
+	newLines[34] = "line 35 changed";
+	const patch = gitUnifiedPatch(
+		"index.tsx",
+		`${oldLines.join("\n")}\n`,
+		`${newLines.join("\n")}\n`,
+	);
+	assert.match(patch, /^ line 6$/m);
+	assert.match(patch, /^ line 34$/m);
+	assert.doesNotMatch(patch, /line 20/);
+	assert.equal(patch.match(/^@@ /gm)?.length, 2);
+	assert.deepEqual(countPatchStats(patch), { added: 2, removed: 2 });
+	const parsed = parseUnifiedDiff(patch);
+	assert.equal(parsed.filter((line) => line.style === "hunk").length, 2);
+	assert.ok(parsed.some((line) => line.style === "context" && line.text === " line 6"));
+});
+
+test("gitUnifiedPatch keeps unchanged lines between nearby edits as context", () => {
+	const oldLines = Array.from({ length: 12 }, (_, i) => `line ${i + 1}`);
+	const newLines = [...oldLines];
+	newLines[2] = "line 3 changed";
+	newLines[6] = "line 7 changed";
+	const patch = gitUnifiedPatch(
+		"index.tsx",
+		`${oldLines.join("\n")}\n`,
+		`${newLines.join("\n")}\n`,
+	);
+	assert.equal(patch.match(/^@@ /gm)?.length, 1);
+	assert.match(patch, /^ line 5$/m);
+	assert.doesNotMatch(patch, /^-line 5$/m);
+	assert.doesNotMatch(patch, /^\+line 5$/m);
+	assert.deepEqual(countPatchStats(patch), { added: 2, removed: 2 });
+});
+
 test("omittedPatch is a git file header with a notice", () => {
 	const patch = omittedPatch("huge.bin", "binary file omitted");
 	assert.equal(

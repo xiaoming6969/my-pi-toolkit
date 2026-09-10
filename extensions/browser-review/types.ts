@@ -24,12 +24,21 @@ export interface MarkdownReviewBlock {
 	html: string;
 }
 
+export interface DiffFileEntry {
+	path: string;
+	added: number;
+	removed: number;
+}
+
 export interface BrowserReviewSource {
 	kind: BrowserReviewKind;
 	title: string;
 	subtitle?: string;
 	lines: ReviewLine[];
 	markdownBlocks?: MarkdownReviewBlock[];
+	files?: DiffFileEntry[];
+	diffHtml?: string;
+	diffHtmlInline?: string;
 }
 
 export interface ReviewAnnotation {

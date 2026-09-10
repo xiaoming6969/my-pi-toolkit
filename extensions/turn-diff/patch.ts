@@ -1,8 +1,10 @@
+import { generateUnifiedPatch } from "@earendil-works/pi-coding-agent";
+
 export const MAX_FILE_BYTES = 256 * 1024;
 export const MAX_DIFF_BYTES = 5 * 1024 * 1024;
 const CONTEXT_LINES = 4;
 
-export function splitLines(text: string): string[] {
+function splitLines(text: string): string[] {
 	if (text === "") return [];
 	const lines = text.split(/\r?\n/);
 	if (lines.at(-1) === "") lines.pop();
@@ -41,42 +43,24 @@ export function gitUnifiedPatch(
 			...oldLines.map((line) => `-${line}`),
 		].join("\n");
 	}
-	let prefix = 0;
-	while (
-		prefix < oldLines.length &&
-		prefix < newLines.length &&
-		oldLines[prefix] === newLines[prefix]
-	) {
-		prefix += 1;
-	}
-	let suffix = 0;
-	while (
-		suffix < oldLines.length - prefix &&
-		suffix < newLines.length - prefix &&
-		oldLines[oldLines.length - 1 - suffix] === newLines[newLines.length - 1 - suffix]
-	) {
-		suffix += 1;
-	}
-	const before = Math.min(CONTEXT_LINES, prefix);
-	const after = Math.min(CONTEXT_LINES, suffix);
-	const oldStart = prefix - before;
-	const newStart = prefix - before;
-	const oldSlice = oldLines.slice(oldStart, oldLines.length - suffix + after);
-	const newSlice = newLines.slice(newStart, newLines.length - suffix + after);
-	const body: string[] = [
-		...oldLines.slice(oldStart, prefix).map((line) => ` ${line}`),
-		...oldLines.slice(prefix, oldLines.length - suffix).map((line) => `-${line}`),
-		...newLines.slice(prefix, newLines.length - suffix).map((line) => `+${line}`),
-		...oldLines
-			.slice(oldLines.length - suffix, oldLines.length - suffix + after)
-			.map((line) => ` ${line}`),
-	];
+	return wrapGitHeaders(
+		path,
+		generateUnifiedPatch(path, oldContent, newContent, CONTEXT_LINES),
+	);
+}
+
+function wrapGitHeaders(path: string, raw: string): string {
+	const lines = raw.split("\n");
+	let start = 0;
+	if (lines[0]?.startsWith("--- ")) start += 1;
+	if (lines[start]?.startsWith("+++ ")) start += 1;
+	const rest = lines.slice(start);
+	while (rest.at(-1) === "") rest.pop();
 	return [
 		`diff --git a/${path} b/${path}`,
 		`--- a/${path}`,
 		`+++ b/${path}`,
-		`@@ -${oldStart + 1},${oldSlice.length} +${newStart + 1},${newSlice.length} @@`,
-		...body,
+		...rest,
 	].join("\n");
 }
 

@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import {
 	createServer,
 	type IncomingMessage,
@@ -19,7 +20,9 @@ const ASSETS = {
 	"": { file: "review.html", type: "text/html; charset=utf-8" },
 	"style.css": { file: "review.css", type: "text/css; charset=utf-8" },
 	"review.js": { file: "review.js", type: "text/javascript; charset=utf-8" },
+	"review-code.js": { file: "review-code.js", type: "text/javascript; charset=utf-8" },
 } as const;
+const require = createRequire(import.meta.url);
 
 function securityHeaders(response: ServerResponse): void {
 	response.setHeader("Cache-Control", "no-store");
@@ -140,6 +143,19 @@ class BrowserReviewSession {
 		const route = pathname.slice(prefix.length);
 		if (request.method === "GET" && route === "data") {
 			json(response, 200, this.source);
+			return;
+		}
+		if (request.method === "GET" && route === "d2h.css") {
+			try {
+				const content = await readFile(
+					require.resolve("diff2html/bundles/css/diff2html.min.css"),
+				);
+				securityHeaders(response);
+				response.writeHead(200, { "Content-Type": "text/css; charset=utf-8" });
+				response.end(content);
+			} catch {
+				response.writeHead(500).end();
+			}
 			return;
 		}
 		if (request.method === "GET" && route in ASSETS) {

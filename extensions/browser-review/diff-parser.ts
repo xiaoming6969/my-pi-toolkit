@@ -7,7 +7,11 @@ function parseFile(line: string): string | undefined {
 	return line.match(/ b\/(.+)$/)?.[1];
 }
 
-export function parseUnifiedDiff(patch: string): ReviewLine[] {
+export function parseUnifiedDiff(
+	patch: string,
+	options: { highlight?: boolean } = {},
+): ReviewLine[] {
+	const withHtml = options.highlight !== false;
 	let file: string | undefined;
 	let oldLine: number | undefined;
 	let newLine: number | undefined;
@@ -25,36 +29,36 @@ export function parseUnifiedDiff(patch: string): ReviewLine[] {
 			return { text, style: "hunk", file };
 		}
 		if (text.startsWith("+") && !text.startsWith("+++")) {
-			const line = {
+			const line: ReviewLine = {
 				text,
-				html: highlightDiffLine(text, file),
-				style: "addition" as const,
+				style: "addition",
 				file,
 				newLine,
 			};
+			if (withHtml) line.html = highlightDiffLine(text, file);
 			if (newLine !== undefined) newLine++;
 			return line;
 		}
 		if (text.startsWith("-") && !text.startsWith("---")) {
-			const line = {
+			const line: ReviewLine = {
 				text,
-				html: highlightDiffLine(text, file),
-				style: "deletion" as const,
+				style: "deletion",
 				file,
 				oldLine,
 			};
+			if (withHtml) line.html = highlightDiffLine(text, file);
 			if (oldLine !== undefined) oldLine++;
 			return line;
 		}
 		if (text.startsWith(" ")) {
-			const line = {
+			const line: ReviewLine = {
 				text,
-				html: highlightDiffLine(text, file),
-				style: "context" as const,
+				style: "context",
 				file,
 				oldLine,
 				newLine,
 			};
+			if (withHtml) line.html = highlightDiffLine(text, file);
 			if (oldLine !== undefined) oldLine++;
 			if (newLine !== undefined) newLine++;
 			return line;
